@@ -1,0 +1,31 @@
+# Escrito manualmente porque a Supabase CLI não está instalada neste
+# ambiente de desenvolvimento (ver supabase/README.md). Ajustar/gerar
+# via `supabase init` assim que a CLI estiver disponível, preservando
+# o project_id abaixo.
+
+project_id = "calisthenics-rpg"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_signup = true
+
+[storage]
+enabled = true

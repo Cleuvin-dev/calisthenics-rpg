@@ -89,3 +89,18 @@ O produto será considerado funcionalmente completo quando conseguir:
 ## 6. Aviso de escopo
 
 Esta documentação é uma especificação de produto e engenharia. Antes da publicação, protocolos, vídeos, critérios técnicos e mensagens de segurança devem ser revisados e aprovados por profissional de Educação Física habilitado e, quando necessário, por profissionais de saúde e assessoria jurídica da jurisdição atendida.
+
+## 7. Estado da implementação
+
+Fase atual: **MVP local-only, sem login** (ver `docs/adr/0006-mvp-local-only.md` e `docs/PROJECT_STATUS.md`). O backend Supabase descrito nos documentos técnicos está pausado, não removido.
+
+### Como rodar (dev)
+
+```
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter test
+flutter run
+```
+
+`*.g.dart` (código gerado pelo Drift) não é versionado — rode `build_runner` após clonar ou instalar novas dependências.
