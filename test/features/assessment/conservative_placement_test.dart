@@ -49,4 +49,16 @@ void main() {
         calculator.calculate(anchor: PushHorizontalAnchor.wall, now: now);
     expect(result.validUntil, now.add(const Duration(days: 30)));
   });
+
+  group('calculateSkippedEntirely', () {
+    test('usa o nó mais conservador quando o usuário não responde nada', () {
+      final result = calculator.calculateSkippedEntirely(now: now);
+      expect(result.level, 0);
+      expect(result.levelName, 'Empurrar a parede em pé');
+      expect(result.inputAnchor, isNull);
+      expect(result.confidence, 'low');
+      expect(result.reasonCode, PlacementReasonCode.skippedEntirely);
+      expect(result.validUntil, now.add(const Duration(days: 30)));
+    });
+  });
 }

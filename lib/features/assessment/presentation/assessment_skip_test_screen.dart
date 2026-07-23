@@ -18,20 +18,35 @@ class _AssessmentSkipTestScreenState
   PushHorizontalAnchor? _selected;
   bool _submitting = false;
 
+  Future<void> _saveAndReturn(ConservativePlacementResult result) async {
+    setState(() => _submitting = true);
+
+    await ref.read(capabilityEstimateRepositoryProvider).save(result);
+
+    ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
+
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _submit() async {
     final anchor = _selected;
     if (anchor == null) return;
-
-    setState(() => _submitting = true);
 
     final result = const ConservativePlacementCalculator().calculate(
       anchor: anchor,
       now: DateTime.now(),
     );
+    await _saveAndReturn(result);
+  }
 
-    await ref.read(capabilityEstimateRepositoryProvider).save(result);
-
-    ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
+  /// Usuário não quer responder nada agora — colocação "não avaliado" no
+  /// nó mais conservador (SCORING_AND_PLACEMENT.md §4).
+  Future<void> _skipEntirely() async {
+    final result = const ConservativePlacementCalculator()
+        .calculateSkippedEntirely(now: DateTime.now());
+    await _saveAndReturn(result);
   }
 
   @override
@@ -71,6 +86,11 @@ class _AssessmentSkipTestScreenState
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Pular teste e ver colocação conservadora'),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _submitting ? null : _skipEntirely,
+            child: const Text('Não quero responder agora'),
           ),
         ],
       ),

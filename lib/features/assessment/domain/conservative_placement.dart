@@ -4,7 +4,7 @@ import 'push_horizontal_anchor.dart';
 /// Muda sempre que o mapeamento âncora→nível for revisado.
 const conservativePlacementRuleVersion = 'conservative-placement-v1';
 
-enum PlacementReasonCode { skippedTestOneLevelBelow }
+enum PlacementReasonCode { skippedTestOneLevelBelow, skippedEntirely }
 
 class ConservativePlacementResult {
   const ConservativePlacementResult({
@@ -27,7 +27,10 @@ class ConservativePlacementResult {
   final String confidence;
   final String ruleVersion;
   final PlacementReasonCode reasonCode;
-  final PushHorizontalAnchor inputAnchor;
+
+  /// Nulo quando o usuário optou por não responder nada
+  /// (ver [PlacementReasonCode.skippedEntirely]).
+  final PushHorizontalAnchor? inputAnchor;
   final DateTime computedAt;
   final DateTime validUntil;
 }
@@ -57,6 +60,28 @@ class ConservativePlacementCalculator {
       ruleVersion: conservativePlacementRuleVersion,
       reasonCode: PlacementReasonCode.skippedTestOneLevelBelow,
       inputAnchor: anchor,
+      computedAt: now,
+      validUntil: now.add(const Duration(days: 30)),
+    );
+  }
+
+  /// Colocação quando o usuário não quer responder nada agora
+  /// (SCORING_AND_PLACEMENT.md §4: "não avaliado"). Usa o nó mais
+  /// conservador disponível na trilha, para nunca prescrever acima da
+  /// capacidade real.
+  ConservativePlacementResult calculateSkippedEntirely({
+    required DateTime now,
+  }) {
+    const level = 0;
+
+    return ConservativePlacementResult(
+      pattern: 'push_horizontal',
+      level: level,
+      levelName: pushHorizontalLevelNames[level]!,
+      confidence: 'low',
+      ruleVersion: conservativePlacementRuleVersion,
+      reasonCode: PlacementReasonCode.skippedEntirely,
+      inputAnchor: null,
       computedAt: now,
       validUntil: now.add(const Duration(days: 30)),
     );

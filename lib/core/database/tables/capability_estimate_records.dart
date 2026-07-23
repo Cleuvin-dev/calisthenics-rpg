@@ -12,7 +12,7 @@ class CapabilityEstimateRecords extends Table {
   TextColumn get confidence => text()(); // low|medium|high
   TextColumn get ruleVersion => text()();
   TextColumn get reasonCode => text()();
-  TextColumn get inputAnchor => text()();
+  TextColumn get inputAnchor => text().nullable()();
   DateTimeColumn get computedAt => dateTime()();
   DateTimeColumn get validUntil => dateTime()();
 }

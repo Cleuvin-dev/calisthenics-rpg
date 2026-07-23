@@ -17,7 +17,7 @@ class CapabilityEstimateRepository {
             confidence: result.confidence,
             ruleVersion: result.ruleVersion,
             reasonCode: result.reasonCode.name,
-            inputAnchor: result.inputAnchor.name,
+            inputAnchor: Value(result.inputAnchor?.name),
             computedAt: result.computedAt,
             validUntil: result.validUntil,
           ),
