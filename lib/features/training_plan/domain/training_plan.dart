@@ -1,3 +1,5 @@
+import 'exercise_catalog.dart' show DoseType;
+
 /// Motivo de inclusão de um item, conforme os `reason_code` de
 /// TRAINING_ENGINE.md §11. Só os códigos realmente produzidos pelo
 /// gerador determinístico do MVP estão listados aqui.
@@ -23,6 +25,11 @@ class PlannedExerciseItem {
     required this.namePtBr,
     required this.setsRepsGuidance,
     required this.reasonCode,
+    this.doseType = DoseType.reps,
+    this.targetSets = 1,
+    this.targetReps,
+    this.targetSeconds,
+    this.restSeconds = 60,
   });
 
   final String pattern;
@@ -31,14 +38,29 @@ class PlannedExerciseItem {
   final String setsRepsGuidance;
   final PlanReasonCode reasonCode;
 
+  final DoseType doseType;
+  final int targetSets;
+  final int? targetReps;
+  final int? targetSeconds;
+  final int restSeconds;
+
   Map<String, dynamic> toJson() => {
         'pattern': pattern,
         'exerciseSlug': exerciseSlug,
         'namePtBr': namePtBr,
         'setsRepsGuidance': setsRepsGuidance,
         'reasonCode': reasonCode.name,
+        'doseType': doseType.name,
+        'targetSets': targetSets,
+        'targetReps': targetReps,
+        'targetSeconds': targetSeconds,
+        'restSeconds': restSeconds,
       };
 
+  /// Tolerante a planos salvos antes da dose estruturada existir: sem
+  /// `doseType`, assume `reps` com `targetReps` nulo — o player usa um
+  /// alvo padrão nesse caso (ver `LogSetSheet`). Regenerar o plano
+  /// ("Gerar novamente") preenche a dose estruturada real.
   factory PlannedExerciseItem.fromJson(Map<String, dynamic> json) {
     return PlannedExerciseItem(
       pattern: json['pattern'] as String,
@@ -46,6 +68,13 @@ class PlannedExerciseItem {
       namePtBr: json['namePtBr'] as String,
       setsRepsGuidance: json['setsRepsGuidance'] as String,
       reasonCode: PlanReasonCode.values.byName(json['reasonCode'] as String),
+      doseType: json['doseType'] == null
+          ? DoseType.reps
+          : DoseType.values.byName(json['doseType'] as String),
+      targetSets: json['targetSets'] as int? ?? 1,
+      targetReps: json['targetReps'] as int?,
+      targetSeconds: json['targetSeconds'] as int?,
+      restSeconds: json['restSeconds'] as int? ?? 60,
     );
   }
 }

@@ -1,18 +1,46 @@
 import 'package:flutter/material.dart';
 
-/// Tema escuro com identidade de "game" (pedido do usuário): violeta
-/// vibrante como cor principal, dourado/âmbar reservado para XP e
-/// conquistas (via `colorScheme.tertiary`), cantos arredondados e
-/// tipografia com mais peso visual. Sem dependências externas de fonte
-/// ou ícone — só `ThemeData`/`ColorScheme` puros do Flutter.
+/// Tema escuro com os tokens de cor de
+/// `VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md` §4.2: verde-menta como cor
+/// de ação principal, violeta reservado só para XP/recompensas (via
+/// `colorScheme.tertiary`), superfícies em quase-preto com três níveis de
+/// elevação. Sem dependências externas de fonte ou ícone — só
+/// `ThemeData`/`ColorScheme` puros do Flutter.
+const _surfaceCanvas = Color(0xFF080A0B);
+const _surfaceCard = Color(0xFF141819);
+const _surfaceElevated = Color(0xFF1B2021);
+const _brandPrimary = Color(0xFF35E6A1);
+const _brandPrimaryPressed = Color(0xFF20C987);
+const _rpgXp = Color(0xFF8B5CF6);
+const _textPrimary = Color(0xFFF7F9F8);
+const _textSecondary = Color(0xFFA7B0AD);
+const _stateWarning = Color(0xFFF4B740);
+const _stateDanger = Color(0xFFF45B69);
+const _divider = Color(0xFF2A302F);
+
 ThemeData buildCalisthenicsRpgTheme() {
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF7C4DFF),
+    seedColor: _brandPrimary,
     brightness: Brightness.dark,
   ).copyWith(
-    tertiary: const Color(0xFFFFC947),
-    tertiaryContainer: const Color(0xFF5C4400),
-    onTertiaryContainer: const Color(0xFFFFDFA0),
+    primary: _brandPrimary,
+    onPrimary: const Color(0xFF06231A),
+    primaryContainer: _brandPrimaryPressed,
+    onPrimaryContainer: const Color(0xFF06231A),
+    secondary: _brandPrimaryPressed,
+    onSecondary: const Color(0xFF06231A),
+    tertiary: _rpgXp,
+    tertiaryContainer: const Color(0xFF2E1D66),
+    onTertiaryContainer: const Color(0xFFE4DBFF),
+    surface: _surfaceCanvas,
+    onSurface: _textPrimary,
+    onSurfaceVariant: _textSecondary,
+    surfaceContainerHigh: _surfaceCard,
+    surfaceContainerHighest: _surfaceElevated,
+    error: _stateDanger,
+    onError: const Color(0xFF3A0A10),
+    outline: _divider,
+    outlineVariant: _divider,
   );
 
   return ThemeData(
@@ -59,9 +87,13 @@ ThemeData buildCalisthenicsRpgTheme() {
   );
 }
 
-/// Cor de destaque para XP/recompensas em qualquer tela — dourado, para
-/// diferenciar visualmente de progressão física (que usa a cor
-/// primária).
+/// Cor de destaque para XP/recompensas em qualquer tela — violeta
+/// (`rpg.xp` no documento), reservada só para isso, para diferenciar
+/// visualmente de progressão física (que usa a cor primária verde-menta).
 extension XpColor on ColorScheme {
   Color get xpAccent => tertiary;
+
+  /// `state.warning` do documento — sem slot próprio no `ColorScheme`
+  /// padrão do Material.
+  Color get stateWarning => _stateWarning;
 }

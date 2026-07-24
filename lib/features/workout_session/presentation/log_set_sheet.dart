@@ -9,19 +9,31 @@ class LoggedSet {
   final PerceivedEffort effort;
 }
 
-/// Formulário de registro de série (FR-021/FR-022): repetições e
-/// percepção — sem escala numérica de RPE, para manter o registro rápido.
+/// Formulário de registro de série por repetições
+/// (VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md §11): o alvo fica visível
+/// até a confirmação, `performed_reps` começa igual ao alvo (ajuste
+/// rápido com `+`/`-`), e nada é salvo antes de "Concluir série".
 class LogSetSheet extends StatefulWidget {
-  const LogSetSheet({super.key, required this.setNumber});
+  const LogSetSheet({
+    super.key,
+    required this.setNumber,
+    required this.totalSets,
+    required this.targetReps,
+  });
 
   final int setNumber;
+  final int totalSets;
+
+  /// Alvo de repetições desta série. Quando não há dose estruturada
+  /// (plano antigo, sem regenerar), cai para um valor padrão razoável.
+  final int targetReps;
 
   @override
   State<LogSetSheet> createState() => _LogSetSheetState();
 }
 
 class _LogSetSheetState extends State<LogSetSheet> {
-  int _reps = 8;
+  late int _reps = widget.targetReps;
   PerceivedEffort? _effort;
 
   @override
@@ -38,23 +50,48 @@ class _LogSetSheetState extends State<LogSetSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Série ${widget.setNumber}',
+            'Série ${widget.setNumber} de ${widget.totalSets}',
             style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'ALVO',
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+          Text(
+            '${widget.targetReps} repetições',
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                onPressed: _reps > 0 ? () => setState(() => _reps--) : null,
+                onPressed: _reps > 0
+                    ? () => setState(() => _reps--)
+                    : null,
                 icon: const Icon(Icons.remove_circle_outline),
+                tooltip: 'Diminuir repetições realizadas',
               ),
-              Text('$_reps reps', style: Theme.of(context).textTheme.headlineSmall),
+              Semantics(
+                label: '$_reps repetições realmente concluídas',
+                child: Text(
+                  '$_reps',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+              ),
               IconButton(
                 onPressed: () => setState(() => _reps++),
                 icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Aumentar repetições realizadas',
               ),
             ],
+          ),
+          Center(
+            child: Text(
+              'repetições realmente concluídas',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           const SizedBox(height: 16),
           const Text('Como foi a série?'),
@@ -77,7 +114,7 @@ class _LogSetSheetState extends State<LogSetSheet> {
                 : () => Navigator.of(context).pop(
                       LoggedSet(reps: _reps, effort: _effort!),
                     ),
-            child: const Text('Registrar'),
+            child: const Text('Concluir série'),
           ),
         ],
       ),

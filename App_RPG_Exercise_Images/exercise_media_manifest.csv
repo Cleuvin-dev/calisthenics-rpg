@@ -1,0 +1,196 @@
+index,category,level,name,slug,asset_path,status
+1,"Empurrar horizontal",0,"Empurrar a parede em pé",empurrar_parede_pe,assets/images/exercises/empurrar_horizontal/empurrar_parede_pe.png,generated
+2,"Empurrar horizontal",1,"Flexão na parede",flexao_na_parede,assets/images/exercises/empurrar_horizontal/flexao_na_parede.png,generated
+3,"Empurrar horizontal",2,"Flexão em superfície muito alta",flexao_superficie_muito_alta,assets/images/exercises/empurrar_horizontal/flexao_superficie_muito_alta.png,generated
+4,"Empurrar horizontal",3,"Flexão inclinada média",flexao_inclinada_media,assets/images/exercises/empurrar_horizontal/flexao_inclinada_media.png,starter_reused
+5,"Empurrar horizontal",4,"Flexão inclinada baixa",flexao_inclinada_baixa,assets/images/exercises/empurrar_horizontal/flexao_inclinada_baixa.png,generated
+6,"Empurrar horizontal",5,"Flexão de joelhos",flexao_joelhos,assets/images/exercises/empurrar_horizontal/flexao_joelhos.png,generated
+7,"Empurrar horizontal",6,"Negativa de flexão",negativa_flexao,assets/images/exercises/empurrar_horizontal/negativa_flexao.png,generated
+8,"Empurrar horizontal",7,"Flexão tradicional",flexao_tradicional,assets/images/exercises/empurrar_horizontal/flexao_tradicional.png,generated
+9,"Empurrar horizontal",8,"Flexão com pausa/tempo",flexao_pausa_tempo,assets/images/exercises/empurrar_horizontal/flexao_pausa_tempo.png,generated
+10,"Empurrar horizontal",9,"Flexão declinada",flexao_declinada,assets/images/exercises/empurrar_horizontal/flexao_declinada.png,generated
+11,"Empurrar horizontal",10,"Flexão diamante",flexao_diamante,assets/images/exercises/empurrar_horizontal/flexao_diamante.png,generated
+12,"Empurrar horizontal",11,"Archer push-up assistida",archer_push_up_assistida,assets/images/exercises/empurrar_horizontal/archer_push_up_assistida.png,generated
+13,"Empurrar horizontal",12,"Archer push-up",archer_push_up,assets/images/exercises/empurrar_horizontal/archer_push_up.png,generated
+14,"Empurrar horizontal",13,"One-arm push-up elevada",one_arm_push_up_elevada,assets/images/exercises/empurrar_horizontal/one_arm_push_up_elevada.png,generated
+15,"Empurrar horizontal",14,"One-arm push-up",one_arm_push_up,assets/images/exercises/empurrar_horizontal/one_arm_push_up.png,generated
+16,"Empurrar horizontal",15,"Planche lean",planche_lean,assets/images/exercises/empurrar_horizontal/planche_lean.png,generated
+17,"Empurrar horizontal",16,"Pseudo planche push-up",pseudo_planche_push_up,assets/images/exercises/empurrar_horizontal/pseudo_planche_push_up.png,generated
+18,"Empurrar horizontal",17,"Tuck planche assistida",tuck_planche_assistida,assets/images/exercises/empurrar_horizontal/tuck_planche_assistida.png,generated
+19,"Empurrar horizontal",18,"Tuck planche",tuck_planche,assets/images/exercises/empurrar_horizontal/tuck_planche.png,generated
+20,"Empurrar horizontal",19,"Advanced tuck planche",advanced_tuck_planche,assets/images/exercises/empurrar_horizontal/advanced_tuck_planche.png,generated
+21,"Empurrar horizontal",20,"Straddle planche",straddle_planche,assets/images/exercises/empurrar_horizontal/straddle_planche.png,generated
+22,"Empurrar horizontal",21,"Full planche",full_planche,assets/images/exercises/empurrar_horizontal/full_planche.png,generated
+23,"Empurrar horizontal",22,"Planche push-up progressions",planche_push_up_progressions,assets/images/exercises/empurrar_horizontal/planche_push_up_progressions.png,generated
+24,"Empurrar vertical",0,"Apoio de mãos em superfície alta",apoio_maos_superficie_alta,assets/images/exercises/empurrar_vertical/apoio_maos_superficie_alta.png,generated
+25,"Empurrar vertical",1,"Pike hold elevado",pike_hold_elevado,assets/images/exercises/empurrar_vertical/pike_hold_elevado.png,generated
+26,"Empurrar vertical",2,"Pike push-up inclinada",pike_push_up_inclinada,assets/images/exercises/empurrar_vertical/pike_push_up_inclinada.png,generated
+27,"Empurrar vertical",3,"Pike push-up no chão",pike_push_up_no_chao,assets/images/exercises/empurrar_vertical/pike_push_up_no_chao.png,generated
+28,"Empurrar vertical",4,"Pike push-up com pés elevados",pike_push_up_pes_elevados,assets/images/exercises/empurrar_vertical/pike_push_up_pes_elevados.png,generated
+29,"Empurrar vertical",5,"Wall walk parcial",wall_walk_parcial,assets/images/exercises/empurrar_vertical/wall_walk_parcial.png,generated
+30,"Empurrar vertical",6,"Handstand na parede, peito para parede",handstand_na_parede_peito_parede,assets/images/exercises/empurrar_vertical/handstand_na_parede_peito_parede.png,generated
+31,"Empurrar vertical",7,"Handstand wall shoulder taps preparatórios",handstand_wall_shoulder_taps_preparatorios,assets/images/exercises/empurrar_vertical/handstand_wall_shoulder_taps_preparatorios.png,generated
+32,"Empurrar vertical",8,"Negativa de HSPU com amplitude parcial",negativa_hspu_amplitude_parcial,assets/images/exercises/empurrar_vertical/negativa_hspu_amplitude_parcial.png,generated
+33,"Empurrar vertical",9,"HSPU parcial na parede",hspu_parcial_na_parede,assets/images/exercises/empurrar_vertical/hspu_parcial_na_parede.png,generated
+34,"Empurrar vertical",10,"HSPU completo na parede",hspu_completo_na_parede,assets/images/exercises/empurrar_vertical/hspu_completo_na_parede.png,generated
+35,"Empurrar vertical",11,"Handstand livre consistente",handstand_livre_consistente,assets/images/exercises/empurrar_vertical/handstand_livre_consistente.png,generated
+36,"Empurrar vertical",12,"Negativa de HSPU livre",negativa_hspu_livre,assets/images/exercises/empurrar_vertical/negativa_hspu_livre.png,generated
+37,"Empurrar vertical",13,"Handstand push-up livre",handstand_push_up_livre,assets/images/exercises/empurrar_vertical/handstand_push_up_livre.png,generated
+38,"Empurrar vertical",14,"HSPU em paralelas/déficit",hspu_paralelas_deficit,assets/images/exercises/empurrar_vertical/hspu_paralelas_deficit.png,generated
+39,"Puxar horizontal e escápula",0,"Retração escapular guiada",retracao_escapular_guiada,assets/images/exercises/puxar_horizontal_escapula/retracao_escapular_guiada.png,generated
+40,"Puxar horizontal e escápula",1,"Remada em pé com elástico",remada_pe_elastico,assets/images/exercises/puxar_horizontal_escapula/remada_pe_elastico.png,generated
+41,"Puxar horizontal e escápula",2,"Remada australiana muito inclinada",remada_australiana_muito_inclinada,assets/images/exercises/puxar_horizontal_escapula/remada_australiana_muito_inclinada.png,generated
+42,"Puxar horizontal e escápula",3,"Remada australiana inclinada",remada_australiana_inclinada,assets/images/exercises/puxar_horizontal_escapula/remada_australiana_inclinada.png,generated
+43,"Puxar horizontal e escápula",4,"Remada australiana horizontal com joelhos flexionados",remada_australiana_horizontal_joelhos_flexionados,assets/images/exercises/puxar_horizontal_escapula/remada_australiana_horizontal_joelhos_flexionados.png,starter_reused
+44,"Puxar horizontal e escápula",5,"Remada horizontal com pernas estendidas",remada_horizontal_pernas_estendidas,assets/images/exercises/puxar_horizontal_escapula/remada_horizontal_pernas_estendidas.png,generated
+45,"Puxar horizontal e escápula",6,"Remada com pés elevados",remada_pes_elevados,assets/images/exercises/puxar_horizontal_escapula/remada_pes_elevados.png,generated
+46,"Puxar horizontal e escápula",7,"Archer row assistida",archer_row_assistida,assets/images/exercises/puxar_horizontal_escapula/archer_row_assistida.png,generated
+47,"Puxar horizontal e escápula",8,"Archer row",archer_row,assets/images/exercises/puxar_horizontal_escapula/archer_row.png,generated
+48,"Puxar horizontal e escápula",9,"Remada unilateral assistida",remada_unilateral_assistida,assets/images/exercises/puxar_horizontal_escapula/remada_unilateral_assistida.png,generated
+49,"Puxar horizontal e escápula",10,"Remada unilateral",remada_unilateral,assets/images/exercises/puxar_horizontal_escapula/remada_unilateral.png,generated
+50,"Puxar horizontal e escápula",11,"Remada explosiva/barra ao peito baixa",remada_explosiva_barra_ao_peito_baixa,assets/images/exercises/puxar_horizontal_escapula/remada_explosiva_barra_ao_peito_baixa.png,generated
+51,"Puxar vertical",0,"Pegada e hang com pés apoiados",pegada_hang_pes_apoiados,assets/images/exercises/puxar_vertical/pegada_hang_pes_apoiados.png,generated
+52,"Puxar vertical",1,"Active hang assistido",active_hang_assistido,assets/images/exercises/puxar_vertical/active_hang_assistido.png,generated
+53,"Puxar vertical",2,"Dead hang confortável",dead_hang_confortavel,assets/images/exercises/puxar_vertical/dead_hang_confortavel.png,generated
+54,"Puxar vertical",3,"Scapular pull-up",scapular_pull_up,assets/images/exercises/puxar_vertical/scapular_pull_up.png,generated
+55,"Puxar vertical",4,"Isometria superior assistida",isometria_superior_assistida,assets/images/exercises/puxar_vertical/isometria_superior_assistida.png,generated
+56,"Puxar vertical",5,"Barra negativa",barra_negativa,assets/images/exercises/puxar_vertical/barra_negativa.png,generated
+57,"Puxar vertical",6,"Barra com elástico/apoio",barra_elastico_apoio,assets/images/exercises/puxar_vertical/barra_elastico_apoio.png,generated
+58,"Puxar vertical",7,"Chin-up livre",chin_up_livre,assets/images/exercises/puxar_vertical/chin_up_livre.png,generated
+59,"Puxar vertical",8,"Pull-up livre",pull_up_livre,assets/images/exercises/puxar_vertical/pull_up_livre.png,generated
+60,"Puxar vertical",9,"Pull-up com pausa/chest intent",pull_up_pausa_chest_intent,assets/images/exercises/puxar_vertical/pull_up_pausa_chest_intent.png,generated
+61,"Puxar vertical",10,"Pull-up explosiva",pull_up_explosiva,assets/images/exercises/puxar_vertical/pull_up_explosiva.png,generated
+62,"Puxar vertical",11,"Chest-to-bar",chest_to_bar,assets/images/exercises/puxar_vertical/chest_to_bar.png,generated
+63,"Puxar vertical",12,"High pull-up",high_pull_up,assets/images/exercises/puxar_vertical/high_pull_up.png,generated
+64,"Puxar vertical",13,"Transição baixa com pés apoiados",transicao_baixa_pes_apoiados,assets/images/exercises/puxar_vertical/transicao_baixa_pes_apoiados.png,generated
+65,"Puxar vertical",14,"Muscle-up com assistência",muscle_up_assistencia,assets/images/exercises/puxar_vertical/muscle_up_assistencia.png,generated
+66,"Puxar vertical",15,"Muscle-up negativo",muscle_up_negativo,assets/images/exercises/puxar_vertical/muscle_up_negativo.png,generated
+67,"Puxar vertical",16,"Bar muscle-up estrito",bar_muscle_up_estrito,assets/images/exercises/puxar_vertical/bar_muscle_up_estrito.png,generated
+68,"Puxar vertical",17,"Muscle-up estrito consistente",muscle_up_estrito_consistente,assets/images/exercises/puxar_vertical/muscle_up_estrito_consistente.png,generated
+69,"Puxar vertical",18,"Muscle-up com carga/variações",muscle_up_carga_variacoes,assets/images/exercises/puxar_vertical/muscle_up_carga_variacoes.png,generated
+70,"Dips e suporte",0,"Suporte em bancada com pés totalmente apoiados",suporte_bancada_pes_totalmente_apoiados,assets/images/exercises/dips_suporte/suporte_bancada_pes_totalmente_apoiados.png,generated
+71,"Dips e suporte",1,"Scapular support em paralelas baixas",scapular_support_paralelas_baixas,assets/images/exercises/dips_suporte/scapular_support_paralelas_baixas.png,generated
+72,"Dips e suporte",2,"Suporte estático assistido",suporte_estatico_assistido,assets/images/exercises/dips_suporte/suporte_estatico_assistido.png,generated
+73,"Dips e suporte",3,"Dip negativo assistido",dip_negativo_assistido,assets/images/exercises/dips_suporte/dip_negativo_assistido.png,generated
+74,"Dips e suporte",4,"Dip com pés/elástico",dip_pes_elastico,assets/images/exercises/dips_suporte/dip_pes_elastico.png,generated
+75,"Dips e suporte",5,"Dip em paralelas",dip_paralelas,assets/images/exercises/dips_suporte/dip_paralelas.png,generated
+76,"Dips e suporte",6,"Dip profundo controlado conforme mobilidade",dip_profundo_controlado_conforme_mobilidade,assets/images/exercises/dips_suporte/dip_profundo_controlado_conforme_mobilidade.png,generated
+77,"Dips e suporte",7,"Straight bar dip",straight_bar_dip,assets/images/exercises/dips_suporte/straight_bar_dip.png,generated
+78,"Dips e suporte",8,"Dip explosivo",dip_explosivo,assets/images/exercises/dips_suporte/dip_explosivo.png,generated
+79,"Dips e suporte",9,"Korean dip/progressões especializadas, se aprovadas",korean_dip_progressoes_especializadas_se_aprovadas,assets/images/exercises/dips_suporte/korean_dip_progressoes_especializadas_se_aprovadas.png,generated
+80,"Agachamento e unilateral",0,"Sentar e levantar de banco alto",sentar_levantar_banco_alto,assets/images/exercises/agachamento_unilateral/sentar_levantar_banco_alto.png,generated
+81,"Agachamento e unilateral",1,"Sentar e levantar de banco médio",sentar_levantar_banco_medio,assets/images/exercises/agachamento_unilateral/sentar_levantar_banco_medio.png,generated
+82,"Agachamento e unilateral",2,"Agachamento assistido parcial",agachamento_assistido_parcial,assets/images/exercises/agachamento_unilateral/agachamento_assistido_parcial.png,generated
+83,"Agachamento e unilateral",3,"Agachamento assistido em amplitude confortável",agachamento_assistido_amplitude_confortavel,assets/images/exercises/agachamento_unilateral/agachamento_assistido_amplitude_confortavel.png,generated
+84,"Agachamento e unilateral",4,"Agachamento livre até caixa",agachamento_livre_ate_caixa,assets/images/exercises/agachamento_unilateral/agachamento_livre_ate_caixa.png,generated
+85,"Agachamento e unilateral",5,"Agachamento livre",agachamento_livre,assets/images/exercises/agachamento_unilateral/agachamento_livre.png,starter_reused
+86,"Agachamento e unilateral",6,"Agachamento com pausa/tempo",agachamento_pausa_tempo,assets/images/exercises/agachamento_unilateral/agachamento_pausa_tempo.png,generated
+87,"Agachamento e unilateral",7,"Split squat assistido",split_squat_assistido,assets/images/exercises/agachamento_unilateral/split_squat_assistido.png,generated
+88,"Agachamento e unilateral",8,"Split squat",split_squat,assets/images/exercises/agachamento_unilateral/split_squat.png,generated
+89,"Agachamento e unilateral",9,"Afundo reverso",afundo_reverso,assets/images/exercises/agachamento_unilateral/afundo_reverso.png,generated
+90,"Agachamento e unilateral",10,"Agachamento búlgaro assistido",agachamento_bulgaro_assistido,assets/images/exercises/agachamento_unilateral/agachamento_bulgaro_assistido.png,generated
+91,"Agachamento e unilateral",11,"Agachamento búlgaro",agachamento_bulgaro,assets/images/exercises/agachamento_unilateral/agachamento_bulgaro.png,generated
+92,"Agachamento e unilateral",12,"Step-down controlado",step_down_controlado,assets/images/exercises/agachamento_unilateral/step_down_controlado.png,generated
+93,"Agachamento e unilateral",13,"Shrimp squat assistido",shrimp_squat_assistido,assets/images/exercises/agachamento_unilateral/shrimp_squat_assistido.png,generated
+94,"Agachamento e unilateral",14,"Pistol para caixa alta",pistol_caixa_alta,assets/images/exercises/agachamento_unilateral/pistol_caixa_alta.png,generated
+95,"Agachamento e unilateral",15,"Pistol para caixa baixa/contrapeso",pistol_caixa_baixa_contrapeso,assets/images/exercises/agachamento_unilateral/pistol_caixa_baixa_contrapeso.png,generated
+96,"Agachamento e unilateral",16,"Pistol squat assistido",pistol_squat_assistido,assets/images/exercises/agachamento_unilateral/pistol_squat_assistido.png,generated
+97,"Agachamento e unilateral",17,"Pistol squat livre",pistol_squat_livre,assets/images/exercises/agachamento_unilateral/pistol_squat_livre.png,generated
+98,"Agachamento e unilateral",18,"Pistol com pausa/carga",pistol_pausa_carga,assets/images/exercises/agachamento_unilateral/pistol_pausa_carga.png,generated
+99,"Agachamento e unilateral",19,"Pistol explosivo/variação elite aprovada",pistol_explosivo_variacao_elite_aprovada,assets/images/exercises/agachamento_unilateral/pistol_explosivo_variacao_elite_aprovada.png,generated
+100,"Cadeia posterior",0,"Ponte de glúteos curta",ponte_gluteos_curta,assets/images/exercises/cadeia_posterior/ponte_gluteos_curta.png,generated
+101,"Cadeia posterior",1,"Ponte de glúteos completa",ponte_gluteos_completa,assets/images/exercises/cadeia_posterior/ponte_gluteos_completa.png,generated
+102,"Cadeia posterior",2,"Hinge na parede",hinge_na_parede,assets/images/exercises/cadeia_posterior/hinge_na_parede.png,generated
+103,"Cadeia posterior",3,"Good morning sem carga/elástico",good_morning_sem_carga_elastico,assets/images/exercises/cadeia_posterior/good_morning_sem_carga_elastico.png,generated
+104,"Cadeia posterior",4,"Ponte unilateral assistida",ponte_unilateral_assistida,assets/images/exercises/cadeia_posterior/ponte_unilateral_assistida.png,generated
+105,"Cadeia posterior",5,"Ponte unilateral",ponte_unilateral,assets/images/exercises/cadeia_posterior/ponte_unilateral.png,generated
+106,"Cadeia posterior",6,"Sliding leg curl bilateral",sliding_leg_curl_bilateral,assets/images/exercises/cadeia_posterior/sliding_leg_curl_bilateral.png,generated
+107,"Cadeia posterior",7,"Sliding leg curl excêntrico/unilateral assistido",sliding_leg_curl_excentrico_unilateral_assistido,assets/images/exercises/cadeia_posterior/sliding_leg_curl_excentrico_unilateral_assistido.png,generated
+108,"Cadeia posterior",8,"Nordic curl com alta assistência",nordic_curl_alta_assistencia,assets/images/exercises/cadeia_posterior/nordic_curl_alta_assistencia.png,generated
+109,"Cadeia posterior",9,"Nordic negativo parcial",nordic_negativo_parcial,assets/images/exercises/cadeia_posterior/nordic_negativo_parcial.png,generated
+110,"Cadeia posterior",10,"Nordic negativo completo",nordic_negativo_completo,assets/images/exercises/cadeia_posterior/nordic_negativo_completo.png,generated
+111,"Cadeia posterior",11,"Nordic curl assistido completo",nordic_curl_assistido_completo,assets/images/exercises/cadeia_posterior/nordic_curl_assistido_completo.png,generated
+112,"Cadeia posterior",12,"Nordic curl livre",nordic_curl_livre,assets/images/exercises/cadeia_posterior/nordic_curl_livre.png,generated
+113,"Cadeia posterior",13,"Nordic com pausa/carga",nordic_pausa_carga,assets/images/exercises/cadeia_posterior/nordic_pausa_carga.png,generated
+114,"Core anterior e compressão",0,"Respiração e brace em decúbito",respiracao_brace_decubito,assets/images/exercises/core_anterior_compressao/respiracao_brace_decubito.png,generated
+115,"Core anterior e compressão",1,"Heel slides",heel_slides,assets/images/exercises/core_anterior_compressao/heel_slides.png,generated
+116,"Core anterior e compressão",2,"Dead bug simplificado",dead_bug_simplificado,assets/images/exercises/core_anterior_compressao/dead_bug_simplificado.png,generated
+117,"Core anterior e compressão",3,"Dead bug alternado",dead_bug_alternado,assets/images/exercises/core_anterior_compressao/dead_bug_alternado.png,generated
+118,"Core anterior e compressão",4,"Prancha inclinada",prancha_inclinada,assets/images/exercises/core_anterior_compressao/prancha_inclinada.png,generated
+119,"Core anterior e compressão",5,"Prancha de joelhos",prancha_joelhos,assets/images/exercises/core_anterior_compressao/prancha_joelhos.png,generated
+120,"Core anterior e compressão",6,"Prancha completa",prancha_completa,assets/images/exercises/core_anterior_compressao/prancha_completa.png,starter_reused
+121,"Core anterior e compressão",7,"Hollow tuck hold",hollow_tuck_hold,assets/images/exercises/core_anterior_compressao/hollow_tuck_hold.png,generated
+122,"Core anterior e compressão",8,"Hollow body hold",hollow_body_hold,assets/images/exercises/core_anterior_compressao/hollow_body_hold.png,generated
+123,"Core anterior e compressão",9,"Elevação de joelhos em suporte/hang assistido",elevacao_joelhos_suporte_hang_assistido,assets/images/exercises/core_anterior_compressao/elevacao_joelhos_suporte_hang_assistido.png,generated
+124,"Core anterior e compressão",10,"Knee raises suspenso",knee_raises_suspenso,assets/images/exercises/core_anterior_compressao/knee_raises_suspenso.png,generated
+125,"Core anterior e compressão",11,"Leg raises parcial/controlado",leg_raises_parcial_controlado,assets/images/exercises/core_anterior_compressao/leg_raises_parcial_controlado.png,generated
+126,"Core anterior e compressão",12,"Leg raises até barra conforme capacidade",leg_raises_ate_barra_conforme_capacidade,assets/images/exercises/core_anterior_compressao/leg_raises_ate_barra_conforme_capacidade.png,generated
+127,"Core anterior e compressão",13,"Tuck support em paralelas",tuck_support_paralelas,assets/images/exercises/core_anterior_compressao/tuck_support_paralelas.png,generated
+128,"Core anterior e compressão",14,"One-leg L-sit",one_leg_l_sit,assets/images/exercises/core_anterior_compressao/one_leg_l_sit.png,generated
+129,"Core anterior e compressão",15,"Tuck L-sit",tuck_l_sit,assets/images/exercises/core_anterior_compressao/tuck_l_sit.png,generated
+130,"Core anterior e compressão",16,"L-sit",l_sit,assets/images/exercises/core_anterior_compressao/l_sit.png,generated
+131,"Core anterior e compressão",17,"L-sit elevado/longa duração",l_sit_elevado_longa_duracao,assets/images/exercises/core_anterior_compressao/l_sit_elevado_longa_duracao.png,generated
+132,"Core anterior e compressão",18,"V-sit progressions",v_sit_progressions,assets/images/exercises/core_anterior_compressao/v_sit_progressions.png,generated
+133,"Core anterior e compressão",19,"V-sit",v_sit,assets/images/exercises/core_anterior_compressao/v_sit.png,generated
+134,"Core posterior",0,"Ponte e controle pélvico",ponte_controle_pelvico,assets/images/exercises/core_posterior/ponte_controle_pelvico.png,generated
+135,"Core posterior",1,"Reverse crunch controlado",reverse_crunch_controlado,assets/images/exercises/core_posterior/reverse_crunch_controlado.png,generated
+136,"Core posterior",2,"Negative candlestick curta",negative_candlestick_curta,assets/images/exercises/core_posterior/negative_candlestick_curta.png,generated
+137,"Core posterior",3,"Candlestick",candlestick,assets/images/exercises/core_posterior/candlestick.png,generated
+138,"Core posterior",4,"Tuck dragon flag negativa",tuck_dragon_flag_negativa,assets/images/exercises/core_posterior/tuck_dragon_flag_negativa.png,generated
+139,"Core posterior",5,"Advanced tuck negativa",advanced_tuck_negativa,assets/images/exercises/core_posterior/advanced_tuck_negativa.png,generated
+140,"Core posterior",6,"One-leg dragon flag",one_leg_dragon_flag,assets/images/exercises/core_posterior/one_leg_dragon_flag.png,generated
+141,"Core posterior",7,"Straddle dragon flag",straddle_dragon_flag,assets/images/exercises/core_posterior/straddle_dragon_flag.png,generated
+142,"Core posterior",8,"Dragon flag negativa completa",dragon_flag_negativa_completa,assets/images/exercises/core_posterior/dragon_flag_negativa_completa.png,generated
+143,"Core posterior",9,"Dragon flag completa",dragon_flag_completa,assets/images/exercises/core_posterior/dragon_flag_completa.png,generated
+144,"Core lateral e anti-rotação",0,"Side plank elevada/joelhos",side_plank_elevada_joelhos,assets/images/exercises/core_lateral_anti_rotacao/side_plank_elevada_joelhos.png,generated
+145,"Core lateral e anti-rotação",1,"Side plank de joelhos",side_plank_joelhos,assets/images/exercises/core_lateral_anti_rotacao/side_plank_joelhos.png,generated
+146,"Core lateral e anti-rotação",2,"Side plank completa",side_plank_completa,assets/images/exercises/core_lateral_anti_rotacao/side_plank_completa.png,generated
+147,"Core lateral e anti-rotação",3,"Side plank com elevação de perna",side_plank_elevacao_perna,assets/images/exercises/core_lateral_anti_rotacao/side_plank_elevacao_perna.png,generated
+148,"Core lateral e anti-rotação",4,"Copenhagen curta assistida",copenhagen_curta_assistida,assets/images/exercises/core_lateral_anti_rotacao/copenhagen_curta_assistida.png,generated
+149,"Core lateral e anti-rotação",5,"Copenhagen completa progressiva",copenhagen_completa_progressiva,assets/images/exercises/core_lateral_anti_rotacao/copenhagen_completa_progressiva.png,generated
+150,"Core lateral e anti-rotação",6,"Hanging windshield wiper tuck",hanging_windshield_wiper_tuck,assets/images/exercises/core_lateral_anti_rotacao/hanging_windshield_wiper_tuck.png,generated
+151,"Core lateral e anti-rotação",7,"Windshield wiper completo",windshield_wiper_completo,assets/images/exercises/core_lateral_anti_rotacao/windshield_wiper_completo.png,generated
+152,"Core lateral e anti-rotação",8,"Human flag vertical assistida",human_flag_vertical_assistida,assets/images/exercises/core_lateral_anti_rotacao/human_flag_vertical_assistida.png,generated
+153,"Core lateral e anti-rotação",9,"Tuck human flag",tuck_human_flag,assets/images/exercises/core_lateral_anti_rotacao/tuck_human_flag.png,generated
+154,"Core lateral e anti-rotação",10,"Straddle human flag",straddle_human_flag,assets/images/exercises/core_lateral_anti_rotacao/straddle_human_flag.png,generated
+155,"Core lateral e anti-rotação",11,"Human flag",human_flag,assets/images/exercises/core_lateral_anti_rotacao/human_flag.png,generated
+156,"Front lever",0,"Scapular lever pulls assistidos",scapular_lever_pulls_assistidos,assets/images/exercises/front_lever/scapular_lever_pulls_assistidos.png,generated
+157,"Front lever",1,"Tuck inverted hang controlado",tuck_inverted_hang_controlado,assets/images/exercises/front_lever/tuck_inverted_hang_controlado.png,generated
+158,"Front lever",2,"Tuck front lever com assistência",tuck_front_lever_assistencia,assets/images/exercises/front_lever/tuck_front_lever_assistencia.png,generated
+159,"Front lever",3,"Tuck front lever",tuck_front_lever,assets/images/exercises/front_lever/tuck_front_lever.png,generated
+160,"Front lever",4,"Advanced tuck front lever",advanced_tuck_front_lever,assets/images/exercises/front_lever/advanced_tuck_front_lever.png,generated
+161,"Front lever",5,"One-leg front lever",one_leg_front_lever,assets/images/exercises/front_lever/one_leg_front_lever.png,generated
+162,"Front lever",6,"Straddle front lever",straddle_front_lever,assets/images/exercises/front_lever/straddle_front_lever.png,generated
+163,"Front lever",7,"Full front lever",full_front_lever,assets/images/exercises/front_lever/full_front_lever.png,generated
+164,"Front lever",8,"Front lever rows progressivas",front_lever_rows_progressivas,assets/images/exercises/front_lever/front_lever_rows_progressivas.png,generated
+165,"Front lever",9,"Full front lever row/touch progressions",full_front_lever_row_touch_progressions,assets/images/exercises/front_lever/full_front_lever_row_touch_progressions.png,generated
+166,"Back lever",0,"German hang extremamente assistido e aprovado",german_hang_extremamente_assistido_aprovado,assets/images/exercises/back_lever/german_hang_extremamente_assistido_aprovado.png,generated
+167,"Back lever",1,"Skin-the-cat parcial assistido",skin_the_cat_parcial_assistido,assets/images/exercises/back_lever/skin_the_cat_parcial_assistido.png,generated
+168,"Back lever",2,"Inverted hang controlado",inverted_hang_controlado,assets/images/exercises/back_lever/inverted_hang_controlado.png,generated
+169,"Back lever",3,"Tuck back lever assistido",tuck_back_lever_assistido,assets/images/exercises/back_lever/tuck_back_lever_assistido.png,generated
+170,"Back lever",4,"Tuck back lever",tuck_back_lever,assets/images/exercises/back_lever/tuck_back_lever.png,generated
+171,"Back lever",5,"Advanced tuck back lever",advanced_tuck_back_lever,assets/images/exercises/back_lever/advanced_tuck_back_lever.png,generated
+172,"Back lever",6,"One-leg back lever",one_leg_back_lever,assets/images/exercises/back_lever/one_leg_back_lever.png,generated
+173,"Back lever",7,"Straddle back lever",straddle_back_lever,assets/images/exercises/back_lever/straddle_back_lever.png,generated
+174,"Back lever",8,"Full back lever",full_back_lever,assets/images/exercises/back_lever/full_back_lever.png,generated
+175,"Handstand",0,"Mobilidade de punho/ombro e bear hold",mobilidade_punho_ombro_bear_hold,assets/images/exercises/handstand/mobilidade_punho_ombro_bear_hold.png,generated
+176,"Handstand",1,"Pike com pés no chão",pike_pes_no_chao,assets/images/exercises/handstand/pike_pes_no_chao.png,generated
+177,"Handstand",2,"Pike com pés elevados",pike_pes_elevados,assets/images/exercises/handstand/pike_pes_elevados.png,generated
+178,"Handstand",4,"Handstand de costas para parede",handstand_costas_parede,assets/images/exercises/handstand/handstand_costas_parede.png,generated
+179,"Handstand",5,"Handstand peito para parede",handstand_peito_parede,assets/images/exercises/handstand/handstand_peito_parede.png,generated
+180,"Handstand",6,"Saída segura/pirueta",saida_segura_pirueta,assets/images/exercises/handstand/saida_segura_pirueta.png,generated
+181,"Handstand",7,"Transferência de peso e toe pulls",transferencia_peso_toe_pulls,assets/images/exercises/handstand/transferencia_peso_toe_pulls.png,generated
+182,"Handstand",8,"Kick-up controlado",kick_up_controlado,assets/images/exercises/handstand/kick_up_controlado.png,generated
+183,"Handstand",9,"Handstand livre 3–5 s",handstand_livre_3_5_s,assets/images/exercises/handstand/handstand_livre_3_5_s.png,generated
+184,"Handstand",11,"Caminhada de mãos",caminhada_maos,assets/images/exercises/handstand/caminhada_maos.png,generated
+185,"Handstand",12,"Press-to-handstand progressions",press_to_handstand_progressions,assets/images/exercises/handstand/press_to_handstand_progressions.png,generated
+186,"Handstand",13,"Press-to-handstand",press_to_handstand,assets/images/exercises/handstand/press_to_handstand.png,generated
+187,"Handstand",14,"One-arm handstand progressions, apenas trilha elite",one_arm_handstand_progressions_apenas_trilha_elite,assets/images/exercises/handstand/one_arm_handstand_progressions_apenas_trilha_elite.png,generated
+188,"Panturrilha, tornozelo e impacto",0,"Elevação de panturrilha assistida bilateral",elevacao_panturrilha_assistida_bilateral,assets/images/exercises/panturrilha_tornozelo_impacto/elevacao_panturrilha_assistida_bilateral.png,generated
+189,"Panturrilha, tornozelo e impacto",1,"Elevação bilateral",elevacao_bilateral,assets/images/exercises/panturrilha_tornozelo_impacto/elevacao_bilateral.png,generated
+190,"Panturrilha, tornozelo e impacto",2,"Elevação unilateral assistida",elevacao_unilateral_assistida,assets/images/exercises/panturrilha_tornozelo_impacto/elevacao_unilateral_assistida.png,generated
+191,"Panturrilha, tornozelo e impacto",3,"Elevação unilateral",elevacao_unilateral,assets/images/exercises/panturrilha_tornozelo_impacto/elevacao_unilateral.png,generated
+192,"Panturrilha, tornozelo e impacto",4,"Pogos/aterrissagem técnica de baixa amplitude",pogos_aterrissagem_tecnica_baixa_amplitude,assets/images/exercises/panturrilha_tornozelo_impacto/pogos_aterrissagem_tecnica_baixa_amplitude.png,generated
+193,"Panturrilha, tornozelo e impacto",5,"Saltos submáximos e aterrissagem",saltos_submaximos_aterrissagem,assets/images/exercises/panturrilha_tornozelo_impacto/saltos_submaximos_aterrissagem.png,generated
+194,"Panturrilha, tornozelo e impacto",6,"Saltos unilaterais progressivos",saltos_unilaterais_progressivos,assets/images/exercises/panturrilha_tornozelo_impacto/saltos_unilaterais_progressivos.png,generated
+195,"Panturrilha, tornozelo e impacto",7,"Pliometria avançada específica",pliometria_avancada_especifica,assets/images/exercises/panturrilha_tornozelo_impacto/pliometria_avancada_especifica.png,generated

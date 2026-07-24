@@ -127,6 +127,11 @@ class WeeklyPlanGenerator {
       reasonCode: equipmentSubstituted
           ? PlanReasonCode.equipmentSubstitution
           : reasonCode,
+      doseType: exercise.doseType,
+      targetSets: exercise.targetSets,
+      targetReps: exercise.targetReps,
+      targetSeconds: exercise.targetSeconds,
+      restSeconds: exercise.restSeconds,
     );
   }
 

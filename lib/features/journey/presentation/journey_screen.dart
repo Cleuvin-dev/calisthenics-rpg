@@ -11,7 +11,9 @@ import '../../rpg/presentation/xp_evolution_chart.dart';
 import '../../rpg/presentation/xp_level_badge.dart';
 import '../../training_plan/data/training_plan_repository.dart';
 import '../../training_plan/domain/training_plan.dart';
+import '../../training_plan/domain/workout_catalog.dart';
 import '../../training_plan/presentation/training_plan_screen.dart';
+import '../../training_plan/presentation/workout_catalog_screen.dart';
 import '../../workout_session/data/workout_session_providers.dart';
 
 /// Dashboard principal (SCREENS_AND_FLOWS.md §1/§3 — "Jornada", primeiro
@@ -68,6 +70,14 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
           preferences: widget.preferences,
           placement: widget.placement,
         ),
+      ),
+    );
+  }
+
+  void _openWorkoutCatalog() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorkoutCatalogScreen(placement: widget.placement),
       ),
     );
   }
@@ -143,6 +153,20 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          if (workoutCatalog.isNotEmpty)
+            FadeSlideIn(
+              index: cardIndex++,
+              child: Card(
+                child: ListTile(
+                  leading: const Icon(Icons.fitness_center),
+                  title: const Text('Treino em destaque'),
+                  subtitle: Text(workoutCatalog.first.namePtBr),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _openWorkoutCatalog,
+                ),
+              ),
+            ),
           const SizedBox(height: 12),
           FadeSlideIn(
             index: cardIndex++,

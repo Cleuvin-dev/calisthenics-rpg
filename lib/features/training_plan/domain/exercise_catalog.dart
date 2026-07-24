@@ -1,5 +1,12 @@
 import '../../onboarding/domain/training_preferences.dart';
 
+/// Tipo de dose de um exercício (EXERCISE_SCHEMA.md §2
+/// `prescription.dose_type`, VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md
+/// §19). `repsOrDuration` está modelado para completude do schema, mas
+/// nenhuma entrada do catálogo mínimo o usa ainda — o plano escolheria
+/// uma modalidade antes da sessão, e o player nunca alterna sozinho.
+enum DoseType { reps, duration, repsOrDuration }
+
 /// Entrada mínima do catálogo de exercícios (EXERCISE_SCHEMA.md), suficiente
 /// para o motor de treino determinístico do MVP. Não é o catálogo editorial
 /// completo (15+ variações por padrão, mídia, revisão profissional) previsto
@@ -11,6 +18,14 @@ class CatalogExercise {
     required this.namePtBr,
     required this.pattern,
     required this.setsRepsGuidance,
+    required this.doseType,
+    this.targetSets = 2,
+    this.targetReps,
+    this.targetSeconds,
+    this.minSeconds,
+    this.maxSeconds,
+    this.safetyCapSeconds,
+    this.restSeconds = 60,
     this.requiredEquipment = const {},
     this.minCapabilityLevel = 0,
     this.maxCapabilityLevel = 100,
@@ -24,8 +39,31 @@ class CatalogExercise {
   final String pattern;
 
   /// Dose conservadora, em texto (TRAINING_ENGINE.md §6 — números finais
-  /// exigem aprovação profissional; este é um placeholder de MVP).
+  /// exigem aprovação profissional; este é um placeholder de MVP). Mantido
+  /// como descrição legível ao lado dos campos estruturados abaixo.
   final String setsRepsGuidance;
+
+  final DoseType doseType;
+
+  /// Número de séries alvo — usado por ambas as modalidades.
+  final int targetSets;
+
+  /// Alvo de repetições por série, só para `DoseType.reps`. O player
+  /// mostra este valor como alvo e inicia `performed_reps` igual a ele
+  /// (VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md §11.2).
+  final int? targetReps;
+
+  /// Duração recomendada, em segundos — só para `DoseType.duration`.
+  /// Sem seletor de duração personalizável nesta entrega (fora do escopo
+  /// combinado); os limites ficam registrados para uso futuro e para
+  /// validação de segurança caso um valor customizado apareça.
+  final int? targetSeconds;
+  final int? minSeconds;
+  final int? maxSeconds;
+  final int? safetyCapSeconds;
+
+  /// Descanso sugerido entre séries deste exercício, em segundos.
+  final int restSeconds;
 
   /// Vazio significa "sem equipamento" (sempre elegível).
   final Set<Equipment> requiredEquipment;
@@ -48,7 +86,7 @@ class CatalogExercise {
 
 /// Catálogo mínimo versionado. Nova versão sempre que dose, padrão ou
 /// requisito de equipamento mudar (EXERCISE_SCHEMA.md §6).
-const exerciseCatalogVersion = 'minimal-catalog-v1';
+const exerciseCatalogVersion = 'minimal-catalog-v2';
 
 /// Padrões cobertos nesta versão do catálogo. Os demais padrões oficiais de
 /// EXERCISE_SCHEMA.md §3 ainda não têm variação cadastrada.
@@ -57,6 +95,10 @@ const exerciseCatalogVersion = 'minimal-catalog-v1';
 /// "concluir o aquecimento" em `features/missions`).
 const warmupExerciseSlug = 'warmup_joint_mobility';
 
+/// Slug da prancha completa — referenciado pelo catálogo de treinos
+/// (`workout_catalog.dart`) e pelos assets locais desta entrega.
+const forearmPlankSlug = 'forearm_plank_full';
+
 const List<CatalogExercise> exerciseCatalog = [
   // Aquecimento — sempre o primeiro bloco da sessão (TRAINING_ENGINE.md §5).
   CatalogExercise(
@@ -64,6 +106,12 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Mobilidade articular geral e marcha estacionária',
     pattern: 'mobility_specific',
     setsRepsGuidance: '3-5 min contínuos, ritmo confortável',
+    doseType: DoseType.duration,
+    targetSets: 1,
+    targetSeconds: 240,
+    minSeconds: 180,
+    maxSeconds: 300,
+    safetyCapSeconds: 300,
     isWarmup: true,
   ),
 
@@ -73,6 +121,9 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Flexão na parede',
     pattern: 'push_horizontal',
     setsRepsGuidance: '2 séries de 6-10 repetições',
+    doseType: DoseType.reps,
+    targetSets: 2,
+    targetReps: 6,
     minCapabilityLevel: 0,
     maxCapabilityLevel: 1,
   ),
@@ -80,7 +131,11 @@ const List<CatalogExercise> exerciseCatalog = [
     slug: 'push_up_incline',
     namePtBr: 'Flexão inclinada (bancada/superfície alta ou similar)',
     pattern: 'push_horizontal',
-    setsRepsGuidance: '2-3 séries de 6-10 repetições',
+    setsRepsGuidance: '3 séries de 10 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 10,
+    restSeconds: 60,
     // Sem exigir Equipment.elevatedSurface: qualquer superfície firme e
     // segura serve (mesa, escada, parapeito), diferente de elástico/barra.
     minCapabilityLevel: 2,
@@ -91,6 +146,9 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Flexão de joelhos',
     pattern: 'push_horizontal',
     setsRepsGuidance: '2-3 séries de 6-10 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 6,
     minCapabilityLevel: 4,
     maxCapabilityLevel: 5,
   ),
@@ -99,6 +157,9 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Flexão tradicional (chão)',
     pattern: 'push_horizontal',
     setsRepsGuidance: '2-4 séries de 5-10 repetições, reps em reserva',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 5,
     minCapabilityLevel: 6,
     maxCapabilityLevel: 100,
   ),
@@ -110,12 +171,18 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Retração escapular assistida (sem equipamento)',
     pattern: 'pull_horizontal',
     setsRepsGuidance: '2-3 séries de 8-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
   ),
   CatalogExercise(
     slug: 'band_row',
     namePtBr: 'Remada com elástico',
     pattern: 'pull_horizontal',
     setsRepsGuidance: '2-3 séries de 8-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
     requiredEquipment: {Equipment.elasticBand},
   ),
 
@@ -124,7 +191,11 @@ const List<CatalogExercise> exerciseCatalog = [
     slug: 'sit_to_stand_squat',
     namePtBr: 'Agachamento livre (sentar e levantar)',
     pattern: 'squat',
-    setsRepsGuidance: '2-3 séries de 8-15 repetições',
+    setsRepsGuidance: '3 séries de 12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 12,
+    restSeconds: 60,
   ),
 
   // hinge_posterior_chain
@@ -133,6 +204,9 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Ponte de glúteos',
     pattern: 'hinge_posterior_chain',
     setsRepsGuidance: '2-3 séries de 10-15 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 10,
   ),
 
   // core_anti_extension
@@ -141,6 +215,22 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Dead bug simplificado',
     pattern: 'core_anti_extension',
     setsRepsGuidance: '2-3 séries de 8-12 repetições por lado',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
+  ),
+  CatalogExercise(
+    slug: forearmPlankSlug,
+    namePtBr: 'Prancha completa',
+    pattern: 'core_anti_extension',
+    setsRepsGuidance: '3 séries de 30 segundos',
+    doseType: DoseType.duration,
+    targetSets: 3,
+    targetSeconds: 30,
+    minSeconds: 10,
+    maxSeconds: 60,
+    safetyCapSeconds: 90,
+    restSeconds: 45,
   ),
 
   // Bônus — só entram quando o orçamento de tempo sobra ou o equipamento
@@ -150,12 +240,21 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Flexão pike (ombro)',
     pattern: 'push_vertical',
     setsRepsGuidance: '2 séries de 5-8 repetições',
+    doseType: DoseType.reps,
+    targetSets: 2,
+    targetReps: 5,
   ),
   CatalogExercise(
     slug: 'parallel_bar_support_hold',
     namePtBr: 'Suporte estático em paralelas',
     pattern: 'support_dip',
     setsRepsGuidance: '2-3 séries de 10-20 segundos',
+    doseType: DoseType.duration,
+    targetSets: 3,
+    targetSeconds: 10,
+    minSeconds: 10,
+    maxSeconds: 20,
+    safetyCapSeconds: 30,
     requiredEquipment: {Equipment.parallelBars},
   ),
   CatalogExercise(
@@ -163,6 +262,12 @@ const List<CatalogExercise> exerciseCatalog = [
     namePtBr: 'Equilíbrio com apoio na parede',
     pattern: 'hand_balance',
     setsRepsGuidance: '2-3 tentativas de 10-20 segundos',
+    doseType: DoseType.duration,
+    targetSets: 3,
+    targetSeconds: 10,
+    minSeconds: 10,
+    maxSeconds: 20,
+    safetyCapSeconds: 30,
   ),
 ];
 
@@ -177,6 +282,15 @@ String exerciseNameForSlug(String slug) {
     if (exercise.slug == slug) return exercise.namePtBr;
   }
   return slug;
+}
+
+/// Entrada do catálogo pelo slug, ou `null` se não existir (ex.: conteúdo
+/// aposentado — histórico permanece referenciável mesmo sem entrada viva).
+CatalogExercise? catalogExerciseForSlug(String slug) {
+  for (final exercise in exerciseCatalog) {
+    if (exercise.slug == slug) return exercise;
+  }
+  return null;
 }
 
 /// Variação de push_horizontal treinada no nível de capacidade atual, ou

@@ -231,4 +231,196 @@ void main() {
 
     expect(best['push_up_wall'], 9); // ignora a série de 20 reps com dor
   });
+
+  group('idempotência (toque duplo em concluir)', () {
+    test('logSet chamado duas vezes com os mesmos parâmetros grava um '
+        'único log', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+
+      final first = await repository.logSet(
+        workoutSessionId: id,
+        exerciseSlug: 'push_up_wall',
+        pattern: 'push_horizontal',
+        setNumber: 1,
+        repsCompleted: 8,
+        targetReps: 8,
+        perceivedEffort: PerceivedEffort.adequate,
+        now: DateTime(2026, 7, 1, 8, 0),
+      );
+      final second = await repository.logSet(
+        workoutSessionId: id,
+        exerciseSlug: 'push_up_wall',
+        pattern: 'push_horizontal',
+        setNumber: 1,
+        repsCompleted: 8,
+        targetReps: 8,
+        perceivedEffort: PerceivedEffort.adequate,
+        now: DateTime(2026, 7, 1, 8, 0, 2), // segundo toque, 2s depois
+      );
+
+      expect(first, isTrue);
+      expect(second, isFalse);
+      final logs = await repository.setLogsFor(id);
+      expect(logs.length, 1);
+      expect(logs.single.targetReps, 8);
+    });
+  });
+
+  group('série por tempo (timer ativo persistido)', () {
+    test('activeTimedSetFor retorna null sem timer iniciado', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+      expect(await repository.activeTimedSetFor(id), isNull);
+    });
+
+    test('startTimedSet cria o estado e updateTimedSetProgress persiste '
+        'o progresso', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+
+      await repository.startTimedSet(
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        now: DateTime(2026, 7, 1, 8, 0),
+      );
+
+      var active = await repository.activeTimedSetFor(id);
+      expect(active, isNotNull);
+      expect(active!.status, 'running');
+      expect(active.activeElapsedMs, 0);
+
+      await repository.updateTimedSetProgress(
+        workoutSessionId: id,
+        activeElapsedMs: 12000,
+        running: false, // usuário pausou
+        now: DateTime(2026, 7, 1, 8, 0, 12),
+      );
+
+      active = await repository.activeTimedSetFor(id);
+      expect(active!.status, 'paused');
+      expect(active.activeElapsedMs, 12000);
+    });
+
+    test('finalizeTimedSet grava o log e remove o estado ativo numa '
+        'transação', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.startTimedSet(
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        now: DateTime(2026, 7, 1, 8, 0),
+      );
+
+      final granted = await repository.finalizeTimedSet(
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        activeDurationMs: 30500,
+        completionReason: TimedSetCompletionReason.targetReached,
+        perceivedEffort: PerceivedEffort.adequate,
+        now: DateTime(2026, 7, 1, 8, 0, 31),
+      );
+
+      expect(granted, isTrue);
+      expect(await repository.activeTimedSetFor(id), isNull);
+
+      final logs = await repository.setLogsFor(id);
+      expect(logs.length, 1);
+      expect(logs.single.targetSeconds, 30);
+      expect(logs.single.activeDurationMs, 30500);
+      expect(
+        logs.single.completionReason,
+        TimedSetCompletionReason.targetReached.name,
+      );
+    });
+
+    test('finalizeTimedSet chamado duas vezes não duplica o log '
+        '(processo morto e reaberto antes de terminar)', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.startTimedSet(
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        now: DateTime(2026, 7, 1, 8, 0),
+      );
+
+      Future<bool> finalize() => repository.finalizeTimedSet(
+            workoutSessionId: id,
+            exerciseSlug: 'forearm_plank_full',
+            pattern: 'core_anti_extension',
+            setNumber: 1,
+            targetSeconds: 30,
+            activeDurationMs: 30200,
+            completionReason: TimedSetCompletionReason.targetReached,
+            perceivedEffort: PerceivedEffort.adequate,
+            now: DateTime(2026, 7, 1, 8, 0, 31),
+          );
+
+      expect(await finalize(), isTrue);
+      expect(await finalize(), isFalse);
+
+      final logs = await repository.setLogsFor(id);
+      expect(logs.length, 1);
+    });
+
+    test('discardActiveTimedSet remove o estado sem gravar log', () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.startTimedSet(
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        now: DateTime(2026, 7, 1, 8, 0),
+      );
+
+      await repository.discardActiveTimedSet(id);
+
+      expect(await repository.activeTimedSetFor(id), isNull);
+      expect(await repository.setLogsFor(id), isEmpty);
+    });
+  });
 }

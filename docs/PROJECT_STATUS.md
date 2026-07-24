@@ -21,6 +21,18 @@ pendências: corrigir os dois bugs encontrados no teste do aparelho,
 estender avaliação real para mais padrões e criar a tela "Evolução".
 gráfico de evolução, animações e ilustrações animadas de exercício.
 
+Nesta continuação (mesma sessão, retomada após compactação de contexto):
+o usuário trouxe uma versão v1.2 da documentação
+(`10_DELIVERY/CHANGELOG_v1.2.md`), com dois documentos novos —
+`07_UX/VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md` e
+`07_UX/SETTINGS_AND_TIMED_EXERCISES.md` — e pediu explicitamente a
+história vertical do §28 do primeiro: dashboard com missão do dia,
+detalhe de treino nomeado, player por repetições com alvo estruturado,
+player por duração com 3-2-1/pausa/retomada/recuperação, descanso entre
+exercícios, recuperação após fechar o app, mídia local com placeholder,
+botão "Senti dor" sempre acessível e persistência transacional/
+idempotente — 100% offline, sem Supabase/Firebase/login/API/câmera/IA.
+
 ## Implementado
 
 ### Motor de treino (`features/training_plan`)
@@ -293,28 +305,150 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
   acesso físico para replugar. Fica pendente confirmar visualmente esta
   leva na próxima sessão.
 
+### Player de treino offline: reps + duração (história vertical v1.2)
+
+- **Dose estruturada no catálogo** (`features/training_plan/domain/
+  exercise_catalog.dart`): `DoseType` (`reps`/`duration`/
+  `repsOrDuration`), `targetSets`/`targetReps`/`targetSeconds`/
+  `minSeconds`/`maxSeconds`/`safetyCapSeconds`/`restSeconds` em
+  `CatalogExercise` — alvo vs. realizado agora são campos sempre
+  separados (DATA_MODEL.md §4), preenchidos para as 13 entradas
+  existentes mais a nova `forearm_plank_full` ("Prancha completa",
+  `core_anti_extension`, 3×30s). `PlannedExerciseItem` e
+  `WorkoutSessionItem` ganharam os mesmos campos (com `fromJson`
+  tolerante — plano/sessão salvos antes desta mudança continuam
+  carregando, com `doseType: reps` como fallback).
+- **Catálogo de treinos novo e aditivo** (`workout_catalog.dart`):
+  `Workout`/`workoutCatalog`, hoje só "Treino A · Fundação" (flexão
+  inclinada, agachamento, prancha) — não altera em nada o
+  `WeeklyPlanGenerator` existente (decisão confirmada com o usuário via
+  pergunta explícita). Telas novas `WorkoutCatalogScreen` e
+  `WorkoutDetailScreen`; `JourneyScreen` ganhou um card adicional
+  "Treino em destaque" apontando para o catálogo.
+- **`ActiveTimer` monotônico** (`workout_session/domain/active_timer.dart`):
+  start/pause/resume/elapsed sobre `Stopwatch` (fonte de tempo
+  injetável para teste), autoridade do tempo ativo — `Timer.periodic`
+  só repinta a UI e decide quando persistir
+  (SETTINGS_AND_TIMED_EXERCISES.md §13: "não usar apenas decremento por
+  Timer.periodic").
+- **Player por repetições** (`log_set_sheet.dart` redesenhado): mostra
+  "Série X de Y", alvo sempre visível, contador de repetições realmente
+  concluídas começa igual ao alvo (ajuste com `+`/`-`), nada é salvo
+  antes de "Concluir série".
+- **Player por duração** (`timed_set_player.dart`, novo): máquina de
+  estados Ready → Preparing (3-2-1) → Running → Paused ⇄ Running →
+  Completed/Stopped; progresso persistido a cada segundo enquanto roda
+  e ao ir para segundo plano (`WidgetsBindingObserver`); "Senti dor"
+  sempre visível em toda fase, pausa o timer antes de abrir o fluxo de
+  segurança.
+- **Descanso** (`rest_screen.dart`, novo): contagem regressiva entre
+  exercícios, "+15 s", "Pular descanso", "Senti dor", sem persistência
+  entre reaberturas do app (risco baixo se o app fechar durante o
+  descanso — decisão de escopo registrada no plano desta entrega).
+- **Recuperação após fechar o app** (`timed_set_recovery_dialog.dart` +
+  wiring em `WorkoutPlayerScreen._checkForActiveTimedSet`): ao reabrir
+  com uma série por tempo pendente, pergunta explicitamente Continuar /
+  Registrar como interrompida / Descartar — nunca decide sozinho
+  (SETTINGS_AND_TIMED_EXERCISES.md §13.3).
+- **Mídia local + placeholder** (`shared/presentation/exercise_media.dart`,
+  novo): resolve `assets/images/exercises/<slug>/v1/start.png`, cai
+  para a ilustração animada (`PatternIllustration`, já existente) via
+  `errorBuilder` quando o arquivo não existe — sem manifesto manual.
+  Imagens reais adicionadas para os 3 exercícios da história vertical
+  (flexão inclinada, agachamento, prancha), copiadas de
+  `App_RPG_Calistenia_Documentacao/assets/exercises/starter/` e
+  declaradas explicitamente no `pubspec.yaml` (confirmado via
+  `flutter build bundle` que os 3 arquivos aparecem no bundle final —
+  a entrada `assets/images/` sozinha não garante inclusão recursiva de
+  subpastas).
+- **Idempotência/persistência transacional**
+  (`workout_session_repository.dart`): `clientEventId` determinístico
+  (`'$workoutSessionId:$exerciseSlug:$setNumber'`), mesmo padrão de
+  `XpLedgerRepository.grant` — `logSet`/`finalizeTimedSet` fazem
+  check-before-insert e retornam `bool` (se gravaram ou não), cobrindo
+  toque duplo em "Concluir" mesmo em caso de processo morto e reaberto
+  antes da primeira gravação terminar. `finalizeTimedSet` roda dentro
+  de `_db.transaction()` (insere o log e remove o estado ativo
+  atomicamente). Guard em memória (`_submitting`) complementa em
+  `WorkoutPlayerScreen`/`TimedSetPlayer` para a UX imediata.
+- **Tema atualizado para os tokens v1.2**
+  (`VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md` §4.2, confirmado com o
+  usuário): substitui a paleta violeta/dourado construída antes por
+  `surface.canvas #080A0B`, `surface.card #141819`,
+  `surface.elevated #1B2021`, `brand.primary #35E6A1` (verde-menta,
+  ações principais), `brand.primaryPressed #20C987`, `rpg.xp #8B5CF6`
+  (violeta, reservado só para XP/recompensas — mesmo papel que o
+  dourado tinha antes), `text.primary #F7F9F8`, `text.secondary
+  #A7B0AD`, `state.warning #F4B740`, `state.danger #F45B69` (mapeado
+  para `colorScheme.error`), `divider #2A302F`.
+- **Botão "Senti dor" padronizado**: encontrado e corrigido um texto
+  inconsistente ("Dor" em vez de "Senti dor" em `timed_set_player.dart`
+  e `workout_player_screen.dart`) — o documento exige o rótulo exato
+  `Senti dor` em toda tela do player (§8, §12, §28).
+
+### Testes desta história vertical
+
+- `active_timer_test.dart` (6 testes): pausa não conta, retomar soma
+  corretamente, `restore` recupera tempo acumulado após fechar o app.
+- `workout_session_repository_test.dart` (+9 testes): idempotência de
+  `logSet` em toque duplo; ciclo completo de timer ativo persistido
+  (`startTimedSet`/`updateTimedSetProgress`/`finalizeTimedSet`/
+  `discardActiveTimedSet`), incluindo `finalizeTimedSet` chamado duas
+  vezes não duplicar o log.
+- `migration_v6_test.dart` (novo): monta um banco no formato real da
+  versão 5 (SQL cru, mesma convenção de nomes que o Drift gera),
+  insere uma linha de usuário, reabre com o `AppDatabase` atual
+  (schemaVersion 6) e confirma que a migração aditiva preserva a linha
+  e cria a tabela nova sem erro.
+- `exercise_media_test.dart` (novo): cai para `PatternIllustration`
+  quando não há imagem local; rótulo semântico presente.
+- `workout_player_screen_test.dart` (novo): botão "Senti dor" sempre
+  visível; toque duplo em "Registrar série" não abre duas folhas nem
+  grava duas séries; formulário de repetições começa igual ao alvo.
+- `timed_set_player_flow_test.dart` (novo): fluxo completo 3-2-1 →
+  rodando → pausar/retomar → concluir, terminando com um único log e
+  sem estado ativo residual. Precisou de `tester.runAsync` com espera
+  de parede real (não só o relógio falso do teste) porque o
+  `ActiveTimer` usa `Stopwatch` real de propósito (mesma garantia
+  contra "trocar o relógio não aumenta o tempo ativo" que vale em
+  produção).
+- Total: **110 testes automatizados** (eram 91 antes desta parte),
+  todos passando. `flutter analyze`: sem problemas.
+
 ## Banco/migrations
 
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
   continua vazio. Sync (`OutboxEvents`) segue reservada e não usada
   (ADR-0005, `core/sync/README.md`).
-- Schema local Drift em `schemaVersion = 5` (sem mudança nesta parte da
-  sessão — missões/Jornada não têm tabela própria):
+- Schema local Drift em `schemaVersion = 6`:
   - `1→2`: recria `CapabilityEstimateRecords` (`inputAnchor` opcional).
   - `2→3`: cria `training_plan_records`.
   - `3→4`: cria `workout_session_records` e `set_log_records`.
   - `4→5`: cria `xp_ledger_records`.
-  - Todas aceitáveis por não haver dados reais em produção ainda.
+  - `5→6` (**nova nesta parte**): adiciona colunas nullable em
+    `set_log_records` (`targetReps`, `targetSeconds`,
+    `activeDurationMs`, `completionReason`, `clientEventId`) via
+    `m.addColumn` — **aditivo**, não recria a tabela, diferente das
+    migrações anteriores, porque agora pode haver dados reais de
+    usuário (o app já foi instalado e usado no aparelho físico em
+    sessões anteriores). Cria `active_timed_set_records` (tabela nova,
+    PK `workoutSessionId`, um timer ativo por sessão). Testada
+    explicitamente em `migration_v6_test.dart` com um banco montado no
+    formato real da v5.
 
 ## Testes executados
 
 | Comando | Resultado |
 |---|---|
 | `flutter analyze` | Sem problemas |
-| `flutter test` | 91 passed, 0 failed |
+| `flutter test` | 91 passed, 0 failed (leva anterior) |
 | `dart run build_runner build` | OK |
 | `flutter build apk --release` | OK (55,7MB), gerado duas vezes na sessão |
 | `adb install -r` no aparelho físico | OK na 1ª leva (tema escuro etc.), testado manualmente via `adb shell input`. **Não repetido na 2ª leva** (bugs/avaliação/Evolução) — aparelho desconectou do `adb` |
+| `flutter analyze` (história vertical player reps+duração) | Sem problemas |
+| `flutter test` (história vertical player reps+duração) | **110 passed, 0 failed** |
+| `flutter build bundle` | OK — usado para confirmar que os 3 assets novos de exercício entram no bundle final |
+| `adb devices` (história vertical player reps+duração) | Nenhum dispositivo listado — aparelho segue desconectado (ver Riscos/bloqueios) |
 
 ## Decisões e ADRs
 
@@ -435,6 +569,41 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
   específico (abriu o assistente de acessibilidade do Android sozinho
   mais de uma vez) — preferir screenshots + coordenadas calculadas a
   partir de `adb shell wm size` em testes futuros neste dispositivo.
+- **Novas pendências desta história vertical (player reps+duração)**,
+  todas registradas como decisão de escopo deliberada no plano, não
+  esquecimento:
+  - Sem seletor de duração personalizável pré-sessão (chips
+    20s/30s/45s de SETTINGS_AND_TIMED_EXERCISES.md §9.1/§12.3) — o
+    player usa a duração recomendada do exercício como alvo fixo.
+  - Sem página de Configurações, perfil físico/IMC ou reinício de
+    jornada (documento próprio, prompt separado do que foi pedido
+    aqui).
+  - Catálogo de treinos tem só "Treino A · Fundação" — sem filtros por
+    nível nem múltiplos treinos ainda.
+  - Placeholder de mídia não inclui lista de erros comuns/checklist de
+    equipamento (EXERCISE_MEDIA_GUIDE.md §12) — só nome, ilustração
+    animada e dose.
+  - Revisão profissional de conteúdo/mídia continua pendente (o próprio
+    documento exige isso antes de publicação).
+  - **Pacote de 195 imagens reais descoberto ao final da sessão**:
+    `App_RPG_Exercise_Images/` (fora de `lib`/`assets`, na raiz do
+    projeto) contém `exercise_media_catalog.json`/`.csv` e um
+    `CLAUDE_CODE_PROMPT.md` próprio pedindo integração completa
+    (mesclar em `assets/images/exercises/`, associar por `slug`, novos
+    campos `mediaKey`/`assetPath`/`mediaType`/`visualReviewStatus`,
+    migration Drift aditiva, `ExerciseMediaPlaceholder` reutilizável,
+    testes de slug único/asset existente/placeholder/modo avião).
+    Perguntado ao usuário se deveria integrar agora — resposta: deixar
+    para depois. Nenhum arquivo desse pacote foi tocado. Próxima sessão
+    que for mexer em mídia de exercício deve começar por aí.
+  - **Verificação manual não realizada nesta sessão**: modo avião,
+    tela bloqueada e toque duplo físico no aparelho — ver Riscos/
+    bloqueios, o `adb` seguiu sem enxergar nenhum dispositivo
+    (`adb devices` retornou lista vazia). Critério objetivo cumprido
+    via `flutter analyze` + 110 testes automatizados (incluindo um
+    teste de widget dedicado a toque duplo e outro ao ciclo completo
+    do timer 3-2-1/pausa/retomada/conclusão), mas nenhum dos dois é
+    substituto de um teste manual real em dispositivo físico.
 
 ## Riscos/bloqueios
 
@@ -445,32 +614,61 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
   — o `adb` perdeu o dispositivo no meio do trabalho autônomo e não
   havia como replugar fisicamente. Tudo passou por `flutter analyze` +
   `flutter test` (91 testes), mas não por verificação visual real.
-  **Primeira coisa a fazer na próxima sessão**: reconectar o aparelho,
-  rodar `flutter build apk --release` + `adb install -r` e conferir as
-  duas correções de bug + a tela Evolução + a avaliação dos 4 padrões
-  novos na prática.
+- **Continua sem acesso ao aparelho físico nesta continuação**
+  (`adb devices` retornou lista vazia ao verificar de novo). Por isso a
+  história vertical do player por reps+duração **não foi verificada
+  manualmente** em nenhum dos quatro critérios que o pedido original
+  exigia: modo avião, tela bloqueada durante uma série por tempo, toque
+  duplo físico em "Concluir", e instalação/uso real do app. Tudo o que
+  foi possível confirmar sem o aparelho foi feito: `flutter analyze`
+  limpo, 110 testes automatizados (unitários + widget, incluindo um
+  teste de widget que simula literalmente o toque duplo e outro que
+  percorre o ciclo 3-2-1 → rodando → pausar/retomar → concluir de
+  ponta a ponta com banco real em memória) e `flutter build bundle`
+  confirmando que os assets de exercício entram no pacote final.
+  **Primeira coisa a fazer assim que o aparelho reconectar**: rodar
+  `flutter build apk --release` + `adb install -r` e refazer os quatro
+  testes manuais do pedido original antes de considerar esta história
+  vertical realmente concluída.
 
 ## Próxima tarefa recomendada
 
-1. **Confirmar no aparelho** o que foi construído autonomamente nesta
-   sessão (bugs corrigidos, avaliação de 4 padrões novos, tela
-   Evolução) — nada disso foi visto rodando de verdade ainda.
+1. **Reconectar o aparelho físico e rodar a verificação manual
+   pendente** desta história vertical (player por reps+duração): modo
+   avião, tela bloqueada durante série por tempo, toque duplo real em
+   "Concluir" (reps e tempo), e confirmar visualmente que as imagens
+   locais dos 3 exercícios aparecem (em vez do placeholder animado).
+   Isso também cobre a verificação visual pendente da leva anterior
+   (bugs corrigidos, avaliação de 4 padrões novos, tela Evolução) —
+   nenhuma das duas levas foi vista rodando de verdade ainda.
 2. Depois disso, com o ciclo básico do MVP fechado (plano → sessão →
-   registro → domínio → XP → missões → Jornada → Evolução) e 5 padrões
-   com colocação real, as próximas opções naturais continuam sendo:
-   (a) dar aos 4 padrões novos o mesmo tratamento de catálogo em
-   camadas + `MasteryRule` que push_horizontal já tem, destravando
-   progressão/XP de domínio neles também; (b) uma tela de Habilidades
-   (mapa de árvores, SCREENS_AND_FLOWS.md §5); ou (c) missões/atributos
-   que ainda faltam (check-in, revisar progresso, atributos narrativos
-   de RPG_SYSTEM.md §4).
+   registro → domínio → XP → missões → Jornada → Evolução → player por
+   reps/duração) e 5 padrões com colocação real, as próximas opções
+   naturais continuam sendo: (a) dar aos 4 padrões novos o mesmo
+   tratamento de catálogo em camadas + `MasteryRule` que
+   push_horizontal já tem, destravando progressão/XP de domínio neles
+   também; (b) uma tela de Habilidades (mapa de árvores,
+   SCREENS_AND_FLOWS.md §5); (c) missões/atributos que ainda faltam
+   (check-in, revisar progresso, atributos narrativos de
+   RPG_SYSTEM.md §4); ou (d) as pendências explícitas desta entrega —
+   seletor de duração pré-sessão, página de Configurações/perfil
+   físico, catálogo de treinos maior.
 
 ## Critério para retomar
 
-Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. A última leva de
-mudanças (correção dos dois bugs, avaliação estendida, tela Evolução)
-foi testada só por `flutter analyze`/`flutter test`, **não no aparelho
-físico** — trate qualquer coisa estranha nelas como possível bug real,
-não como algo já confirmado funcionando. O resto (motor de treino,
-sessão, RPG/XP, missões, tema escuro/dashboard) foi confirmado
-visualmente no aparelho antes desta última leva.
+Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. Duas levas de
+mudanças seguidas foram testadas só por `flutter analyze`/`flutter
+test`, **não no aparelho físico**, porque o `adb` ficou sem enxergar o
+dispositivo a sessão inteira: (1) correção dos dois bugs + avaliação
+estendida + tela Evolução; (2) a história vertical do player por
+repetições e por duração (v1.2: dose estruturada, catálogo de treinos,
+recuperação após fechar o app, mídia local, idempotência, tema novo).
+Trate qualquer coisa estranha nelas como possível bug real, não como
+algo já confirmado funcionando — em especial o player por duração
+(timer monotônico, recuperação de série interrompida, persistência de
+progresso em segundo plano), que é a parte com mais lógica sensível a
+tempo real e comportamento de sistema operacional (bloqueio de tela,
+app em background) que nenhum teste automatizado consegue simular
+com 100% de fidelidade. O resto (motor de treino, sessão original,
+RPG/XP, missões, tema escuro/dashboard da primeira versão) foi
+confirmado visualmente no aparelho antes dessas duas levas.

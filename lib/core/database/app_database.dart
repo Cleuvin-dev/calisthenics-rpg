@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'tables/active_timed_set_records.dart';
 import 'tables/capability_estimate_records.dart';
 import 'tables/outbox_events.dart';
 import 'tables/safety_screenings.dart';
@@ -26,6 +27,7 @@ part 'app_database.g.dart';
   WorkoutSessionRecords,
   SetLogRecords,
   XpLedgerRecords,
+  ActiveTimedSetRecords,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -34,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +60,18 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             // Nova tabela do ledger de XP.
             await m.createTable(xpLedgerRecords);
+          }
+          if (from < 6) {
+            // Player por repetições/duração: colunas aditivas em
+            // set_log_records (pode já haver dados reais do usuário, por
+            // isso ALTER TABLE em vez de recriar) + nova tabela de série
+            // por tempo em andamento.
+            await m.addColumn(setLogRecords, setLogRecords.targetReps);
+            await m.addColumn(setLogRecords, setLogRecords.targetSeconds);
+            await m.addColumn(setLogRecords, setLogRecords.activeDurationMs);
+            await m.addColumn(setLogRecords, setLogRecords.completionReason);
+            await m.addColumn(setLogRecords, setLogRecords.clientEventId);
+            await m.createTable(activeTimedSetRecords);
           }
         },
       );
