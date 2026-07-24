@@ -4,6 +4,10 @@
 **Responsável:** Claude Code (sessão com Cleuvin)
 **Branch/commit:** `main` (working tree com alterações não commitadas — usuário commita manualmente)
 
+Histórico narrativo de sessão ("o que foi feito e por quê"). Para a
+lista priorizada e acionável do que falta ("o que fazer a seguir"), ver
+`docs/IMPLEMENTATION_BACKLOG.md`.
+
 ## Objetivo da sessão
 
 Dar andamento ao MVP depois da primeira história vertical (triagem →
@@ -19,7 +23,6 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
 Por fim, o usuário autorizou trabalho autônomo pela lista de
 pendências: corrigir os dois bugs encontrados no teste do aparelho,
 estender avaliação real para mais padrões e criar a tela "Evolução".
-gráfico de evolução, animações e ilustrações animadas de exercício.
 
 Nesta continuação (mesma sessão, retomada após compactação de contexto):
 o usuário trouxe uma versão v1.2 da documentação
@@ -699,6 +702,11 @@ ver Riscos/bloqueios, aparelho segue desconectado).
 
 ## Pendências
 
+Lista histórica e narrativa, com o contexto de cada item. Para a versão
+priorizada e acionável ("o que fazer a seguir", sem prosa), ver
+`docs/IMPLEMENTATION_BACKLOG.md` — mantenha os dois sincronizados: item
+concluído sai daqui e do backlog; item novo entra nos dois.
+
 - Textos de triagem/segurança seguem placeholders — pendente de revisão
   profissional (SAFETY_AND_SCREENING.md §10).
 - Catálogo de exercícios mínimo — precisa crescer antes de qualquer
@@ -841,39 +849,62 @@ do processo do app:
   contornado fechando o assistente e recalibrando toques por
   coordenadas já confirmadas.
 
+### Feedback do usuário usando o app de verdade (2026-07-24)
+
+Depois da verificação manual, o usuário usou o app no próprio fluxo
+real (não guiado por mim) e relatou 5 pontos. Só li e registrei —
+**nenhuma implementação feita ainda**, a pedido explícito do usuário
+("anote para implementarmos futuramente"). Detalhe técnico completo de
+cada item, incluindo diagnóstico de código já feito para os dois bugs,
+está em `docs/IMPLEMENTATION_BACKLOG.md`:
+
+1. Falta página de Configurações completa (reset de jornada, perfil
+   físico para IMC, estimativa de gasto calórico) — enriquece o item
+   que já existia no backlog em P2.
+2. **Bug diagnosticado**: `TrainingPlanScreen` ("Ver plano da semana
+   completo") ainda mostra só a ilustração animada, não as imagens
+   reais — a tela nunca foi migrada para `ExerciseMedia`/`mediaSlug`
+   quando as 195 imagens foram integradas (só as telas do catálogo de
+   treinos novo foram). Ver backlog, seção "bugs reportados pelo uso
+   real".
+3. **Bug diagnosticado**: texto "Sua próxima missão de treino" sem
+   contraste (cinza sobre verde) no card de destaque da Jornada —
+   `_NextSessionCard` não define cor de texto própria para o fundo
+   `primaryContainer`. Mesma seção do backlog.
+4. Pedido de tela de teste físico periódico (a qualquer momento ou a
+   cada 15/30 dias), escolhendo quais exercícios reavaliar, com
+   recálculo automático das metas semanais — motivado por um caso real:
+   o app prescreveu "Flexão na parede" para o usuário mesmo ele já
+   conseguindo fazer flexão completa, e não havia como corrigir isso
+   facilmente. Registrado em P1 no backlog, cruzado com o item já
+   existente de avaliação/progressão dos 4 padrões novos.
+5. Pedido para a tela de Treino mostrar a trilha completa de treinos
+   (Treino A, B, C... até o avançado), mesmo os bloqueados, para dar
+   visão de evolução e motivar o usuário — registrado em P1 no
+   backlog, próximo conceitualmente da Tela de Habilidades que já
+   estava pendente.
+
 ## Próxima tarefa recomendada
 
-1. Completar os três testes manuais que ainda faltam no aparelho: modo
-   avião explícito, tela bloqueada durante série por tempo
-   (`adb shell input keyevent KEYCODE_POWER`), e toque duplo físico
-   deliberado em "Concluir"/"Registrar série".
-2. Com o ciclo básico do MVP fechado e verificado (plano → sessão →
-   registro → domínio → XP → missões → Jornada → Evolução → player por
-   reps/duração → mídia real para 9 dos 13 exercícios prescritos) e 5
-   padrões com colocação real, as próximas opções naturais continuam
-   sendo: (a) dar aos 4 padrões novos o mesmo tratamento de catálogo em
-   camadas + `MasteryRule` que push_horizontal já tem, destravando
-   progressão/XP de domínio neles também; (b) ligar as escadas de
-   avaliação (`fundamental_pattern_anchors.dart`,
-   `push_horizontal_anchor.dart`) e as telas de avaliação/Evolução ao
-   `MediaCatalogIndex.byCategoryLevel` já pronto — destrava mostrar
-   imagem real em cada degrau de autorrelato, não só nos 13 exercícios
-   prescritos; (c) uma tela de Habilidades (mapa de árvores,
-   SCREENS_AND_FLOWS.md §5), que agora tem 195 imagens prontas para
-   usar; (d) missões/atributos que ainda faltam (check-in, revisar
-   progresso, atributos narrativos de RPG_SYSTEM.md §4); ou (e) as
-   pendências explícitas do player (seletor de duração pré-sessão,
-   página de Configurações/perfil físico, catálogo de treinos maior).
+Lista completa e priorizada em `docs/IMPLEMENTATION_BACKLOG.md` (P0 →
+P3). Resumo do topo da fila agora: (1) os três testes manuais que ainda
+faltam no aparelho — modo avião explícito, tela bloqueada durante
+série por tempo (`adb shell input keyevent KEYCODE_POWER`), toque
+duplo físico deliberado; (2) dar aos 4 padrões novos o mesmo tratamento
+de catálogo em camadas + `MasteryRule` que push_horizontal já tem; (3)
+ligar as 195 imagens às escadas de avaliação/Evolução via
+`MediaCatalogIndex.byCategoryLevel`, já pronto.
 
 ## Critério para retomar
 
-Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. As três levas
-mais recentes (correção de bugs + avaliação estendida + Evolução;
-história vertical do player por reps/duração; integração das 195
-imagens) agora têm verificação automatizada completa (119 testes) **e**
-verificação manual real no aparelho físico (`7549GMFUDA4DKZW8`),
-incluindo o cenário mais sensível a tempo real — recuperação de série
-por tempo após o app fechar/reabrir. Os únicos testes manuais ainda não
-feitos são modo avião explícito, tela bloqueada e toque duplo físico
-deliberado (ver Próxima tarefa recomendada) — nenhum é bloqueio, o
+Ler este arquivo, `docs/IMPLEMENTATION_BACKLOG.md` e
+`docs/adr/0006-mvp-local-only.md`. As três levas mais recentes
+(correção de bugs + avaliação estendida + Evolução; história vertical
+do player por reps/duração; integração das 195 imagens) agora têm
+verificação automatizada completa (119 testes) **e** verificação manual
+real no aparelho físico (`7549GMFUDA4DKZW8`), incluindo o cenário mais
+sensível a tempo real — recuperação de série por tempo após o app
+fechar/reabrir. Os únicos testes manuais ainda não feitos são modo
+avião explícito, tela bloqueada e toque duplo físico deliberado (ver
+`docs/IMPLEMENTATION_BACKLOG.md`, seção P0) — nenhum é bloqueio, o
 sistema já foi exercitado de verdade em cenários equivalentes.
