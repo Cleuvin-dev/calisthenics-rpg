@@ -9,7 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'tables/capability_estimate_records.dart';
 import 'tables/outbox_events.dart';
 import 'tables/safety_screenings.dart';
+import 'tables/set_log_records.dart';
+import 'tables/training_plan_records.dart';
 import 'tables/training_preference_records.dart';
+import 'tables/workout_session_records.dart';
 
 part 'app_database.g.dart';
 
@@ -18,6 +21,9 @@ part 'app_database.g.dart';
   SafetyScreenings,
   TrainingPreferenceRecords,
   CapabilityEstimateRecords,
+  TrainingPlanRecords,
+  WorkoutSessionRecords,
+  SetLogRecords,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -26,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -37,6 +43,15 @@ class AppDatabase extends _$AppDatabase {
             // Sem dados reais em produção ainda: recria a tabela.
             await m.deleteTable(capabilityEstimateRecords.actualTableName);
             await m.createTable(capabilityEstimateRecords);
+          }
+          if (from < 3) {
+            // Nova tabela do motor de treino.
+            await m.createTable(trainingPlanRecords);
+          }
+          if (from < 4) {
+            // Novas tabelas do player de sessão.
+            await m.createTable(workoutSessionRecords);
+            await m.createTable(setLogRecords);
           }
         },
       );

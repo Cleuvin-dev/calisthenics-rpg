@@ -9,17 +9,44 @@ class CapabilityEstimateRepository {
   final AppDatabase _db;
 
   Future<void> save(ConservativePlacementResult result) {
+    return saveEstimate(
+      pattern: result.pattern,
+      level: result.level,
+      levelName: result.levelName,
+      confidence: result.confidence,
+      ruleVersion: result.ruleVersion,
+      reasonCode: result.reasonCode.name,
+      inputAnchor: result.inputAnchor?.name,
+      computedAt: result.computedAt,
+      validUntil: result.validUntil,
+    );
+  }
+
+  /// Grava uma nova estimativa de capacidade, qualquer que seja a origem
+  /// (colocação conservadora, confirmação de domínio etc.). Append-only,
+  /// como todo registro auditável desta tabela.
+  Future<void> saveEstimate({
+    required String pattern,
+    required int level,
+    required String levelName,
+    required String confidence,
+    required String ruleVersion,
+    required String reasonCode,
+    String? inputAnchor,
+    required DateTime computedAt,
+    required DateTime validUntil,
+  }) {
     return _db.into(_db.capabilityEstimateRecords).insert(
           CapabilityEstimateRecordsCompanion.insert(
-            pattern: result.pattern,
-            level: result.level,
-            levelName: result.levelName,
-            confidence: result.confidence,
-            ruleVersion: result.ruleVersion,
-            reasonCode: result.reasonCode.name,
-            inputAnchor: Value(result.inputAnchor?.name),
-            computedAt: result.computedAt,
-            validUntil: result.validUntil,
+            pattern: pattern,
+            level: level,
+            levelName: levelName,
+            confidence: confidence,
+            ruleVersion: ruleVersion,
+            reasonCode: reasonCode,
+            inputAnchor: Value(inputAnchor),
+            computedAt: computedAt,
+            validUntil: validUntil,
           ),
         );
   }

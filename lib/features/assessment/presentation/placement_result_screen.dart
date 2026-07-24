@@ -56,9 +56,10 @@ class PlacementResultScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Esta é a primeira história implementada até agora: triagem, '
-              'agenda/equipamento e colocação conservadora. Motor de '
-              'treino, sessões e XP ainda não existem.',
+              'Implementado até agora: triagem, agenda/equipamento, '
+              'colocação conservadora, motor de treino determinístico e '
+              'player de sessão. XP e progressão de habilidades ainda não '
+              'existem.',
               style: TextStyle(fontStyle: FontStyle.italic),
             ),
           ],

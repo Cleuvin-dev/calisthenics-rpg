@@ -32,3 +32,15 @@ class TrainingPreferencesRepository {
     return query.getSingleOrNull();
   }
 }
+
+extension TrainingPreferenceRecordDecoding on TrainingPreferenceRecord {
+  TrainingPreferences toDomain() {
+    final equipmentNames = (jsonDecode(equipmentJson) as List).cast<String>();
+    return TrainingPreferences(
+      daysPerWeek: daysPerWeek,
+      minutesPerSession: minutesPerSession,
+      location: TrainingLocation.values.byName(location),
+      equipment: equipmentNames.map(Equipment.values.byName).toSet(),
+    );
+  }
+}

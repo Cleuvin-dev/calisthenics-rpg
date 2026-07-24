@@ -1,0 +1,108 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
+
+import '../../../core/database/app_database.dart';
+import '../domain/workout_session.dart';
+
+class WorkoutSessionRepository {
+  WorkoutSessionRepository(this._db);
+
+  final AppDatabase _db;
+
+  Future<int> startSession({
+    required String dayLabel,
+    required List<WorkoutSessionItem> items,
+    required String planRuleVersion,
+    required String catalogVersion,
+    required DateTime now,
+  }) {
+    return _db.into(_db.workoutSessionRecords).insert(
+          WorkoutSessionRecordsCompanion.insert(
+            dayLabel: dayLabel,
+            status: WorkoutSessionStatus.inProgress.name,
+            planRuleVersion: planRuleVersion,
+            catalogVersion: catalogVersion,
+            itemsJson: jsonEncode(items.map((e) => e.toJson()).toList()),
+            startedAt: now,
+          ),
+        );
+  }
+
+  Future<void> logSet({
+    required int workoutSessionId,
+    required String exerciseSlug,
+    required String pattern,
+    required int setNumber,
+    required int repsCompleted,
+    required PerceivedEffort perceivedEffort,
+    required DateTime now,
+  }) {
+    return _db.into(_db.setLogRecords).insert(
+          SetLogRecordsCompanion.insert(
+            workoutSessionId: workoutSessionId,
+            exerciseSlug: exerciseSlug,
+            pattern: pattern,
+            setNumber: setNumber,
+            repsCompleted: repsCompleted,
+            perceivedEffort: perceivedEffort.name,
+            completedAt: now,
+          ),
+        );
+  }
+
+  Future<void> pause(int workoutSessionId) =>
+      _setStatus(workoutSessionId, WorkoutSessionStatus.paused);
+
+  Future<void> resume(int workoutSessionId) =>
+      _setStatus(workoutSessionId, WorkoutSessionStatus.inProgress);
+
+  Future<void> abandon(int workoutSessionId, DateTime now) =>
+      _setStatus(workoutSessionId, WorkoutSessionStatus.abandoned, now);
+
+  Future<void> complete(int workoutSessionId, DateTime now) =>
+      _setStatus(workoutSessionId, WorkoutSessionStatus.completed, now);
+
+  Future<void> _setStatus(
+    int workoutSessionId,
+    WorkoutSessionStatus status, [
+    DateTime? completedAt,
+  ]) {
+    final update = _db.update(_db.workoutSessionRecords)
+      ..where((t) => t.id.equals(workoutSessionId));
+    return update.write(
+      WorkoutSessionRecordsCompanion(
+        status: Value(status.name),
+        completedAt: completedAt == null ? const Value.absent() : Value(completedAt),
+      ),
+    );
+  }
+
+  /// Sessão em andamento ou pausada mais recente, se houver — usada para
+  /// oferecer retomada (FR-026) em vez de permitir sessões órfãs.
+  Future<WorkoutSessionRecord?> latestActive() {
+    final query = _db.select(_db.workoutSessionRecords)
+      ..where(
+        (t) => t.status.isIn([
+          WorkoutSessionStatus.inProgress.name,
+          WorkoutSessionStatus.paused.name,
+        ]),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
+      ..limit(1);
+    return query.getSingleOrNull();
+  }
+
+  Future<List<SetLogRecord>> setLogsFor(int workoutSessionId) {
+    final query = _db.select(_db.setLogRecords)
+      ..where((t) => t.workoutSessionId.equals(workoutSessionId))
+      ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]);
+    return query.get();
+  }
+}
+
+extension WorkoutSessionRecordDecoding on WorkoutSessionRecord {
+  List<WorkoutSessionItem> get items => (jsonDecode(itemsJson) as List)
+      .map((e) => WorkoutSessionItem.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
