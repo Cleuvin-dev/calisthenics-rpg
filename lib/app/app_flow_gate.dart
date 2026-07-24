@@ -71,8 +71,9 @@ class _AfterPreferencesGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final placementAsync =
-        ref.watch(latestCapabilityEstimateProvider('push_horizontal'));
+    final placementAsync = ref.watch(
+      latestCapabilityEstimateProvider('push_horizontal'),
+    );
 
     return placementAsync.when(
       loading: () => const _LoadingScreen(),
@@ -81,14 +82,20 @@ class _AfterPreferencesGate extends ConsumerWidget {
         if (placement == null) {
           return const AssessmentSkipTestScreen();
         }
-        return _AfterPlacementGate(preferences: preferences, placement: placement);
+        return _AfterPlacementGate(
+          preferences: preferences,
+          placement: placement,
+        );
       },
     );
   }
 }
 
 class _AfterPlacementGate extends ConsumerWidget {
-  const _AfterPlacementGate({required this.preferences, required this.placement});
+  const _AfterPlacementGate({
+    required this.preferences,
+    required this.placement,
+  });
 
   final TrainingPreferenceRecord preferences;
   final CapabilityEstimateRecord placement;

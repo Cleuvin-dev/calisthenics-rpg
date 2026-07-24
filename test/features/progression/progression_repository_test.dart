@@ -81,8 +81,7 @@ void main() {
     expect(result, isNull);
   });
 
-  test('duas sessões qualificadas promovem e gravam nova colocação',
-      () async {
+  test('duas sessões qualificadas promovem e gravam nova colocação', () async {
     await completeQualifyingSession(DateTime(2026, 1, 2, 8));
     await completeQualifyingSession(DateTime(2026, 1, 4, 8)); // 48h depois
 

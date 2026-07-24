@@ -127,7 +127,9 @@ void main() {
       );
       expect(
         full
-            .firstWhere((r) => r.definition.type == MissionType.trainAllPatterns)
+            .firstWhere(
+              (r) => r.definition.type == MissionType.trainAllPatterns,
+            )
             .completed,
         isTrue,
       );
@@ -145,7 +147,9 @@ void main() {
       );
       expect(
         results
-            .firstWhere((r) => r.definition.type == MissionType.trainAllPatterns)
+            .firstWhere(
+              (r) => r.definition.type == MissionType.trainAllPatterns,
+            )
             .completed,
         isFalse,
       );

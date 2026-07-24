@@ -2,11 +2,13 @@
 /// tela Jornada. Semana começa na segunda-feira.
 DateTime startOfDay(DateTime date) => DateTime(date.year, date.month, date.day);
 
-DateTime endOfDay(DateTime date) => startOfDay(date).add(const Duration(days: 1));
+DateTime endOfDay(DateTime date) =>
+    startOfDay(date).add(const Duration(days: 1));
 
 DateTime startOfWeek(DateTime date) {
   final day = startOfDay(date);
   return day.subtract(Duration(days: day.weekday - DateTime.monday));
 }
 
-DateTime endOfWeek(DateTime date) => startOfWeek(date).add(const Duration(days: 7));
+DateTime endOfWeek(DateTime date) =>
+    startOfWeek(date).add(const Duration(days: 7));

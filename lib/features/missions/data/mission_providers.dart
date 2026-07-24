@@ -19,10 +19,14 @@ final missionRepositoryProvider = Provider<MissionRepository>((ref) {
 /// Leitura pura e reativa — não concede XP. Ver `MissionRepository.
 /// grantCompletedDaily/Weekly` para a ação explícita de conceder,
 /// disparada ao abrir a tela Jornada.
-final dailyMissionsProvider = FutureProvider<List<MissionEvaluationResult>>((ref) {
+final dailyMissionsProvider = FutureProvider<List<MissionEvaluationResult>>((
+  ref,
+) {
   return ref.watch(missionRepositoryProvider).evaluateDaily(DateTime.now());
 });
 
-final weeklyMissionsProvider = FutureProvider<List<MissionEvaluationResult>>((ref) {
+final weeklyMissionsProvider = FutureProvider<List<MissionEvaluationResult>>((
+  ref,
+) {
   return ref.watch(missionRepositoryProvider).evaluateWeekly(DateTime.now());
 });

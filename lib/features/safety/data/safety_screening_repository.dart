@@ -10,15 +10,16 @@ class SafetyScreeningRepository {
   final AppDatabase _db;
 
   Future<void> save(ScreeningAnswers answers, ScreeningResult result) {
-    return _db.into(_db.safetyScreenings).insert(
+    return _db
+        .into(_db.safetyScreenings)
+        .insert(
           SafetyScreeningsCompanion.insert(
             hasCardiovascularCondition: answers.hasCardiovascularCondition,
             chestPainAtRestOrExertion: answers.chestPainAtRestOrExertion,
             faintingOrSevereDizziness: answers.faintingOrSevereDizziness,
             boneJointNeurologicalOrRecentSurgery:
                 answers.boneJointNeurologicalOrRecentSurgery,
-            medicationsAffectingExercise:
-                answers.medicationsAffectingExercise,
+            medicationsAffectingExercise: answers.medicationsAffectingExercise,
             pregnantOrPostpartum: answers.pregnantOrPostpartum,
             hasCurrentPain: answers.hasCurrentPain,
             currentPainLocation: Value(answers.currentPainLocation),

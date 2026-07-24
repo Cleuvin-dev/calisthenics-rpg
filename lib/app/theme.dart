@@ -19,29 +19,30 @@ const _stateDanger = Color(0xFFF45B69);
 const _divider = Color(0xFF2A302F);
 
 ThemeData buildCalisthenicsRpgTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: _brandPrimary,
-    brightness: Brightness.dark,
-  ).copyWith(
-    primary: _brandPrimary,
-    onPrimary: const Color(0xFF06231A),
-    primaryContainer: _brandPrimaryPressed,
-    onPrimaryContainer: const Color(0xFF06231A),
-    secondary: _brandPrimaryPressed,
-    onSecondary: const Color(0xFF06231A),
-    tertiary: _rpgXp,
-    tertiaryContainer: const Color(0xFF2E1D66),
-    onTertiaryContainer: const Color(0xFFE4DBFF),
-    surface: _surfaceCanvas,
-    onSurface: _textPrimary,
-    onSurfaceVariant: _textSecondary,
-    surfaceContainerHigh: _surfaceCard,
-    surfaceContainerHighest: _surfaceElevated,
-    error: _stateDanger,
-    onError: const Color(0xFF3A0A10),
-    outline: _divider,
-    outlineVariant: _divider,
-  );
+  final colorScheme =
+      ColorScheme.fromSeed(
+        seedColor: _brandPrimary,
+        brightness: Brightness.dark,
+      ).copyWith(
+        primary: _brandPrimary,
+        onPrimary: const Color(0xFF06231A),
+        primaryContainer: _brandPrimaryPressed,
+        onPrimaryContainer: const Color(0xFF06231A),
+        secondary: _brandPrimaryPressed,
+        onSecondary: const Color(0xFF06231A),
+        tertiary: _rpgXp,
+        tertiaryContainer: const Color(0xFF2E1D66),
+        onTertiaryContainer: const Color(0xFFE4DBFF),
+        surface: _surfaceCanvas,
+        onSurface: _textPrimary,
+        onSurfaceVariant: _textSecondary,
+        surfaceContainerHigh: _surfaceCard,
+        surfaceContainerHighest: _surfaceElevated,
+        error: _stateDanger,
+        onError: const Color(0xFF3A0A10),
+        outline: _divider,
+        outlineVariant: _divider,
+      );
 
   return ThemeData(
     useMaterial3: true,

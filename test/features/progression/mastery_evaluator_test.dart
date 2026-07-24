@@ -91,8 +91,7 @@ void main() {
     expect(result.promoted, isFalse);
   });
 
-  test('série com dor desqualifica a sessão inteira, mesmo com boas reps',
-      () {
+  test('série com dor desqualifica a sessão inteira, mesmo com boas reps', () {
     final result = evaluator.evaluate(
       rule: rule,
       sessions: [

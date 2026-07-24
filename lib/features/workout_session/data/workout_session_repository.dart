@@ -17,7 +17,9 @@ class WorkoutSessionRepository {
     required String catalogVersion,
     required DateTime now,
   }) {
-    return _db.into(_db.workoutSessionRecords).insert(
+    return _db
+        .into(_db.workoutSessionRecords)
+        .insert(
           WorkoutSessionRecordsCompanion.insert(
             dayLabel: dayLabel,
             status: WorkoutSessionStatus.inProgress.name,
@@ -49,12 +51,14 @@ class WorkoutSessionRepository {
       exerciseSlug: exerciseSlug,
       setNumber: setNumber,
     );
-    final existing = await (_db.select(_db.setLogRecords)
-          ..where((t) => t.clientEventId.equals(clientEventId)))
-        .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.setLogRecords,
+    )..where((t) => t.clientEventId.equals(clientEventId))).getSingleOrNull();
     if (existing != null) return false;
 
-    await _db.into(_db.setLogRecords).insert(
+    await _db
+        .into(_db.setLogRecords)
+        .insert(
           SetLogRecordsCompanion.insert(
             workoutSessionId: workoutSessionId,
             exerciseSlug: exerciseSlug,
@@ -87,7 +91,9 @@ class WorkoutSessionRepository {
     required int targetSeconds,
     required DateTime now,
   }) {
-    return _db.into(_db.activeTimedSetRecords).insertOnConflictUpdate(
+    return _db
+        .into(_db.activeTimedSetRecords)
+        .insertOnConflictUpdate(
           ActiveTimedSetRecordsCompanion.insert(
             workoutSessionId: Value(workoutSessionId),
             exerciseSlug: exerciseSlug,
@@ -151,12 +157,14 @@ class WorkoutSessionRepository {
     );
 
     return _db.transaction(() async {
-      final existing = await (_db.select(_db.setLogRecords)
-            ..where((t) => t.clientEventId.equals(clientEventId)))
-          .getSingleOrNull();
+      final existing = await (_db.select(
+        _db.setLogRecords,
+      )..where((t) => t.clientEventId.equals(clientEventId))).getSingleOrNull();
 
       if (existing == null) {
-        await _db.into(_db.setLogRecords).insert(
+        await _db
+            .into(_db.setLogRecords)
+            .insert(
               SetLogRecordsCompanion.insert(
                 workoutSessionId: workoutSessionId,
                 exerciseSlug: exerciseSlug,
@@ -213,7 +221,9 @@ class WorkoutSessionRepository {
     return update.write(
       WorkoutSessionRecordsCompanion(
         status: Value(status.name),
-        completedAt: completedAt == null ? const Value.absent() : Value(completedAt),
+        completedAt: completedAt == null
+            ? const Value.absent()
+            : Value(completedAt),
       ),
     );
   }

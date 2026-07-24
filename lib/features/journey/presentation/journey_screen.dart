@@ -100,9 +100,9 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
           IconButton(
             icon: const Icon(Icons.insights_outlined),
             tooltip: 'Evolução',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EvolutionScreen()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const EvolutionScreen())),
           ),
         ],
       ),
@@ -118,14 +118,13 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
               error: (_, _) => const SizedBox.shrink(),
               data: (completed) => Column(
                 children: [
-                  _StatusCard(
-                    plan: plan,
-                    completedCount: completed.length,
-                  ),
+                  _StatusCard(plan: plan, completedCount: completed.length),
                   const SizedBox(height: 12),
                   _NextSessionCard(
                     plan: plan,
-                    completedDayLabels: completed.map((s) => s.dayLabel).toSet(),
+                    completedDayLabels: completed
+                        .map((s) => s.dayLabel)
+                        .toSet(),
                     onTap: _openPlan,
                   ),
                 ],
@@ -202,7 +201,10 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
               error: (_, _) => const SizedBox.shrink(),
               data: (missions) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: MissionList(title: 'Missões de hoje', missions: missions),
+                child: MissionList(
+                  title: 'Missões de hoje',
+                  missions: missions,
+                ),
               ),
             ),
           ),
@@ -213,7 +215,10 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
               error: (_, _) => const SizedBox.shrink(),
               data: (missions) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: MissionList(title: 'Missões da semana', missions: missions),
+                child: MissionList(
+                  title: 'Missões da semana',
+                  missions: missions,
+                ),
               ),
             ),
           ),
@@ -311,8 +316,10 @@ class _StatusCard extends StatelessWidget {
                     'Frequência da semana',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  Text('$completedCount de ${plan.actualDaysPerWeek} sessões '
-                      '(meta: $required)'),
+                  Text(
+                    '$completedCount de ${plan.actualDaysPerWeek} sessões '
+                    '(meta: $required)',
+                  ),
                 ],
               ),
             ),

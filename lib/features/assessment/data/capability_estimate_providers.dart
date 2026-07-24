@@ -6,10 +6,10 @@ import 'capability_estimate_repository.dart';
 
 final capabilityEstimateRepositoryProvider =
     Provider<CapabilityEstimateRepository>((ref) {
-  return CapabilityEstimateRepository(ref.watch(appDatabaseProvider));
-});
+      return CapabilityEstimateRepository(ref.watch(appDatabaseProvider));
+    });
 
 final latestCapabilityEstimateProvider =
     FutureProvider.family<CapabilityEstimateRecord?, String>((ref, pattern) {
-  return ref.watch(capabilityEstimateRepositoryProvider).latestFor(pattern);
-});
+      return ref.watch(capabilityEstimateRepositoryProvider).latestFor(pattern);
+    });

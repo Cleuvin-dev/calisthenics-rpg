@@ -28,8 +28,13 @@ class XpEvolutionChart extends StatelessWidget {
                 value: dailyTotals[i],
                 maxValue: maxValue,
                 maxHeight: chartHeight,
-                label: _weekdayLabels[
-                    now.subtract(Duration(days: dailyTotals.length - 1 - i)).weekday - 1],
+                label:
+                    _weekdayLabels[now
+                            .subtract(
+                              Duration(days: dailyTotals.length - 1 - i),
+                            )
+                            .weekday -
+                        1],
                 isToday: i == dailyTotals.length - 1,
               ),
             ),

@@ -58,8 +58,8 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   Text(
                     '+$xpAwarded XP',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ],
                 if (leveledUp) ...[
@@ -82,7 +82,9 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   Text(
                     '$painCount série(s) com dor — não contam como evidência '
                     'de domínio (PROGRESSION_RULES.md §8).',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 if (masteryResult != null && masteryResult!.promoted) ...[

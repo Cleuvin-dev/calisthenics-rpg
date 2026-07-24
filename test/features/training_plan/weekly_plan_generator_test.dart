@@ -90,16 +90,16 @@ void main() {
     );
   });
 
-  test('sem capacidade avaliada, usa a variação mais conservadora de push',
-      () {
+  test('sem capacidade avaliada, usa a variação mais conservadora de push', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
       pushHorizontalCapabilityLevel: null,
       now: now,
     );
 
-    final pushItem = plan.sessions.first.items
-        .firstWhere((i) => i.pattern == 'push_horizontal');
+    final pushItem = plan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'push_horizontal',
+    );
     expect(pushItem.exerciseSlug, 'push_up_wall');
   });
 
@@ -110,8 +110,9 @@ void main() {
       now: now,
     );
 
-    final pushItem = plan.sessions.first.items
-        .firstWhere((i) => i.pattern == 'push_horizontal');
+    final pushItem = plan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'push_horizontal',
+    );
     expect(pushItem.exerciseSlug, 'push_up_floor');
   });
 
@@ -123,8 +124,9 @@ void main() {
       now: now,
     );
 
-    final pullItem = plan.sessions.first.items
-        .firstWhere((i) => i.pattern == 'pull_horizontal');
+    final pullItem = plan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'pull_horizontal',
+    );
     expect(pullItem.exerciseSlug, 'scapular_retraction_bodyweight');
     expect(pullItem.reasonCode, PlanReasonCode.equipmentSubstitution);
   });
@@ -140,8 +142,9 @@ void main() {
       now: now,
     );
 
-    final pullItem = plan.sessions.first.items
-        .firstWhere((i) => i.pattern == 'pull_horizontal');
+    final pullItem = plan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'pull_horizontal',
+    );
     expect(pullItem.exerciseSlug, 'band_row');
     expect(pullItem.reasonCode, isNot(PlanReasonCode.equipmentSubstitution));
   });

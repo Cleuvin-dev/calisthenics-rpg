@@ -20,12 +20,14 @@ class RestScreen extends StatefulWidget {
     required this.nextExerciseNamePtBr,
     required this.onPauseSession,
     required this.onPain,
+    this.nextExerciseMediaSlug,
   });
 
   final int seconds;
   final String nextExerciseSlug;
   final String nextExercisePattern;
   final String nextExerciseNamePtBr;
+  final String? nextExerciseMediaSlug;
   final VoidCallback onPauseSession;
   final VoidCallback onPain;
 
@@ -106,6 +108,7 @@ class _RestScreenState extends State<RestScreen> {
               exerciseSlug: widget.nextExerciseSlug,
               pattern: widget.nextExercisePattern,
               namePtBr: widget.nextExerciseNamePtBr,
+              mediaSlug: widget.nextExerciseMediaSlug,
               size: 80,
             ),
             const SizedBox(height: 8),

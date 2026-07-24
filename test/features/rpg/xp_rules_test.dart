@@ -33,8 +33,7 @@ void main() {
     expect(awards.single.repeatable, isTrue);
   });
 
-  test('bônus de todas as séries só aparece quando todo item foi logado',
-      () {
+  test('bônus de todas as séries só aparece quando todo item foi logado', () {
     final partialAwards = awardsForCompletedSession(
       workoutSessionId: 1,
       items: items,

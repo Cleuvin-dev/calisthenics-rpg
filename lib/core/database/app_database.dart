@@ -18,17 +18,19 @@ import 'tables/xp_ledger_records.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [
-  OutboxEvents,
-  SafetyScreenings,
-  TrainingPreferenceRecords,
-  CapabilityEstimateRecords,
-  TrainingPlanRecords,
-  WorkoutSessionRecords,
-  SetLogRecords,
-  XpLedgerRecords,
-  ActiveTimedSetRecords,
-])
+@DriftDatabase(
+  tables: [
+    OutboxEvents,
+    SafetyScreenings,
+    TrainingPreferenceRecords,
+    CapabilityEstimateRecords,
+    TrainingPlanRecords,
+    WorkoutSessionRecords,
+    SetLogRecords,
+    XpLedgerRecords,
+    ActiveTimedSetRecords,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -40,41 +42,41 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            // inputAnchor virou opcional (colocação "não avaliado").
-            // Sem dados reais em produção ainda: recria a tabela.
-            await m.deleteTable(capabilityEstimateRecords.actualTableName);
-            await m.createTable(capabilityEstimateRecords);
-          }
-          if (from < 3) {
-            // Nova tabela do motor de treino.
-            await m.createTable(trainingPlanRecords);
-          }
-          if (from < 4) {
-            // Novas tabelas do player de sessão.
-            await m.createTable(workoutSessionRecords);
-            await m.createTable(setLogRecords);
-          }
-          if (from < 5) {
-            // Nova tabela do ledger de XP.
-            await m.createTable(xpLedgerRecords);
-          }
-          if (from < 6) {
-            // Player por repetições/duração: colunas aditivas em
-            // set_log_records (pode já haver dados reais do usuário, por
-            // isso ALTER TABLE em vez de recriar) + nova tabela de série
-            // por tempo em andamento.
-            await m.addColumn(setLogRecords, setLogRecords.targetReps);
-            await m.addColumn(setLogRecords, setLogRecords.targetSeconds);
-            await m.addColumn(setLogRecords, setLogRecords.activeDurationMs);
-            await m.addColumn(setLogRecords, setLogRecords.completionReason);
-            await m.addColumn(setLogRecords, setLogRecords.clientEventId);
-            await m.createTable(activeTimedSetRecords);
-          }
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // inputAnchor virou opcional (colocação "não avaliado").
+        // Sem dados reais em produção ainda: recria a tabela.
+        await m.deleteTable(capabilityEstimateRecords.actualTableName);
+        await m.createTable(capabilityEstimateRecords);
+      }
+      if (from < 3) {
+        // Nova tabela do motor de treino.
+        await m.createTable(trainingPlanRecords);
+      }
+      if (from < 4) {
+        // Novas tabelas do player de sessão.
+        await m.createTable(workoutSessionRecords);
+        await m.createTable(setLogRecords);
+      }
+      if (from < 5) {
+        // Nova tabela do ledger de XP.
+        await m.createTable(xpLedgerRecords);
+      }
+      if (from < 6) {
+        // Player por repetições/duração: colunas aditivas em
+        // set_log_records (pode já haver dados reais do usuário, por
+        // isso ALTER TABLE em vez de recriar) + nova tabela de série
+        // por tempo em andamento.
+        await m.addColumn(setLogRecords, setLogRecords.targetReps);
+        await m.addColumn(setLogRecords, setLogRecords.targetSeconds);
+        await m.addColumn(setLogRecords, setLogRecords.activeDurationMs);
+        await m.addColumn(setLogRecords, setLogRecords.completionReason);
+        await m.addColumn(setLogRecords, setLogRecords.clientEventId);
+        await m.createTable(activeTimedSetRecords);
+      }
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

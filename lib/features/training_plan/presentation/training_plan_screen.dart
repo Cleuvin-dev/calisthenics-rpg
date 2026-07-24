@@ -29,8 +29,7 @@ class TrainingPlanScreen extends ConsumerStatefulWidget {
   final CapabilityEstimateRecord placement;
 
   @override
-  ConsumerState<TrainingPlanScreen> createState() =>
-      _TrainingPlanScreenState();
+  ConsumerState<TrainingPlanScreen> createState() => _TrainingPlanScreenState();
 }
 
 class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
@@ -71,8 +70,10 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Finalize ou pause a sessão em andamento antes '
-                'de iniciar outra.'),
+            content: Text(
+              'Finalize ou pause a sessão em andamento antes '
+              'de iniciar outra.',
+            ),
           ),
         );
       }
@@ -83,12 +84,14 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
     final id = await repository.startSession(
       dayLabel: session.dayLabel,
       items: session.items
-          .map((i) => WorkoutSessionItem(
-                pattern: i.pattern,
-                exerciseSlug: i.exerciseSlug,
-                namePtBr: i.namePtBr,
-                setsRepsGuidance: i.setsRepsGuidance,
-              ))
+          .map(
+            (i) => WorkoutSessionItem(
+              pattern: i.pattern,
+              exerciseSlug: i.exerciseSlug,
+              namePtBr: i.namePtBr,
+              setsRepsGuidance: i.setsRepsGuidance,
+            ),
+          )
           .toList(),
       planRuleVersion: plan.ruleVersion,
       catalogVersion: plan.catalogVersion,
@@ -258,10 +261,9 @@ class _ExerciseRow extends StatelessWidget {
               children: [
                 Text(
                   item.namePtBr,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(item.setsRepsGuidance),
                 Text(

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/data/exercise_media_catalog_provider.dart';
 import '../../../shared/presentation/exercise_media.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../progression/data/progression_providers.dart';
@@ -48,12 +51,14 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   int? _recoveredSetNumber;
   bool _submitting = false;
   bool _recoveryChecked = false;
+  int _precachedForIndex = -1;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _checkForActiveTimedSet());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkForActiveTimedSet(),
+    );
   }
 
   /// Recuperação após fechar o app/bloquear a tela
@@ -68,8 +73,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       return;
     }
 
-    final session =
-        await ref.read(workoutSessionByIdProvider(widget.workoutSessionId).future);
+    final session = await ref.read(
+      workoutSessionByIdProvider(widget.workoutSessionId).future,
+    );
     if (session == null || !mounted) {
       setState(() => _recoveryChecked = true);
       return;
@@ -77,8 +83,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
     final items = session.items;
     final idx = items.indexWhere((i) => i.exerciseSlug == active.exerciseSlug);
-    final exerciseName =
-        idx == -1 ? active.exerciseSlug : items[idx].namePtBr;
+    final exerciseName = idx == -1 ? active.exerciseSlug : items[idx].namePtBr;
 
     final choice = await showTimedSetRecoveryDialog(
       context,
@@ -114,6 +119,45 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     }
 
     if (mounted) setState(() => _recoveryChecked = true);
+  }
+
+  /// Pré-carrega só a imagem do exercício atual e a seguinte
+  /// (`App_RPG_Exercise_Images/CLAUDE_CODE_PROMPT.md` #11) — não a
+  /// sessão inteira, para não pressionar a memória de aparelhos Android
+  /// intermediários. Falha de precache é silenciosa: o próprio
+  /// `Image.asset`/`ExerciseMedia` já tem seu `errorBuilder` para quando
+  /// a imagem realmente for exibida.
+  void _precacheAdjacentMedia(List<WorkoutSessionItem> items) {
+    if (_precachedForIndex == _currentIndex) return;
+    _precachedForIndex = _currentIndex;
+
+    final catalog = ref.read(exerciseMediaCatalogProvider).value;
+    String resolve(WorkoutSessionItem item) {
+      final mediaSlug = item.mediaSlug;
+      final fromCatalog = mediaSlug == null
+          ? null
+          : catalog?.bySlug(mediaSlug)?.assetPath;
+      return fromCatalog ??
+          'assets/images/exercises/${item.exerciseSlug}/v1/start.png';
+    }
+
+    final toPreload = [
+      items[_currentIndex],
+      if (_currentIndex + 1 < items.length) items[_currentIndex + 1],
+    ];
+    for (final item in toPreload) {
+      // `onError` (não só `.catchError` no Future retornado) é
+      // necessário: o pipeline de imagem do Flutter também reporta o
+      // erro via `FlutterError.onError` de forma síncrona, então só
+      // capturar a Future não é suficiente para evitar o erro "subir".
+      unawaited(
+        precacheImage(
+          AssetImage(resolve(item)),
+          context,
+          onError: (exception, stackTrace) {},
+        ),
+      );
+    }
   }
 
   Future<void> _pauseAndExit() async {
@@ -175,7 +219,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       return;
     }
 
-    await ref.read(workoutSessionRepositoryProvider).logSet(
+    await ref
+        .read(workoutSessionRepositoryProvider)
+        .logSet(
           workoutSessionId: widget.workoutSessionId,
           exerciseSlug: item.exerciseSlug,
           pattern: item.pattern,
@@ -194,7 +240,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   }
 
   Future<void> _reportPainNow(WorkoutSessionItem item, int setNumber) async {
-    await ref.read(workoutSessionRepositoryProvider).logSet(
+    await ref
+        .read(workoutSessionRepositoryProvider)
+        .logSet(
           workoutSessionId: widget.workoutSessionId,
           exerciseSlug: item.exerciseSlug,
           pattern: item.pattern,
@@ -250,6 +298,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
             nextExerciseSlug: next.exerciseSlug,
             nextExercisePattern: next.pattern,
             nextExerciseNamePtBr: next.namePtBr,
+            nextExerciseMediaSlug: next.mediaSlug,
             onPauseSession: () {
               Navigator.of(context).pop();
               _pauseAndExit();
@@ -280,19 +329,22 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     await sessionRepository.complete(widget.workoutSessionId, now);
     ref.invalidate(latestActiveWorkoutSessionProvider);
 
-    final masteryResult =
-        await ref.read(progressionRepositoryProvider).evaluateAndPromotePushHorizontal(
-              currentLevel: widget.pushHorizontalPlacement.level,
-              placementComputedAt: widget.pushHorizontalPlacement.computedAt,
-              now: now,
-            );
+    final masteryResult = await ref
+        .read(progressionRepositoryProvider)
+        .evaluateAndPromotePushHorizontal(
+          currentLevel: widget.pushHorizontalPlacement.level,
+          placementComputedAt: widget.pushHorizontalPlacement.computedAt,
+          now: now,
+        );
     if (masteryResult?.promoted ?? false) {
       ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
     }
 
     final xpRepository = ref.read(xpLedgerRepositoryProvider);
     const levelCalculator = LevelCalculator();
-    final levelBefore = levelCalculator.levelFor(await xpRepository.totalXp()).level;
+    final levelBefore = levelCalculator
+        .levelFor(await xpRepository.totalXp())
+        .level;
 
     final logs = await sessionRepository.setLogsFor(widget.workoutSessionId);
     final awards = awardsForCompletedSession(
@@ -304,7 +356,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       masteryNewLevel: masteryResult?.newLevel,
     );
     final xpAwarded = await xpRepository.grantAwards(awards, now: now);
-    final levelAfter = levelCalculator.levelFor(await xpRepository.totalXp()).level;
+    final levelAfter = levelCalculator
+        .levelFor(await xpRepository.totalXp())
+        .level;
     ref.invalidate(levelProgressProvider);
 
     if (!mounted) return;
@@ -324,8 +378,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionAsync =
-        ref.watch(workoutSessionByIdProvider(widget.workoutSessionId));
+    final sessionAsync = ref.watch(
+      workoutSessionByIdProvider(widget.workoutSessionId),
+    );
 
     return PopScope(
       canPop: false,
@@ -339,152 +394,171 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       child: !_recoveryChecked
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : sessionAsync.when(
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, _) => Scaffold(body: Center(child: Text('Erro: $error'))),
-        data: (session) {
-          if (session == null) {
-            return const Scaffold(
-              body: Center(child: Text('Sessão não encontrada.')),
-            );
-          }
-
-          final items = session.items;
-          final currentItem = items[_currentIndex];
-          final isLast = _currentIndex == items.length - 1;
-          final logsAsync =
-              ref.watch(setLogsForSessionProvider(widget.workoutSessionId));
-
-          return Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.pause),
-                tooltip: 'Pausar e sair',
-                onPressed: _pauseAndExit,
+              loading: () => const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
               ),
-              title: Text(session.dayLabel),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.flag_outlined),
-                  tooltip: 'Abandonar sessão',
-                  onPressed: _confirmAbandon,
-                ),
-              ],
-            ),
-            body: logsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('Erro: $error')),
-              data: (logs) {
-                final itemLogs = logs
-                    .where((l) => l.exerciseSlug == currentItem.exerciseSlug)
-                    .toList();
-                final nextSetNumber = itemLogs.length + 1;
+              error: (error, _) =>
+                  Scaffold(body: Center(child: Text('Erro: $error'))),
+              data: (session) {
+                if (session == null) {
+                  return const Scaffold(
+                    body: Center(child: Text('Sessão não encontrada.')),
+                  );
+                }
 
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Center(
-                      child: ExerciseMedia(
-                        key: ValueKey(currentItem.exerciseSlug),
-                        exerciseSlug: currentItem.exerciseSlug,
-                        pattern: currentItem.pattern,
-                        namePtBr: currentItem.namePtBr,
-                        size: 140,
-                      ),
+                final items = session.items;
+                final currentItem = items[_currentIndex];
+                final isLast = _currentIndex == items.length - 1;
+                final logsAsync = ref.watch(
+                  setLogsForSessionProvider(widget.workoutSessionId),
+                );
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _precacheAdjacentMedia(items),
+                );
+
+                return Scaffold(
+                  appBar: AppBar(
+                    leading: IconButton(
+                      icon: const Icon(Icons.pause),
+                      tooltip: 'Pausar e sair',
+                      onPressed: _pauseAndExit,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Exercício ${_currentIndex + 1}/${items.length}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currentItem.namePtBr,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(currentItem.setsRepsGuidance),
-                    const SizedBox(height: 16),
-                    if (currentItem.doseType == DoseType.duration)
-                      TimedSetPlayer(
-                        key: ValueKey(
-                          '${currentItem.exerciseSlug}-$nextSetNumber',
-                        ),
-                        workoutSessionId: widget.workoutSessionId,
-                        exerciseSlug: currentItem.exerciseSlug,
-                        pattern: currentItem.pattern,
-                        exerciseNamePtBr: currentItem.namePtBr,
-                        setNumber: nextSetNumber,
-                        totalSets: currentItem.targetSets,
-                        targetSeconds: currentItem.targetSeconds ?? 30,
-                        initialElapsedMs: nextSetNumber == _recoveredSetNumber
-                            ? _recoveredElapsedMs
-                            : null,
-                        onFinalized: () => ref.invalidate(
-                          setLogsForSessionProvider(widget.workoutSessionId),
-                        ),
-                        onPain: () => _showPainDialog(),
-                      )
-                    else ...[
-                      for (final log in itemLogs)
-                        ListTile(
-                          dense: true,
-                          leading: const Icon(Icons.check_circle_outline),
-                          title: Text('Série ${log.setNumber}: '
-                              '${log.repsCompleted} reps'),
-                          subtitle: Text(
-                            PerceivedEffort.values
-                                .byName(log.perceivedEffort)
-                                .labelPtBr,
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: _submitting
-                                  ? null
-                                  : () => _logSet(
-                                        currentItem,
-                                        nextSetNumber,
-                                        currentItem.targetSets,
-                                      ),
-                              child: const Text('Registrar série'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.error,
-                            ),
-                            onPressed: () =>
-                                _reportPainNow(currentItem, nextSetNumber),
-                            child: const Text('Senti dor'),
-                          ),
-                        ],
+                    title: Text(session.dayLabel),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.flag_outlined),
+                        tooltip: 'Abandonar sessão',
+                        onPressed: _confirmAbandon,
                       ),
                     ],
-                  ],
+                  ),
+                  body: logsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, _) => Center(child: Text('Erro: $error')),
+                    data: (logs) {
+                      final itemLogs = logs
+                          .where(
+                            (l) => l.exerciseSlug == currentItem.exerciseSlug,
+                          )
+                          .toList();
+                      final nextSetNumber = itemLogs.length + 1;
+
+                      return ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          Center(
+                            child: ExerciseMedia(
+                              key: ValueKey(currentItem.exerciseSlug),
+                              exerciseSlug: currentItem.exerciseSlug,
+                              pattern: currentItem.pattern,
+                              namePtBr: currentItem.namePtBr,
+                              mediaSlug: currentItem.mediaSlug,
+                              size: 140,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Exercício ${_currentIndex + 1}/${items.length}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            currentItem.namePtBr,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(currentItem.setsRepsGuidance),
+                          const SizedBox(height: 16),
+                          if (currentItem.doseType == DoseType.duration)
+                            TimedSetPlayer(
+                              key: ValueKey(
+                                '${currentItem.exerciseSlug}-$nextSetNumber',
+                              ),
+                              workoutSessionId: widget.workoutSessionId,
+                              exerciseSlug: currentItem.exerciseSlug,
+                              pattern: currentItem.pattern,
+                              exerciseNamePtBr: currentItem.namePtBr,
+                              setNumber: nextSetNumber,
+                              totalSets: currentItem.targetSets,
+                              targetSeconds: currentItem.targetSeconds ?? 30,
+                              initialElapsedMs:
+                                  nextSetNumber == _recoveredSetNumber
+                                  ? _recoveredElapsedMs
+                                  : null,
+                              onFinalized: () => ref.invalidate(
+                                setLogsForSessionProvider(
+                                  widget.workoutSessionId,
+                                ),
+                              ),
+                              onPain: () => _showPainDialog(),
+                            )
+                          else ...[
+                            for (final log in itemLogs)
+                              ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.check_circle_outline),
+                                title: Text(
+                                  'Série ${log.setNumber}: '
+                                  '${log.repsCompleted} reps',
+                                ),
+                                subtitle: Text(
+                                  PerceivedEffort.values
+                                      .byName(log.perceivedEffort)
+                                      .labelPtBr,
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed: _submitting
+                                        ? null
+                                        : () => _logSet(
+                                            currentItem,
+                                            nextSetNumber,
+                                            currentItem.targetSets,
+                                          ),
+                                    child: const Text('Registrar série'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.error,
+                                  ),
+                                  onPressed: () => _reportPainNow(
+                                    currentItem,
+                                    nextSetNumber,
+                                  ),
+                                  child: const Text('Senti dor'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                  bottomNavigationBar: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: FilledButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => _advanceOrComplete(session, items, isLast),
+                        child: Text(
+                          isLast ? 'Concluir sessão' : 'Próximo exercício',
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
-            bottomNavigationBar: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: _submitting
-                      ? null
-                      : () => _advanceOrComplete(session, items, isLast),
-                  child: Text(isLast ? 'Concluir sessão' : 'Próximo exercício'),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

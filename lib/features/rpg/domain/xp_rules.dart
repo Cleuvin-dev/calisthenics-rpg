@@ -36,7 +36,8 @@ List<XpAward> awardsForCompletedSession({
     ),
   ];
 
-  final allItemsLogged = items.isNotEmpty &&
+  final allItemsLogged =
+      items.isNotEmpty &&
       items.every((item) => loggedExerciseSlugs.contains(item.exerciseSlug));
   if (allItemsLogged) {
     awards.add(

@@ -33,10 +33,10 @@ class PlacementResultScreen extends StatelessWidget {
             Text(
               estimate.reasonCode == PlacementReasonCode.skippedEntirely.name
                   ? 'Por que essa variação: você optou por não responder '
-                      'agora, então usamos o nó mais conservador possível.'
+                        'agora, então usamos o nó mais conservador possível.'
                   : 'Por que essa variação: colocação conservadora, um '
-                      'nível abaixo do que você relatou, porque o teste '
-                      'prático foi pulado.',
+                        'nível abaixo do que você relatou, porque o teste '
+                        'prático foi pulado.',
             ),
             const SizedBox(height: 8),
             const Text('Confiança: baixa (autorrelato, sem teste prático)'),

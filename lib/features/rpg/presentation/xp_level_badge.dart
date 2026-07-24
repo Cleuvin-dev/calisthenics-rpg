@@ -24,7 +24,10 @@ class XpLevelBadge extends ConsumerWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [colorScheme.primaryContainer, colorScheme.surfaceContainerHigh],
+              colors: [
+                colorScheme.primaryContainer,
+                colorScheme.surfaceContainerHigh,
+              ],
             ),
           ),
           padding: const EdgeInsets.all(16),
@@ -42,9 +45,9 @@ class XpLevelBadge extends ConsumerWidget {
                 child: Text(
                   '${progress.level}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: colorScheme.tertiary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: colorScheme.tertiary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),

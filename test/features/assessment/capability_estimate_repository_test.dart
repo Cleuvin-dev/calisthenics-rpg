@@ -23,14 +23,18 @@ void main() {
   test('latestFor retorna a estimativa mais recente do padrão', () async {
     const calculator = ConservativePlacementCalculator();
 
-    await repository.save(calculator.calculate(
-      anchor: PushHorizontalAnchor.wall,
-      now: DateTime(2026, 1, 1),
-    ));
-    await repository.save(calculator.calculate(
-      anchor: PushHorizontalAnchor.floor,
-      now: DateTime(2026, 6, 1),
-    ));
+    await repository.save(
+      calculator.calculate(
+        anchor: PushHorizontalAnchor.wall,
+        now: DateTime(2026, 1, 1),
+      ),
+    );
+    await repository.save(
+      calculator.calculate(
+        anchor: PushHorizontalAnchor.floor,
+        now: DateTime(2026, 6, 1),
+      ),
+    );
 
     final latest = await repository.latestFor('push_horizontal');
 
@@ -42,10 +46,12 @@ void main() {
   test('latestFor filtra por padrão', () async {
     const calculator = ConservativePlacementCalculator();
 
-    await repository.save(calculator.calculate(
-      anchor: PushHorizontalAnchor.wall,
-      now: DateTime(2026, 1, 1),
-    ));
+    await repository.save(
+      calculator.calculate(
+        anchor: PushHorizontalAnchor.wall,
+        now: DateTime(2026, 1, 1),
+      ),
+    );
 
     expect(await repository.latestFor('pull_vertical'), isNull);
   });

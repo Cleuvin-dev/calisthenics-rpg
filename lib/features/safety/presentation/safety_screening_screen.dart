@@ -13,8 +13,7 @@ class SafetyScreeningScreen extends ConsumerStatefulWidget {
       _SafetyScreeningScreenState();
 }
 
-class _SafetyScreeningScreenState
-    extends ConsumerState<SafetyScreeningScreen> {
+class _SafetyScreeningScreenState extends ConsumerState<SafetyScreeningScreen> {
   bool _cardio = false;
   bool _chestPain = false;
   bool _fainting = false;
@@ -37,8 +36,7 @@ class _SafetyScreeningScreenState
     if (!_consent) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('É preciso aceitar o termo da triagem para continuar.'),
+          content: Text('É preciso aceitar o termo da triagem para continuar.'),
         ),
       );
       return;
@@ -56,8 +54,8 @@ class _SafetyScreeningScreenState
       hasCurrentPain: _currentPain,
       currentPainLocation:
           _currentPain && _painLocationController.text.trim().isNotEmpty
-              ? _painLocationController.text.trim()
-              : null,
+          ? _painLocationController.text.trim()
+          : null,
       priorMedicalAdviceToLimitActivity: _priorAdvice,
       consentAccepted: _consent,
     );
@@ -86,8 +84,9 @@ class _SafetyScreeningScreenState
           ),
           const SizedBox(height: 16),
           SwitchListTile(
-            title:
-                const Text('Tenho ou já tive doença cardiovascular conhecida'),
+            title: const Text(
+              'Tenho ou já tive doença cardiovascular conhecida',
+            ),
             value: _cardio,
             onChanged: (v) => setState(() => _cardio = v),
           ),
@@ -112,8 +111,9 @@ class _SafetyScreeningScreenState
             onChanged: (v) => setState(() => _boneJoint = v),
           ),
           SwitchListTile(
-            title:
-                const Text('Uso medicamento que afeta resposta ao exercício'),
+            title: const Text(
+              'Uso medicamento que afeta resposta ao exercício',
+            ),
             value: _medications,
             onChanged: (v) => setState(() => _medications = v),
           ),
@@ -132,8 +132,9 @@ class _SafetyScreeningScreenState
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
               child: TextField(
                 controller: _painLocationController,
-                decoration:
-                    const InputDecoration(labelText: 'Local da dor (opcional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Local da dor (opcional)',
+                ),
               ),
             ),
           SwitchListTile(

@@ -94,10 +94,12 @@ class ProgressionRepository {
       final logs = await logsQuery.get();
       if (logs.isEmpty) continue;
 
-      evidence.add(SessionEvidence(
-        completedAt: session.completedAt!,
-        sets: logs
-            .map((l) => SetLog(
+      evidence.add(
+        SessionEvidence(
+          completedAt: session.completedAt!,
+          sets: logs
+              .map(
+                (l) => SetLog(
                   exerciseSlug: l.exerciseSlug,
                   pattern: l.pattern,
                   setNumber: l.setNumber,
@@ -106,9 +108,11 @@ class ProgressionRepository {
                     l.perceivedEffort,
                   ),
                   completedAt: l.completedAt,
-                ))
-            .toList(),
-      ));
+                ),
+              )
+              .toList(),
+        ),
+      );
     }
     return evidence;
   }

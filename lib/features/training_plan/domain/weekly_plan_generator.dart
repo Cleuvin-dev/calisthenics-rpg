@@ -69,8 +69,8 @@ class WeeklyPlanGenerator {
       validUntil: now.add(const Duration(days: 14)),
       frequencyDowngradeReason: requestedDays > actualDays
           ? 'Sem histórico suficiente para sustentar $requestedDays dias '
-              'por semana ainda (WEEKLY_TEMPLATES.md §6); plano reduzido '
-              'para $actualDays dias.'
+                'por semana ainda (WEEKLY_TEMPLATES.md §6); plano reduzido '
+                'para $actualDays dias.'
           : null,
     );
   }
@@ -84,8 +84,9 @@ class WeeklyPlanGenerator {
   }) {
     final items = <PlannedExerciseItem>[];
 
-    final warmup = exercisesForPattern('mobility_specific')
-        .firstWhere((e) => e.isWarmup);
+    final warmup = exercisesForPattern(
+      'mobility_specific',
+    ).firstWhere((e) => e.isWarmup);
     items.add(_toItem(warmup, PlanReasonCode.foundationGap));
 
     var slotsFilled = 0;
@@ -99,11 +100,15 @@ class WeeklyPlanGenerator {
       if (chosen == null) continue;
 
       final isRequired = i < day.requiredSlots;
-      items.add(_toItem(
-        chosen.exercise,
-        isRequired ? PlanReasonCode.foundationGap : PlanReasonCode.weeklyBalance,
-        equipmentSubstituted: chosen.substituted,
-      ));
+      items.add(
+        _toItem(
+          chosen.exercise,
+          isRequired
+              ? PlanReasonCode.foundationGap
+              : PlanReasonCode.weeklyBalance,
+          equipmentSubstituted: chosen.substituted,
+        ),
+      );
       slotsFilled++;
     }
 
@@ -132,6 +137,7 @@ class WeeklyPlanGenerator {
       targetReps: exercise.targetReps,
       targetSeconds: exercise.targetSeconds,
       restSeconds: exercise.restSeconds,
+      mediaSlug: exercise.mediaSlug,
     );
   }
 
@@ -145,14 +151,13 @@ class WeeklyPlanGenerator {
     required int capabilityLevel,
     required Set<Equipment> availableEquipment,
   }) {
-    final candidates = exercisesForPattern(pattern)
-        .where((e) => e.suitableForLevel(capabilityLevel))
-        .toList()
-      ..sort(
-        (a, b) => b.requiredEquipment.length.compareTo(
-          a.requiredEquipment.length,
-        ),
-      );
+    final candidates =
+        exercisesForPattern(
+          pattern,
+        ).where((e) => e.suitableForLevel(capabilityLevel)).toList()..sort(
+          (a, b) =>
+              b.requiredEquipment.length.compareTo(a.requiredEquipment.length),
+        );
 
     for (var i = 0; i < candidates.length; i++) {
       final candidate = candidates[i];
@@ -248,14 +253,8 @@ class WeeklyPlanGenerator {
             'push_vertical',
             'core_anti_extension',
           ], 2),
-          _DayTemplate('Pull', [
-            'pull_horizontal',
-            'core_anti_extension',
-          ], 2),
-          _DayTemplate('Legs', [
-            'squat',
-            'hinge_posterior_chain',
-          ], 2),
+          _DayTemplate('Pull', ['pull_horizontal', 'core_anti_extension'], 2),
+          _DayTemplate('Legs', ['squat', 'hinge_posterior_chain'], 2),
           _DayTemplate('Skills + Core', [
             'core_anti_extension',
             'hand_balance',

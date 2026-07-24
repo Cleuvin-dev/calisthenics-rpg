@@ -32,7 +32,11 @@ MovementFamily movementFamilyForPattern(String pattern) {
 /// enquanto o catálogo editorial completo com mídia real não existe
 /// (EXERCISE_SCHEMA.md §5, `exercise_catalog.dart`).
 class PatternIllustration extends StatefulWidget {
-  const PatternIllustration({super.key, required this.pattern, this.size = 120});
+  const PatternIllustration({
+    super.key,
+    required this.pattern,
+    this.size = 120,
+  });
 
   final String pattern;
   final double size;
@@ -80,7 +84,11 @@ class _PatternIllustrationState extends State<PatternIllustration>
 }
 
 class _StickFigurePainter extends CustomPainter {
-  _StickFigurePainter({required this.family, required this.t, required this.color});
+  _StickFigurePainter({
+    required this.family,
+    required this.t,
+    required this.color,
+  });
 
   final MovementFamily family;
 
@@ -131,10 +139,14 @@ class _StickFigurePainter extends CustomPainter {
         rightFoot = Offset(w * 0.8, h * 0.9);
       case MovementFamily.overhead:
         final raise = t;
-        leftHand =
-            Offset(w * _lerp(0.25, 0.32, raise), h * _lerp(0.55, 0.06, raise));
-        rightHand =
-            Offset(w * _lerp(0.75, 0.68, raise), h * _lerp(0.55, 0.06, raise));
+        leftHand = Offset(
+          w * _lerp(0.25, 0.32, raise),
+          h * _lerp(0.55, 0.06, raise),
+        );
+        rightHand = Offset(
+          w * _lerp(0.75, 0.68, raise),
+          h * _lerp(0.55, 0.06, raise),
+        );
       case MovementFamily.mobility:
         final angle = t * 2 * pi;
         leftHand = Offset(

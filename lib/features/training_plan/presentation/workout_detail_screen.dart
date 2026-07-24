@@ -52,8 +52,10 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Finalize ou pause a sessão em andamento antes '
-                'de iniciar outra.'),
+            content: Text(
+              'Finalize ou pause a sessão em andamento antes '
+              'de iniciar outra.',
+            ),
           ),
         );
       }
@@ -85,6 +87,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       targetReps: exercise.targetReps,
       targetSeconds: exercise.targetSeconds,
       restSeconds: exercise.restSeconds,
+      mediaSlug: exercise.mediaSlug,
     );
   }
 
@@ -105,7 +108,10 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(workout.objectivePtBr, style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            workout.objectivePtBr,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Text('${workout.level.labelPtBr} · ~${workout.estimatedMinutes} min'),
           Text(
@@ -141,6 +147,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   exerciseSlug: exercise.slug,
                   pattern: exercise.pattern,
                   namePtBr: exercise.namePtBr,
+                  mediaSlug: exercise.mediaSlug,
                   size: 56,
                 ),
                 title: Text(exercise.namePtBr),

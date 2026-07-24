@@ -89,7 +89,8 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final backgrounding = state == AppLifecycleState.paused ||
+    final backgrounding =
+        state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden;
     if (_phase == _Phase.running && backgrounding) {
@@ -99,7 +100,9 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
 
   Future<void> _persistProgress({required bool running}) async {
     if (!_hasPersistedRow) return;
-    await ref.read(workoutSessionRepositoryProvider).updateTimedSetProgress(
+    await ref
+        .read(workoutSessionRepositoryProvider)
+        .updateTimedSetProgress(
           workoutSessionId: widget.workoutSessionId,
           activeElapsedMs: _timer.elapsed.inMilliseconds,
           running: running,
@@ -129,7 +132,9 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
 
   Future<void> _beginRunning() async {
     if (!_hasPersistedRow) {
-      await ref.read(workoutSessionRepositoryProvider).startTimedSet(
+      await ref
+          .read(workoutSessionRepositoryProvider)
+          .startTimedSet(
             workoutSessionId: widget.workoutSessionId,
             exerciseSlug: widget.exerciseSlug,
             pattern: widget.pattern,
@@ -142,8 +147,10 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
     if (!mounted) return;
     _timer.start();
     setState(() => _phase = _Phase.running);
-    _uiTicker =
-        Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
+    _uiTicker = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) => _tick(),
+    );
   }
 
   void _tick() {
@@ -173,8 +180,10 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
   void _resume() {
     _timer.resume();
     setState(() => _phase = _Phase.running);
-    _uiTicker =
-        Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
+    _uiTicker = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) => _tick(),
+    );
     unawaited(_persistProgress(running: true));
   }
 
@@ -262,7 +271,9 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
   }) async {
     if (_busy) return;
     setState(() => _busy = true);
-    await ref.read(workoutSessionRepositoryProvider).finalizeTimedSet(
+    await ref
+        .read(workoutSessionRepositoryProvider)
+        .finalizeTimedSet(
           workoutSessionId: widget.workoutSessionId,
           exerciseSlug: widget.exerciseSlug,
           pattern: widget.pattern,
@@ -280,8 +291,8 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
 
   @override
   Widget build(BuildContext context) {
-    final remainingSeconds =
-        (widget.targetSeconds - _timer.elapsed.inSeconds).clamp(0, widget.targetSeconds);
+    final remainingSeconds = (widget.targetSeconds - _timer.elapsed.inSeconds)
+        .clamp(0, widget.targetSeconds);
     final progress = 1 - (remainingSeconds / widget.targetSeconds);
 
     return Column(
@@ -406,7 +417,10 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
 }
 
 class _PreparationView extends StatelessWidget {
-  const _PreparationView({required this.secondsRemaining, required this.onCancel});
+  const _PreparationView({
+    required this.secondsRemaining,
+    required this.onCancel,
+  });
 
   final int secondsRemaining;
   final VoidCallback onCancel;

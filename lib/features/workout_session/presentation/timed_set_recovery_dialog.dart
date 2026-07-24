@@ -29,18 +29,19 @@ Future<TimedSetRecoveryChoice?> showTimedSetRecoveryDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext)
-              .pop(TimedSetRecoveryChoice.discard),
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(TimedSetRecoveryChoice.discard),
           child: const Text('Descartar'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(dialogContext)
-              .pop(TimedSetRecoveryChoice.markInterrupted),
+          onPressed: () => Navigator.of(
+            dialogContext,
+          ).pop(TimedSetRecoveryChoice.markInterrupted),
           child: const Text('Registrar como interrompida'),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(dialogContext)
-              .pop(TimedSetRecoveryChoice.resume),
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(TimedSetRecoveryChoice.resume),
           child: const Text('Continuar'),
         ),
       ],

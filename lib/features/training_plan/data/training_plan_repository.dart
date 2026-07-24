@@ -11,7 +11,9 @@ class TrainingPlanRepository {
   final AppDatabase _db;
 
   Future<void> save(WeeklyPlan plan) {
-    return _db.into(_db.trainingPlanRecords).insert(
+    return _db
+        .into(_db.trainingPlanRecords)
+        .insert(
           TrainingPlanRecordsCompanion.insert(
             requestedDaysPerWeek: plan.requestedDaysPerWeek,
             actualDaysPerWeek: plan.actualDaysPerWeek,

@@ -34,8 +34,7 @@ void main() {
     expect(await repository.latestActive(), isNull);
   });
 
-  test('startSession cria sessão em andamento com itens congelados',
-      () async {
+  test('startSession cria sessão em andamento com itens congelados', () async {
     final id = await repository.startSession(
       dayLabel: 'Full Body A',
       items: items,
@@ -155,82 +154,86 @@ void main() {
     expect(active.dayLabel, 'Full Body B');
   });
 
-  test('completedSessions retorna só concluídas, mais recente primeiro',
-      () async {
-    final inProgressId = await repository.startSession(
-      dayLabel: 'Full Body A',
-      items: items,
-      planRuleVersion: 'v1',
-      catalogVersion: 'v1',
-      now: DateTime(2026, 7, 1),
-    );
+  test(
+    'completedSessions retorna só concluídas, mais recente primeiro',
+    () async {
+      final inProgressId = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
 
-    final oldId = await repository.startSession(
-      dayLabel: 'Full Body A',
-      items: items,
-      planRuleVersion: 'v1',
-      catalogVersion: 'v1',
-      now: DateTime(2026, 7, 1),
-    );
-    await repository.complete(oldId, DateTime(2026, 7, 1, 9));
+      final oldId = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.complete(oldId, DateTime(2026, 7, 1, 9));
 
-    final newId = await repository.startSession(
-      dayLabel: 'Full Body B',
-      items: items,
-      planRuleVersion: 'v1',
-      catalogVersion: 'v1',
-      now: DateTime(2026, 7, 10),
-    );
-    await repository.complete(newId, DateTime(2026, 7, 10, 9));
+      final newId = await repository.startSession(
+        dayLabel: 'Full Body B',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 10),
+      );
+      await repository.complete(newId, DateTime(2026, 7, 10, 9));
 
-    final completed = await repository.completedSessions();
+      final completed = await repository.completedSessions();
 
-    expect(completed.map((s) => s.id), [newId, oldId]);
-    expect(completed.any((s) => s.id == inProgressId), isFalse);
-  });
+      expect(completed.map((s) => s.id), [newId, oldId]);
+      expect(completed.any((s) => s.id == inProgressId), isFalse);
+    },
+  );
 
-  test('bestRepsByExercise ignora dor/não completei e pega o maior valor',
-      () async {
-    final id = await repository.startSession(
-      dayLabel: 'Full Body A',
-      items: items,
-      planRuleVersion: 'v1',
-      catalogVersion: 'v1',
-      now: DateTime(2026, 7, 1),
-    );
+  test(
+    'bestRepsByExercise ignora dor/não completei e pega o maior valor',
+    () async {
+      final id = await repository.startSession(
+        dayLabel: 'Full Body A',
+        items: items,
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 1),
+      );
 
-    await repository.logSet(
-      workoutSessionId: id,
-      exerciseSlug: 'push_up_wall',
-      pattern: 'push_horizontal',
-      setNumber: 1,
-      repsCompleted: 6,
-      perceivedEffort: PerceivedEffort.adequate,
-      now: DateTime(2026, 7, 1),
-    );
-    await repository.logSet(
-      workoutSessionId: id,
-      exerciseSlug: 'push_up_wall',
-      pattern: 'push_horizontal',
-      setNumber: 2,
-      repsCompleted: 9,
-      perceivedEffort: PerceivedEffort.hardCompleted,
-      now: DateTime(2026, 7, 1),
-    );
-    await repository.logSet(
-      workoutSessionId: id,
-      exerciseSlug: 'push_up_wall',
-      pattern: 'push_horizontal',
-      setNumber: 3,
-      repsCompleted: 20,
-      perceivedEffort: PerceivedEffort.pain,
-      now: DateTime(2026, 7, 1),
-    );
+      await repository.logSet(
+        workoutSessionId: id,
+        exerciseSlug: 'push_up_wall',
+        pattern: 'push_horizontal',
+        setNumber: 1,
+        repsCompleted: 6,
+        perceivedEffort: PerceivedEffort.adequate,
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.logSet(
+        workoutSessionId: id,
+        exerciseSlug: 'push_up_wall',
+        pattern: 'push_horizontal',
+        setNumber: 2,
+        repsCompleted: 9,
+        perceivedEffort: PerceivedEffort.hardCompleted,
+        now: DateTime(2026, 7, 1),
+      );
+      await repository.logSet(
+        workoutSessionId: id,
+        exerciseSlug: 'push_up_wall',
+        pattern: 'push_horizontal',
+        setNumber: 3,
+        repsCompleted: 20,
+        perceivedEffort: PerceivedEffort.pain,
+        now: DateTime(2026, 7, 1),
+      );
 
-    final best = await repository.bestRepsByExercise();
+      final best = await repository.bestRepsByExercise();
 
-    expect(best['push_up_wall'], 9); // ignora a série de 20 reps com dor
-  });
+      expect(best['push_up_wall'], 9); // ignora a série de 20 reps com dor
+    },
+  );
 
   group('idempotência (toque duplo em concluir)', () {
     test('logSet chamado duas vezes com os mesmos parâmetros grava um '
@@ -382,16 +385,16 @@ void main() {
       );
 
       Future<bool> finalize() => repository.finalizeTimedSet(
-            workoutSessionId: id,
-            exerciseSlug: 'forearm_plank_full',
-            pattern: 'core_anti_extension',
-            setNumber: 1,
-            targetSeconds: 30,
-            activeDurationMs: 30200,
-            completionReason: TimedSetCompletionReason.targetReached,
-            perceivedEffort: PerceivedEffort.adequate,
-            now: DateTime(2026, 7, 1, 8, 0, 31),
-          );
+        workoutSessionId: id,
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: 1,
+        targetSeconds: 30,
+        activeDurationMs: 30200,
+        completionReason: TimedSetCompletionReason.targetReached,
+        perceivedEffort: PerceivedEffort.adequate,
+        now: DateTime(2026, 7, 1, 8, 0, 31),
+      );
 
       expect(await finalize(), isTrue);
       expect(await finalize(), isFalse);

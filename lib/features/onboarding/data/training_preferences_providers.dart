@@ -6,10 +6,10 @@ import 'training_preferences_repository.dart';
 
 final trainingPreferencesRepositoryProvider =
     Provider<TrainingPreferencesRepository>((ref) {
-  return TrainingPreferencesRepository(ref.watch(appDatabaseProvider));
-});
+      return TrainingPreferencesRepository(ref.watch(appDatabaseProvider));
+    });
 
 final latestTrainingPreferencesProvider =
     FutureProvider<TrainingPreferenceRecord?>((ref) {
-  return ref.watch(trainingPreferencesRepositoryProvider).latest();
-});
+      return ref.watch(trainingPreferencesRepositoryProvider).latest();
+    });

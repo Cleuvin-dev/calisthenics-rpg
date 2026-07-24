@@ -66,7 +66,8 @@ const List<Workout> workoutCatalog = [
     level: WorkoutLevel.beginner,
     estimatedMinutes: 25,
     equipment: {},
-    safetyNoticePtBr: 'Pare a qualquer momento se sentir dor. Prefira '
+    safetyNoticePtBr:
+        'Pare a qualquer momento se sentir dor. Prefira '
         'reduzir a amplitude ou trocar de variação a forçar a técnica.',
     exerciseSlugs: [
       warmupExerciseSlug,

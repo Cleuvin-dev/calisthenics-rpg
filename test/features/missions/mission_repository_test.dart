@@ -102,7 +102,9 @@ void main() {
 
   group('missões semanais', () {
     test('sem plano salvo, retorna lista vazia', () async {
-      final results = await missionRepository.evaluateWeekly(DateTime(2026, 7, 20));
+      final results = await missionRepository.evaluateWeekly(
+        DateTime(2026, 7, 20),
+      );
       expect(results, isEmpty);
     });
 
@@ -115,31 +117,44 @@ void main() {
         actualDaysPerWeek: 2,
         minutesPerSession: 30,
         sessions: const [
-          PlannedSession(dayLabel: 'A', targetMinutes: 30, items: [
-            PlannedExerciseItem(
-              pattern: 'push_horizontal',
-              exerciseSlug: 'push_up_wall',
-              namePtBr: 'Flexão na parede',
-              setsRepsGuidance: '2x8',
-              reasonCode: PlanReasonCode.foundationGap,
-            ),
-          ]),
-          PlannedSession(dayLabel: 'B', targetMinutes: 30, items: [
-            PlannedExerciseItem(
-              pattern: 'squat',
-              exerciseSlug: 'sit_to_stand_squat',
-              namePtBr: 'Agachamento livre',
-              setsRepsGuidance: '2x10',
-              reasonCode: PlanReasonCode.foundationGap,
-            ),
-          ]),
+          PlannedSession(
+            dayLabel: 'A',
+            targetMinutes: 30,
+            items: [
+              PlannedExerciseItem(
+                pattern: 'push_horizontal',
+                exerciseSlug: 'push_up_wall',
+                namePtBr: 'Flexão na parede',
+                setsRepsGuidance: '2x8',
+                reasonCode: PlanReasonCode.foundationGap,
+              ),
+            ],
+          ),
+          PlannedSession(
+            dayLabel: 'B',
+            targetMinutes: 30,
+            items: [
+              PlannedExerciseItem(
+                pattern: 'squat',
+                exerciseSlug: 'sit_to_stand_squat',
+                namePtBr: 'Agachamento livre',
+                setsRepsGuidance: '2x10',
+                reasonCode: PlanReasonCode.foundationGap,
+              ),
+            ],
+          ),
         ],
         generatedAt: weekMonday,
         validUntil: weekMonday.add(const Duration(days: 14)),
       );
       await planRepository.save(plan);
 
-      Future<void> completeSession(String dayLabel, String pattern, String slug, DateTime at) async {
+      Future<void> completeSession(
+        String dayLabel,
+        String pattern,
+        String slug,
+        DateTime at,
+      ) async {
         final id = await sessionRepository.startSession(
           dayLabel: dayLabel,
           items: [
@@ -166,8 +181,18 @@ void main() {
         await sessionRepository.complete(id, at);
       }
 
-      await completeSession('A', 'push_horizontal', 'push_up_wall', weekMonday.add(const Duration(days: 1)));
-      await completeSession('B', 'squat', 'sit_to_stand_squat', weekMonday.add(const Duration(days: 2)));
+      await completeSession(
+        'A',
+        'push_horizontal',
+        'push_up_wall',
+        weekMonday.add(const Duration(days: 1)),
+      );
+      await completeSession(
+        'B',
+        'squat',
+        'sit_to_stand_squat',
+        weekMonday.add(const Duration(days: 2)),
+      );
 
       final checkAt = weekMonday.add(const Duration(days: 3));
       final results = await missionRepository.evaluateWeekly(checkAt);
@@ -190,47 +215,53 @@ void main() {
       final granted = await missionRepository.grantCompletedWeekly(checkAt);
       expect(granted, 150); // duas missões semanais concluídas (75 cada)
 
-      final grantedAgain = await missionRepository.grantCompletedWeekly(checkAt);
+      final grantedAgain = await missionRepository.grantCompletedWeekly(
+        checkAt,
+      );
       expect(grantedAgain, 0);
     });
 
-    test('domínio confirmado na semana marca a missão correspondente',
-        () async {
-      final weekMonday = DateTime(2026, 7, 20);
-      final plan = WeeklyPlan(
-        ruleVersion: 'v1',
-        catalogVersion: 'v1',
-        requestedDaysPerWeek: 2,
-        actualDaysPerWeek: 2,
-        minutesPerSession: 30,
-        sessions: const [
-          PlannedSession(dayLabel: 'A', targetMinutes: 30, items: []),
-        ],
-        generatedAt: weekMonday,
-        validUntil: weekMonday.add(const Duration(days: 14)),
-      );
-      await planRepository.save(plan);
+    test(
+      'domínio confirmado na semana marca a missão correspondente',
+      () async {
+        final weekMonday = DateTime(2026, 7, 20);
+        final plan = WeeklyPlan(
+          ruleVersion: 'v1',
+          catalogVersion: 'v1',
+          requestedDaysPerWeek: 2,
+          actualDaysPerWeek: 2,
+          minutesPerSession: 30,
+          sessions: const [
+            PlannedSession(dayLabel: 'A', targetMinutes: 30, items: []),
+          ],
+          generatedAt: weekMonday,
+          validUntil: weekMonday.add(const Duration(days: 14)),
+        );
+        await planRepository.save(plan);
 
-      await capabilityRepository.saveEstimate(
-        pattern: 'push_horizontal',
-        level: 1,
-        levelName: 'Flexão na parede',
-        confidence: 'medium',
-        ruleVersion: 'mastery-push-horizontal-v1',
-        reasonCode: masteryConfirmedReasonCode,
-        computedAt: weekMonday.add(const Duration(days: 2)),
-        validUntil: weekMonday.add(const Duration(days: 30)),
-      );
+        await capabilityRepository.saveEstimate(
+          pattern: 'push_horizontal',
+          level: 1,
+          levelName: 'Flexão na parede',
+          confidence: 'medium',
+          ruleVersion: 'mastery-push-horizontal-v1',
+          reasonCode: masteryConfirmedReasonCode,
+          computedAt: weekMonday.add(const Duration(days: 2)),
+          validUntil: weekMonday.add(const Duration(days: 30)),
+        );
 
-      final results = await missionRepository.evaluateWeekly(
-        weekMonday.add(const Duration(days: 3)),
-      );
-      expect(
-        results
-            .firstWhere((r) => r.definition.type == MissionType.confirmMastery)
-            .completed,
-        isTrue,
-      );
-    });
+        final results = await missionRepository.evaluateWeekly(
+          weekMonday.add(const Duration(days: 3)),
+        );
+        expect(
+          results
+              .firstWhere(
+                (r) => r.definition.type == MissionType.confirmMastery,
+              )
+              .completed,
+          isTrue,
+        );
+      },
+    );
   });
 }

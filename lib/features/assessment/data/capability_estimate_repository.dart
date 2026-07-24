@@ -36,7 +36,9 @@ class CapabilityEstimateRepository {
     required DateTime computedAt,
     required DateTime validUntil,
   }) {
-    return _db.into(_db.capabilityEstimateRecords).insert(
+    return _db
+        .into(_db.capabilityEstimateRecords)
+        .insert(
           CapabilityEstimateRecordsCompanion.insert(
             pattern: pattern,
             level: level,

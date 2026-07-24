@@ -45,6 +45,7 @@ class WorkoutSessionItem {
     this.targetReps,
     this.targetSeconds,
     this.restSeconds = 60,
+    this.mediaSlug,
   });
 
   final String pattern;
@@ -58,17 +59,22 @@ class WorkoutSessionItem {
   final int? targetSeconds;
   final int restSeconds;
 
+  /// Slug no catálogo de mídia estática, congelado junto com o resto do
+  /// item — ver `PlannedExerciseItem.mediaSlug`.
+  final String? mediaSlug;
+
   Map<String, dynamic> toJson() => {
-        'pattern': pattern,
-        'exerciseSlug': exerciseSlug,
-        'namePtBr': namePtBr,
-        'setsRepsGuidance': setsRepsGuidance,
-        'doseType': doseType.name,
-        'targetSets': targetSets,
-        'targetReps': targetReps,
-        'targetSeconds': targetSeconds,
-        'restSeconds': restSeconds,
-      };
+    'pattern': pattern,
+    'exerciseSlug': exerciseSlug,
+    'namePtBr': namePtBr,
+    'setsRepsGuidance': setsRepsGuidance,
+    'doseType': doseType.name,
+    'targetSets': targetSets,
+    'targetReps': targetReps,
+    'targetSeconds': targetSeconds,
+    'restSeconds': restSeconds,
+    'mediaSlug': mediaSlug,
+  };
 
   /// Tolerante a sessões congeladas antes da dose estruturada existir —
   /// mesma filosofia de `PlannedExerciseItem.fromJson`.
@@ -85,6 +91,7 @@ class WorkoutSessionItem {
       targetReps: json['targetReps'] as int?,
       targetSeconds: json['targetSeconds'] as int?,
       restSeconds: json['restSeconds'] as int? ?? 60,
+      mediaSlug: json['mediaSlug'] as String?,
     );
   }
 }

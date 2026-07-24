@@ -11,7 +11,9 @@ class TrainingPreferencesRepository {
   final AppDatabase _db;
 
   Future<void> save(TrainingPreferences preferences) {
-    return _db.into(_db.trainingPreferenceRecords).insert(
+    return _db
+        .into(_db.trainingPreferenceRecords)
+        .insert(
           TrainingPreferenceRecordsCompanion.insert(
             daysPerWeek: preferences.daysPerWeek,
             minutesPerSession: preferences.minutesPerSession,

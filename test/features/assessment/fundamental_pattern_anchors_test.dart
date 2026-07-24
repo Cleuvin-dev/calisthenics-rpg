@@ -35,8 +35,7 @@ void main() {
     expect(result.levelName, 'Remada com pés elevados');
   });
 
-  test('calculateSkippedEntirelyForPattern usa o nível mais conservador',
-      () {
+  test('calculateSkippedEntirelyForPattern usa o nível mais conservador', () {
     final result = calculator.calculateSkippedEntirelyForPattern(
       pattern: hingePosteriorChainPattern,
       levelNames: hingePosteriorChainLevelNames,
@@ -59,17 +58,20 @@ void main() {
     });
   });
 
-  test('cada âncora aponta para um nível existente no mapa de nomes menos 1',
-      () {
-    for (final ladder in fundamentalPatternLadders) {
-      for (final anchor in ladder.anchors) {
-        expect(
-          ladder.levelNames.containsKey(anchor.skillLevel - 1),
-          isTrue,
-          reason: '${ladder.pattern}/${anchor.name} não tem nível '
-              '${anchor.skillLevel - 1} nomeado',
-        );
+  test(
+    'cada âncora aponta para um nível existente no mapa de nomes menos 1',
+    () {
+      for (final ladder in fundamentalPatternLadders) {
+        for (final anchor in ladder.anchors) {
+          expect(
+            ladder.levelNames.containsKey(anchor.skillLevel - 1),
+            isTrue,
+            reason:
+                '${ladder.pattern}/${anchor.name} não tem nível '
+                '${anchor.skillLevel - 1} nomeado',
+          );
+        }
       }
-    }
-  });
+    },
+  );
 }

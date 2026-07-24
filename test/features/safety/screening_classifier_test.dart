@@ -84,10 +84,7 @@ void main() {
 
   test('resultados de bloqueio conforme SAFETY_AND_SCREENING.md §3-4', () {
     expect(ScreeningResult.emergency.blocksAssessment, isTrue);
-    expect(
-      ScreeningResult.needsProfessionalGuidance.blocksAssessment,
-      isTrue,
-    );
+    expect(ScreeningResult.needsProfessionalGuidance.blocksAssessment, isTrue);
     expect(ScreeningResult.needsClarification.blocksAssessment, isFalse);
     expect(ScreeningResult.cleared.blocksAssessment, isFalse);
   });

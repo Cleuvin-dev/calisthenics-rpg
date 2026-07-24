@@ -81,6 +81,21 @@ flutter:
     - assets/images/exercises/push_up_incline/v1/
     - assets/images/exercises/sit_to_stand_squat/v1/
     - assets/images/exercises/forearm_plank_full/v1/
+    - assets/images/exercises/empurrar_horizontal/
+    - assets/images/exercises/empurrar_vertical/
+    - assets/images/exercises/puxar_horizontal_escapula/
+    - assets/images/exercises/puxar_vertical/
+    - assets/images/exercises/dips_suporte/
+    - assets/images/exercises/agachamento_unilateral/
+    - assets/images/exercises/cadeia_posterior/
+    - assets/images/exercises/core_anterior_compressao/
+    - assets/images/exercises/core_posterior/
+    - assets/images/exercises/core_lateral_anti_rotacao/
+    - assets/images/exercises/front_lever/
+    - assets/images/exercises/back_lever/
+    - assets/images/exercises/handstand/
+    - assets/images/exercises/panturrilha_tornozelo_impacto/
+    - assets/data/exercise_media_catalog.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

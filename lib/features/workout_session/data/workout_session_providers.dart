@@ -5,43 +5,44 @@ import '../../../core/database/app_database_provider.dart';
 import '../../../core/time/date_period.dart';
 import 'workout_session_repository.dart';
 
-final workoutSessionRepositoryProvider =
-    Provider<WorkoutSessionRepository>((ref) {
+final workoutSessionRepositoryProvider = Provider<WorkoutSessionRepository>((
+  ref,
+) {
   return WorkoutSessionRepository(ref.watch(appDatabaseProvider));
 });
 
 final latestActiveWorkoutSessionProvider =
     FutureProvider<WorkoutSessionRecord?>((ref) {
-  return ref.watch(workoutSessionRepositoryProvider).latestActive();
-});
+      return ref.watch(workoutSessionRepositoryProvider).latestActive();
+    });
 
 final workoutSessionByIdProvider =
     FutureProvider.family<WorkoutSessionRecord?, int>((ref, id) async {
-  final db = ref.watch(appDatabaseProvider);
-  final query = db.select(db.workoutSessionRecords)
-    ..where((t) => t.id.equals(id));
-  return query.getSingleOrNull();
-});
+      final db = ref.watch(appDatabaseProvider);
+      final query = db.select(db.workoutSessionRecords)
+        ..where((t) => t.id.equals(id));
+      return query.getSingleOrNull();
+    });
 
 final setLogsForSessionProvider =
     FutureProvider.family<List<SetLogRecord>, int>((ref, workoutSessionId) {
-  return ref
-      .watch(workoutSessionRepositoryProvider)
-      .setLogsFor(workoutSessionId);
-});
+      return ref
+          .watch(workoutSessionRepositoryProvider)
+          .setLogsFor(workoutSessionId);
+    });
 
 final completedSessionsThisWeekProvider =
     FutureProvider<List<WorkoutSessionRecord>>((ref) {
-  final now = DateTime.now();
-  return ref
-      .watch(workoutSessionRepositoryProvider)
-      .completedBetween(startOfWeek(now), endOfWeek(now));
-});
+      final now = DateTime.now();
+      return ref
+          .watch(workoutSessionRepositoryProvider)
+          .completedBetween(startOfWeek(now), endOfWeek(now));
+    });
 
 final recentCompletedSessionsProvider =
     FutureProvider<List<WorkoutSessionRecord>>((ref) {
-  return ref.watch(workoutSessionRepositoryProvider).completedSessions();
-});
+      return ref.watch(workoutSessionRepositoryProvider).completedSessions();
+    });
 
 final bestRepsByExerciseProvider = FutureProvider<Map<String, int>>((ref) {
   return ref.watch(workoutSessionRepositoryProvider).bestRepsByExercise();

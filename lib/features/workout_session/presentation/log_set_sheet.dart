@@ -54,10 +54,7 @@ class _LogSetSheetState extends State<LogSetSheet> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
-          Text(
-            'ALVO',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+          Text('ALVO', style: Theme.of(context).textTheme.labelMedium),
           Text(
             '${widget.targetReps} repetições',
             style: Theme.of(context).textTheme.headlineSmall,
@@ -67,9 +64,7 @@ class _LogSetSheetState extends State<LogSetSheet> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                onPressed: _reps > 0
-                    ? () => setState(() => _reps--)
-                    : null,
+                onPressed: _reps > 0 ? () => setState(() => _reps--) : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 tooltip: 'Diminuir repetições realizadas',
               ),
@@ -111,9 +106,9 @@ class _LogSetSheetState extends State<LogSetSheet> {
           FilledButton(
             onPressed: _effort == null
                 ? null
-                : () => Navigator.of(context).pop(
-                      LoggedSet(reps: _reps, effort: _effort!),
-                    ),
+                : () => Navigator.of(
+                    context,
+                  ).pop(LoggedSet(reps: _reps, effort: _effort!)),
             child: const Text('Concluir série'),
           ),
         ],

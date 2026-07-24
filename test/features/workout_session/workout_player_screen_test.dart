@@ -70,8 +70,9 @@ void main() {
     );
   }
 
-  testWidgets('botão "Senti dor" está sempre visível no player por reps',
-      (tester) async {
+  testWidgets('botão "Senti dor" está sempre visível no player por reps', (
+    tester,
+  ) async {
     final id = await seedRepsSession();
     await tester.pumpWidget(wrap(id));
     await tester.pumpAndSettle();
@@ -79,40 +80,38 @@ void main() {
     expect(find.text('Senti dor'), findsOneWidget);
   });
 
-  testWidgets(
-    'toque duplo em "Registrar série" não abre dois formulários nem '
-    'grava duas séries',
-    (tester) async {
-      final id = await seedRepsSession();
-      await tester.pumpWidget(wrap(id));
-      await tester.pumpAndSettle();
+  testWidgets('toque duplo em "Registrar série" não abre dois formulários nem '
+      'grava duas séries', (tester) async {
+    final id = await seedRepsSession();
+    await tester.pumpWidget(wrap(id));
+    await tester.pumpAndSettle();
 
-      final registrarButton = find.text('Registrar série');
-      expect(registrarButton, findsOneWidget);
+    final registrarButton = find.text('Registrar série');
+    expect(registrarButton, findsOneWidget);
 
-      // Dois toques em sequência rápida, sem pump() entre eles: simula o
-      // "toque duplo" físico que o guard em memória (_submitting) precisa
-      // bloquear antes mesmo de o Flutter reconstruir a árvore.
-      await tester.tap(registrarButton, warnIfMissed: false);
-      await tester.tap(registrarButton, warnIfMissed: false);
-      await tester.pumpAndSettle();
+    // Dois toques em sequência rápida, sem pump() entre eles: simula o
+    // "toque duplo" físico que o guard em memória (_submitting) precisa
+    // bloquear antes mesmo de o Flutter reconstruir a árvore.
+    await tester.tap(registrarButton, warnIfMissed: false);
+    await tester.tap(registrarButton, warnIfMissed: false);
+    await tester.pumpAndSettle();
 
-      // Só uma folha de registro deve estar na tela, nunca duas
-      // empilhadas.
-      expect(find.byType(LogSetSheet), findsOneWidget);
+    // Só uma folha de registro deve estar na tela, nunca duas
+    // empilhadas.
+    expect(find.byType(LogSetSheet), findsOneWidget);
 
-      await tester.tap(find.text('Adequado'));
-      await tester.pump();
-      await tester.tap(find.text('Concluir série'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Adequado'));
+    await tester.pump();
+    await tester.tap(find.text('Concluir série'));
+    await tester.pumpAndSettle();
 
-      final logs = await repository.setLogsFor(id);
-      expect(logs, hasLength(1));
-    },
-  );
+    final logs = await repository.setLogsFor(id);
+    expect(logs, hasLength(1));
+  });
 
-  testWidgets('ajustar repetições no formulário começa igual ao alvo',
-      (tester) async {
+  testWidgets('ajustar repetições no formulário começa igual ao alvo', (
+    tester,
+  ) async {
     final id = await seedRepsSession();
     await tester.pumpWidget(wrap(id));
     await tester.pumpAndSettle();

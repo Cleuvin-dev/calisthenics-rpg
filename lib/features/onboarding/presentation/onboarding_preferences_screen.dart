@@ -65,9 +65,7 @@ class _OnboardingPreferencesScreenState
             initialValue: _location,
             decoration: const InputDecoration(labelText: 'Local principal'),
             items: TrainingLocation.values
-                .map(
-                  (l) => DropdownMenuItem(value: l, child: Text(l.label)),
-                )
+                .map((l) => DropdownMenuItem(value: l, child: Text(l.label)))
                 .toList(),
             onChanged: (v) => setState(() => _location = v ?? _location),
           ),

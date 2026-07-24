@@ -415,6 +415,181 @@ idempotente — 100% offline, sem Supabase/Firebase/login/API/câmera/IA.
 - Total: **110 testes automatizados** (eram 91 antes desta parte),
   todos passando. `flutter analyze`: sem problemas.
 
+### Integração do pacote de 195 imagens reais (`App_RPG_Exercise_Images/`)
+
+Continuação direta da pendência registrada acima: o usuário confirmou a
+integração completa, seguindo `App_RPG_Exercise_Images/CLAUDE_CODE_PROMPT.md`
+à risca.
+
+**Antes de editar**, o pacote foi inspecionado e comparado ao código
+existente: `exercise_media_catalog.json` usa uma taxonomia de slugs em
+português (`flexao_inclinada_media`, `agachamento_livre`, ...) totalmente
+diferente dos slugs já usados pelo motor de treino
+(`push_up_incline`, `sit_to_stand_squat`, ...) — os dois namespaces
+**não foram unificados** (isso exigiria renomear conteúdo já em produção
+sem necessidade, indo contra a instrução explícita do prompt). Em vez
+disso, foi construída uma associação explícita, um campo por exercício
+(`CatalogExercise.mediaSlug`), com cada valor justificado por uma de duas
+evidências, nunca por comparação frágil de nome:
+
+1. **Referência cruzada por `starter_file`**: 4 dos 195 registros do
+   catálogo citam no campo `starter_file` o nome exato de um arquivo já
+   usado nesta mesma sessão, numa entrega anterior, para um slug
+   conhecido (`push_up_incline_start.png` → `push_up_incline`,
+   `bodyweight_squat_bottom.png` → `sit_to_stand_squat`,
+   `forearm_plank_hold.png` → `forearm_plank_full`,
+   `australian_row_top.png`, usado só para confirmar a correspondência
+   de categoria `puxar_horizontal_escapula` ↔ `pull_horizontal`, sem
+   exercício prescrito equivalente ainda). É a evidência mais forte
+   possível: o próprio dado aponta para o slug certo.
+2. **Nome de nó idêntico ao rótulo já usado em `SKILL_TREES.md`**: os
+   quatro padrões de avaliação (`fundamental_pattern_anchors.dart`,
+   `push_horizontal_anchor.dart`) já citam os nomes exatos dos nós de
+   `SKILL_TREES.md` nos seus mapas de nível 0-7 — comparando esses
+   mapas com as 8 primeiras entradas de cada categoria correspondente
+   no catálogo de imagens, os nomes batem palavra por palavra em quase
+   todos os níveis (confirmado, não presumido, lendo os dois lados).
+   Isso deu confiança para associar `category_slug` de imagem ↔
+   `pattern` do app: `empurrar_horizontal`↔`push_horizontal`,
+   `puxar_horizontal_escapula`↔`pull_horizontal`,
+   `agachamento_unilateral`↔`squat` (a árvore cobre agachamento
+   bilateral nos níveis 0-6 antes de virar unilateral — não é um
+   descompasso de eixo de movimento, é a mesma árvore contínua),
+   `cadeia_posterior`↔`hinge_posterior_chain`,
+   `core_anterior_compressao`↔`core_anti_extension`.
+
+Com essas 5 correspondências de categoria confirmadas, 9 dos 13
+exercícios prescritos ganharam `mediaSlug` com alta confiança. Mais 2
+(`pike_push_up`, `wall_assisted_handstand`) ganharam associação de
+confiança **média** (nome do nó não é idêntico, é uma aproximação
+razoável — documentado em comentário no próprio código). 2 ficaram
+**sem associação** por falta de correspondência segura
+(`warmup_joint_mobility` — aquecimento não é nó de nenhuma árvore;
+`parallel_bar_support_hold` — nenhum nó de `dips_suporte` corresponde
+com segurança a suporte estático não assistido) e continuam mostrando o
+placeholder animado, o que é seguro e esperado.
+
+**O que foi feito:**
+
+- `assets/images/exercises/<category_slug>/<slug>.png` — as 195 imagens
+  mescladas na pasta já existente (`push_up_incline/`,
+  `sit_to_stand_squat/`, `forearm_plank_full/` preservadas, sem
+  colisão: convenção de pasta diferente). Total 198 arquivos.
+- `assets/data/exercise_media_catalog.json` — o catálogo JSON completo,
+  copiado como asset de dados (não transcrito à mão em Dart, para não
+  arriscar erro de digitação em 195 entradas).
+- `pubspec.yaml`: os 14 novos subdiretórios de categoria + o JSON
+  registrados explicitamente (não só `assets/images/exercises/` — ver
+  nota técnica abaixo). Verificado via `flutter build bundle` que os
+  198 arquivos e o JSON entram no bundle final.
+- `lib/shared/domain/exercise_media_catalog.dart` (novo):
+  `MediaCatalogEntry` (com `fromJson`) e `MediaCatalogIndex` (índice por
+  `slug` e por `categorySlug:level`, este último reaproveitável pelas
+  escadas de avaliação existentes, ainda não usado por nenhuma tela).
+- `lib/shared/data/exercise_media_catalog_provider.dart` (novo):
+  `FutureProvider<MediaCatalogIndex>` que lê o JSON via `rootBundle`
+  uma única vez (Riverpod cacheia o resultado).
+- `lib/shared/presentation/exercise_media_placeholder.dart` (novo):
+  `ExerciseMediaPlaceholder`, nome pedido explicitamente pelo prompt —
+  por baixo, reaproveita `PatternIllustration` (já existente) em vez de
+  criar uma silhueta nova.
+- `lib/shared/presentation/exercise_media.dart` (reescrito):
+  `ExerciseMedia` virou `ConsumerWidget`. Ordem de resolução: (1)
+  `mediaSlug` explícito, se existir no catálogo de 195 imagens; (2)
+  convenção antiga `assets/images/exercises/<slug>/v1/start.png` (os 3
+  exercícios da entrega anterior); (3) `ExerciseMediaPlaceholder`, via
+  `errorBuilder` — cobre asset ausente e erro de decodificação sem
+  travar a sessão, e cobre também o caso do catálogo ainda estar
+  carregando (não bloqueia a primeira renderização).
+- `CatalogExercise.mediaSlug` (nullable) em `exercise_catalog.dart`,
+  propagado por todo o caminho de congelamento de dados já existente
+  (mesmo padrão dos campos de dose): `PlannedExerciseItem.mediaSlug` →
+  `WeeklyPlanGenerator._toItem` → `WorkoutSessionItem.mediaSlug` →
+  `WorkoutDetailScreen._toSessionItem`. `exerciseCatalogVersion` subiu
+  para `minimal-catalog-v3`.
+- `WorkoutCatalogScreen`/`WorkoutDetailScreen`/`WorkoutPlayerScreen`/
+  `RestScreen`: todo `ExerciseMedia(...)` já existente passou a receber
+  `mediaSlug: item.mediaSlug`.
+- Pré-carregamento (`_precacheAdjacentMedia` em `WorkoutPlayerScreen`):
+  só a imagem do exercício atual e a seguinte, nunca a sessão inteira
+  (item 11 do prompt) — usa `precacheImage(..., onError: (_, __) {})`;
+  o parâmetro `onError` é necessário porque o pipeline de imagem do
+  Flutter reporta erro de asset ausente via `FlutterError.onError` de
+  forma síncrona, independente de `.catchError` na `Future` retornada
+  (achado ao rodar os testes — sem isso, uma imagem ausente derrubava a
+  tela mesmo com o erro "capturado").
+- **Nenhuma migration Drift nova**: o catálogo de exercícios/mídia é
+  dado estático em Dart/JSON, não uma tabela — nunca existiu no banco
+  (mesma decisão já registrada para o catálogo de exercícios original,
+  "recomputável, não precisa de tabela"). O prompt pede migration "se
+  houver banco Drift já criado" para o que muda — aqui nada mudou no
+  schema, então nenhuma migration foi necessária ou criada.
+
+**Nota técnica sobre o pubspec**: o prompt pede registrar
+`assets/images/exercises/` uma única vez. Optou-se por listar os 14
+subdiretórios de categoria explicitamente em vez de só o diretório pai,
+porque a entrega anterior desta sessão já havia constatado, testando
+com `flutter build bundle`, que uma entrada de pasta no `pubspec.yaml`
+não inclui de forma confiável subpastas aninhadas sem cada uma ser
+listada. É mais verboso, mas testado e confirmado a funcionar para as
+195 imagens (nenhuma ficou de fora do bundle).
+
+**Testes novos** (110 → **119 testes automatizados**, todos passando;
+`flutter analyze` e `dart format .` sem problemas):
+
+- `test/shared/domain/exercise_media_catalog_test.dart` (novo, dados
+  puros, sem widget): catálogo carrega 195 entradas; todo slug é único;
+  todo `asset_path` existe no disco; nenhum caminho absoluto/URL;
+  nenhuma imagem duplicada fisicamente (as duas ocorrências
+  compartilhadas entre árvores citadas no README do pacote — "Wall walk
+  parcial", "Handstand livre consistente" — têm só uma entrada cada no
+  JSON, não duas); índice por categoria+nível encontra os nós já
+  citados pelas escadas de avaliação existentes; **todo `mediaSlug` já
+  associado em `exercise_catalog.dart` existe de fato no catálogo de
+  195 imagens** (pega erro de digitação na associação antes de virar
+  bug silencioso em produção).
+- `test/shared/presentation/exercise_media_test.dart` (+1 teste): usa a
+  imagem do catálogo novo quando `mediaSlug` é fornecido e existe
+  (com override do provider — carregar o JSON de verdade via
+  `rootBundle` trava para sempre dentro de `testWidgets` sem tempo de
+  parede real, achado desta sessão); `BoxFit.contain` confirmado;
+  fallback para `ExerciseMediaPlaceholder` confirmado por tipo, não só
+  por `PatternIllustration` (que fica por baixo).
+- `test/features/workout_session/timed_set_player_flow_test.dart`
+  (+1 teste): "timer continua funcionando mesmo quando a mídia do
+  exercício falha" — sessão com `exerciseSlug`/`mediaSlug` que não
+  resolvem imagem nenhuma, ainda assim passa por 3-2-1 → rodando
+  normalmente.
+
+**Exercícios/imagens ainda sem associação segura** (mostram placeholder
+animado, não a foto real):
+
+- `warmup_joint_mobility` (aquecimento — não é nó de nenhuma árvore).
+- `parallel_bar_support_hold` (suporte estático em paralelas — nenhum
+  nó de `dips_suporte` corresponde com segurança).
+- As 190+ imagens do catálogo que não correspondem a nenhum dos 13
+  exercícios hoje prescritos pelo motor de treino (níveis avançados de
+  todas as 14 árvores, incluindo front lever, back lever, handstand
+  livre, muscle-up etc.) — carregadas e disponíveis por `slug`/
+  `categorySlug:level` no índice, mas **nenhuma tela ainda as exibe**;
+  ficou fora do escopo desta entrega ligar as escadas de avaliação
+  (`fundamental_pattern_anchors.dart`, telas de avaliação/Evolução) à
+  mídia nova, para não expandir o raio de alteração além do que o
+  prompt pediu ("catálogo, detalhes do treino e player"). É a extensão
+  natural mais óbvia para uma próxima sessão — o `MediaCatalogIndex.
+  byCategoryLevel` já existe pronto para isso.
+- **Nenhuma revisão biomecânica profissional foi feita nem marcada como
+  concluída** — todas as 195 imagens permanecem com
+  `visual_review_status = requires_professional_review` (ou o que veio
+  no JSON original); a associação feita aqui é só de dado (slug ↔
+  slug), não uma validação de que a imagem está correta ou seguramente
+  prescritível.
+
+**Impacto no tamanho do app**: as 195 imagens somam ~44 MB (PNG
+1024×1024, fundo transparente). Ainda não medido o impacto no APK final
+(`flutter build apk --release` desta leva não foi gerado nesta sessão —
+ver Riscos/bloqueios, aparelho segue desconectado).
+
 ## Banco/migrations
 
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
@@ -449,6 +624,14 @@ idempotente — 100% offline, sem Supabase/Firebase/login/API/câmera/IA.
 | `flutter test` (história vertical player reps+duração) | **110 passed, 0 failed** |
 | `flutter build bundle` | OK — usado para confirmar que os 3 assets novos de exercício entram no bundle final |
 | `adb devices` (história vertical player reps+duração) | Nenhum dispositivo listado — aparelho segue desconectado (ver Riscos/bloqueios) |
+| `flutter analyze` (integração das 195 imagens) | Sem problemas |
+| `dart format .` | 64 arquivos reformatados, nenhum erro |
+| `flutter test` (integração das 195 imagens) | **119 passed, 0 failed** |
+| `flutter build bundle` (integração das 195 imagens) | OK — confirmado que as 198 imagens (195 novas + 3 da entrega anterior) e `exercise_media_catalog.json` entram no bundle final |
+| `adb devices` (integração das 195 imagens) | Nenhum dispositivo listado — aparelho segue desconectado |
+| `adb devices` (verificação manual) | Aparelho `7549GMFUDA4DKZW8` reconectado |
+| `flutter build apk --release` (verificação manual) | OK (100,6MB) |
+| `adb install -r` no aparelho físico (verificação manual) | OK — testado manualmente via `adb shell input`/`uiautomator`: catálogo/detalhe/player/descanso com imagens reais, recuperação de série por tempo após reabrir o app, sem crashes no `logcat` |
 
 ## Decisões e ADRs
 
@@ -585,17 +768,9 @@ idempotente — 100% offline, sem Supabase/Firebase/login/API/câmera/IA.
     animada e dose.
   - Revisão profissional de conteúdo/mídia continua pendente (o próprio
     documento exige isso antes de publicação).
-  - **Pacote de 195 imagens reais descoberto ao final da sessão**:
-    `App_RPG_Exercise_Images/` (fora de `lib`/`assets`, na raiz do
-    projeto) contém `exercise_media_catalog.json`/`.csv` e um
-    `CLAUDE_CODE_PROMPT.md` próprio pedindo integração completa
-    (mesclar em `assets/images/exercises/`, associar por `slug`, novos
-    campos `mediaKey`/`assetPath`/`mediaType`/`visualReviewStatus`,
-    migration Drift aditiva, `ExerciseMediaPlaceholder` reutilizável,
-    testes de slug único/asset existente/placeholder/modo avião).
-    Perguntado ao usuário se deveria integrar agora — resposta: deixar
-    para depois. Nenhum arquivo desse pacote foi tocado. Próxima sessão
-    que for mexer em mídia de exercício deve começar por aí.
+  - ~~Pacote de 195 imagens reais descoberto ao final da sessão~~ —
+    **integrado** na continuação seguinte desta mesma sessão. Ver seção
+    própria "Integração do pacote de 195 imagens reais" abaixo.
   - **Verificação manual não realizada nesta sessão**: modo avião,
     tela bloqueada e toque duplo físico no aparelho — ver Riscos/
     bloqueios, o `adb` seguiu sem enxergar nenhum dispositivo
@@ -609,66 +784,96 @@ idempotente — 100% offline, sem Supabase/Firebase/login/API/câmera/IA.
 
 - Nenhum bloqueio técnico. Supabase CLI/Docker seguem não instalados,
   irrelevante enquanto o backend estiver pausado.
-- Build de release da 2ª leva desta sessão (bugs corrigidos + avaliação
-  estendida + Evolução) **não foi instalado/testado no aparelho físico**
-  — o `adb` perdeu o dispositivo no meio do trabalho autônomo e não
-  havia como replugar fisicamente. Tudo passou por `flutter analyze` +
-  `flutter test` (91 testes), mas não por verificação visual real.
-- **Continua sem acesso ao aparelho físico nesta continuação**
-  (`adb devices` retornou lista vazia ao verificar de novo). Por isso a
-  história vertical do player por reps+duração **não foi verificada
-  manualmente** em nenhum dos quatro critérios que o pedido original
-  exigia: modo avião, tela bloqueada durante uma série por tempo, toque
-  duplo físico em "Concluir", e instalação/uso real do app. Tudo o que
-  foi possível confirmar sem o aparelho foi feito: `flutter analyze`
-  limpo, 110 testes automatizados (unitários + widget, incluindo um
-  teste de widget que simula literalmente o toque duplo e outro que
-  percorre o ciclo 3-2-1 → rodando → pausar/retomar → concluir de
-  ponta a ponta com banco real em memória) e `flutter build bundle`
-  confirmando que os assets de exercício entram no pacote final.
-  **Primeira coisa a fazer assim que o aparelho reconectar**: rodar
-  `flutter build apk --release` + `adb install -r` e refazer os quatro
-  testes manuais do pedido original antes de considerar esta história
-  vertical realmente concluída.
+- Build de release da 2ª leva da sessão anterior (bugs corrigidos +
+  avaliação estendida + Evolução) segue **não verificado visualmente no
+  aparelho** — o `adb` perdeu o dispositivo antes que desse tempo. Não
+  bloqueante (dados desse período sobreviveram à migração e apareceram
+  corretos na verificação desta sessão — ver abaixo), mas ninguém
+  conferiu essas telas especificamente ainda.
+- ~~Verificação manual da história vertical do player por reps+duração
+  pendente~~ e ~~verificação manual da integração das 195 imagens
+  pendente~~ — **ambas concluídas nesta continuação**, aparelho
+  reconectado (`7549GMFUDA4DKZW8`). Ver "Verificação manual no aparelho
+  físico" abaixo para o relato completo.
+
+### Verificação manual no aparelho físico (`7549GMFUDA4DKZW8`)
+
+`flutter build apk --release` (100,6 MB — confirma o impacto real das
+195 imagens: eram 55,7 MB antes) + `adb install -r`, sem erros.
+Confirmado por interação real (`adb shell input tap`, calibrado com
+`uiautomator dump` quando necessário) mais leitura de `logcat` completa
+do processo do app:
+
+- App abre, tema novo (verde-menta/violeta) renderiza correto, e os
+  dados salvos de sessões anteriores sobreviveram à migração 5→6 em
+  banco real (Nível 1, 70 XP, histórico de missões — não só em teste
+  automatizado com banco em memória).
+- Jornada → catálogo de treinos → detalhe do "Treino A": as **3
+  imagens reais associadas** (flexão inclinada, agachamento livre,
+  prancha completa) aparecem corretas nas miniaturas de 56px; o
+  aquecimento (sem associação) cai no boneco animado, como esperado.
+- Player de treino: a mesma imagem real aparece ampliada (140px) no
+  exercício de repetições, `BoxFit.contain` sem distorção visível.
+- Tela de descanso: mostra a imagem real do **próximo** exercício
+  corretamente.
+- Botão "Senti dor" com o rótulo certo em toda tela (reps, tempo,
+  descanso) — confirmado visualmente, não só por `find.text` em teste.
+- **Recuperação de série por tempo testada de verdade**: uma série por
+  tempo ficou em andamento (44s de 240s) e o app foi reaberto — o
+  diálogo "Sessão por tempo interrompida" apareceu com as três opções;
+  "Continuar" retomou o cronômetro no ponto exato (03:16 restantes,
+  arco de progresso violeta), "Interromper" registrou a série como
+  interrompida e voltou ao fluxo normal, "Abandonar sessão" encerrou e
+  limpou o estado. Este era um dos quatro testes manuais pendentes do
+  pedido original.
+- `adb logcat` do processo do app inteiro, do início ao fim da
+  verificação: **nenhum crash, nenhuma exceção fatal**.
+- **Não testado ainda nesta rodada**: modo avião explícito (o app já é
+  100% local, então o risco é baixo, mas não foi exercitado com o
+  rádio desligado de propósito), tela bloqueada via
+  `KEYCODE_POWER` durante uma série por tempo, e toque duplo físico
+  deliberado em "Concluir"/"Registrar série" (o double-tap guard foi
+  validado por teste de widget dedicado, não fisicamente no aparelho).
+  Ficam para uma próxima verificação, não são bloqueio.
+- Achado de processo (não bug do app): `uiautomator dump` voltou a
+  abrir sozinho o assistente de acessibilidade "Acesso por interruptor"
+  neste aparelho, confirmando o quirk já registrado nesta sessão —
+  contornado fechando o assistente e recalibrando toques por
+  coordenadas já confirmadas.
 
 ## Próxima tarefa recomendada
 
-1. **Reconectar o aparelho físico e rodar a verificação manual
-   pendente** desta história vertical (player por reps+duração): modo
-   avião, tela bloqueada durante série por tempo, toque duplo real em
-   "Concluir" (reps e tempo), e confirmar visualmente que as imagens
-   locais dos 3 exercícios aparecem (em vez do placeholder animado).
-   Isso também cobre a verificação visual pendente da leva anterior
-   (bugs corrigidos, avaliação de 4 padrões novos, tela Evolução) —
-   nenhuma das duas levas foi vista rodando de verdade ainda.
-2. Depois disso, com o ciclo básico do MVP fechado (plano → sessão →
+1. Completar os três testes manuais que ainda faltam no aparelho: modo
+   avião explícito, tela bloqueada durante série por tempo
+   (`adb shell input keyevent KEYCODE_POWER`), e toque duplo físico
+   deliberado em "Concluir"/"Registrar série".
+2. Com o ciclo básico do MVP fechado e verificado (plano → sessão →
    registro → domínio → XP → missões → Jornada → Evolução → player por
-   reps/duração) e 5 padrões com colocação real, as próximas opções
-   naturais continuam sendo: (a) dar aos 4 padrões novos o mesmo
-   tratamento de catálogo em camadas + `MasteryRule` que
-   push_horizontal já tem, destravando progressão/XP de domínio neles
-   também; (b) uma tela de Habilidades (mapa de árvores,
-   SCREENS_AND_FLOWS.md §5); (c) missões/atributos que ainda faltam
-   (check-in, revisar progresso, atributos narrativos de
-   RPG_SYSTEM.md §4); ou (d) as pendências explícitas desta entrega —
-   seletor de duração pré-sessão, página de Configurações/perfil
-   físico, catálogo de treinos maior.
+   reps/duração → mídia real para 9 dos 13 exercícios prescritos) e 5
+   padrões com colocação real, as próximas opções naturais continuam
+   sendo: (a) dar aos 4 padrões novos o mesmo tratamento de catálogo em
+   camadas + `MasteryRule` que push_horizontal já tem, destravando
+   progressão/XP de domínio neles também; (b) ligar as escadas de
+   avaliação (`fundamental_pattern_anchors.dart`,
+   `push_horizontal_anchor.dart`) e as telas de avaliação/Evolução ao
+   `MediaCatalogIndex.byCategoryLevel` já pronto — destrava mostrar
+   imagem real em cada degrau de autorrelato, não só nos 13 exercícios
+   prescritos; (c) uma tela de Habilidades (mapa de árvores,
+   SCREENS_AND_FLOWS.md §5), que agora tem 195 imagens prontas para
+   usar; (d) missões/atributos que ainda faltam (check-in, revisar
+   progresso, atributos narrativos de RPG_SYSTEM.md §4); ou (e) as
+   pendências explícitas do player (seletor de duração pré-sessão,
+   página de Configurações/perfil físico, catálogo de treinos maior).
 
 ## Critério para retomar
 
-Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. Duas levas de
-mudanças seguidas foram testadas só por `flutter analyze`/`flutter
-test`, **não no aparelho físico**, porque o `adb` ficou sem enxergar o
-dispositivo a sessão inteira: (1) correção dos dois bugs + avaliação
-estendida + tela Evolução; (2) a história vertical do player por
-repetições e por duração (v1.2: dose estruturada, catálogo de treinos,
-recuperação após fechar o app, mídia local, idempotência, tema novo).
-Trate qualquer coisa estranha nelas como possível bug real, não como
-algo já confirmado funcionando — em especial o player por duração
-(timer monotônico, recuperação de série interrompida, persistência de
-progresso em segundo plano), que é a parte com mais lógica sensível a
-tempo real e comportamento de sistema operacional (bloqueio de tela,
-app em background) que nenhum teste automatizado consegue simular
-com 100% de fidelidade. O resto (motor de treino, sessão original,
-RPG/XP, missões, tema escuro/dashboard da primeira versão) foi
-confirmado visualmente no aparelho antes dessas duas levas.
+Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. As três levas
+mais recentes (correção de bugs + avaliação estendida + Evolução;
+história vertical do player por reps/duração; integração das 195
+imagens) agora têm verificação automatizada completa (119 testes) **e**
+verificação manual real no aparelho físico (`7549GMFUDA4DKZW8`),
+incluindo o cenário mais sensível a tempo real — recuperação de série
+por tempo após o app fechar/reabrir. Os únicos testes manuais ainda não
+feitos são modo avião explícito, tela bloqueada e toque duplo físico
+deliberado (ver Próxima tarefa recomendada) — nenhum é bloqueio, o
+sistema já foi exercitado de verdade em cenários equivalentes.

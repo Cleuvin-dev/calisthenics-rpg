@@ -44,16 +44,19 @@ class MasteryEvaluator {
     final qualifyingTimestamps = <DateTime>[];
 
     for (final session in sessions) {
-      final hasPain =
-          session.sets.any((s) => s.perceivedEffort == PerceivedEffort.pain);
+      final hasPain = session.sets.any(
+        (s) => s.perceivedEffort == PerceivedEffort.pain,
+      );
       if (hasPain) continue;
 
-      final qualifyingSets = session.sets.where(
-        (s) =>
-            s.repsCompleted >= rule.minRepsPerSet &&
-            (s.perceivedEffort == PerceivedEffort.adequate ||
-                s.perceivedEffort == PerceivedEffort.tooEasy),
-      ).length;
+      final qualifyingSets = session.sets
+          .where(
+            (s) =>
+                s.repsCompleted >= rule.minRepsPerSet &&
+                (s.perceivedEffort == PerceivedEffort.adequate ||
+                    s.perceivedEffort == PerceivedEffort.tooEasy),
+          )
+          .length;
 
       if (qualifyingSets >= rule.minQualifyingSets) {
         qualifyingTimestamps.add(session.completedAt);
@@ -62,7 +65,8 @@ class MasteryEvaluator {
 
     final confirmations = <DateTime>[];
     for (final timestamp in qualifyingTimestamps) {
-      final gapSatisfied = confirmations.isEmpty ||
+      final gapSatisfied =
+          confirmations.isEmpty ||
           timestamp.difference(confirmations.last).inHours >=
               rule.minHoursBetweenConfirmations;
       if (gapSatisfied) {

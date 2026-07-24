@@ -81,61 +81,109 @@ void main() {
     );
   }
 
-  testWidgets(
-    'player por duração passa por 3-2-1 → rodando → pausar/retomar → '
-    'concluir, salvando um único log',
-    (tester) async {
-      final id = await seedTimedSession();
-      await tester.pumpWidget(wrap(id));
-      await tester.pumpAndSettle();
+  testWidgets('player por duração passa por 3-2-1 → rodando → pausar/retomar → '
+      'concluir, salvando um único log', (tester) async {
+    final id = await seedTimedSession();
+    await tester.pumpWidget(wrap(id));
+    await tester.pumpAndSettle();
 
+    expect(find.text('Alvo: 2 segundos'), findsOneWidget);
+    expect(find.text('Senti dor'), findsOneWidget);
+
+    await _tapButton(tester, 'Iniciar');
+
+    // Preparação 3-2-1: começa em "3".
+    expect(find.text('3'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('2'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+
+    // Agora rodando: botão "Pausar" disponível, dor continua acessível.
+    await tester.pump();
+    expect(find.text('Pausar'), findsOneWidget);
+    expect(find.text('Senti dor'), findsOneWidget);
+
+    await _tapButton(tester, 'Pausar');
+    expect(find.text('Continuar'), findsOneWidget);
+
+    await _tapButton(tester, 'Continuar');
+    expect(find.text('Pausar'), findsOneWidget);
+
+    // Deixa o alvo de 2s ser atingido: o `ActiveTimer` é monotônico e
+    // usa um `Stopwatch` de parede real (de propósito — é a garantia
+    // contra "trocar o relógio não deve aumentar o tempo ativo"), então
+    // só avançar o relógio falso do teste não é suficiente aqui; é
+    // preciso esperar tempo de parede de verdade e só então deixar o
+    // `Timer.periodic` de UI (esse sim, no relógio falso) perceber.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 2300)),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    // A série já parou de contar (fase pausada antes da folha de
+    // efeito), então dá para deixar a animação da folha assentar.
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tempo concluído! Como foi a série?'), findsOneWidget);
+    await tester.tap(find.text('Adequado'));
+    await tester.pumpAndSettle();
+
+    final logs = await repository.setLogsFor(id);
+    expect(logs, hasLength(1));
+    expect(logs.single.completionReason, 'targetReached');
+    expect(await repository.activeTimedSetFor(id), isNull);
+  });
+
+  testWidgets(
+    'timer continua funcionando mesmo quando a mídia do exercício falha '
+    '(sem asset local nem mediaSlug válido) — CLAUDE_CODE_PROMPT.md do '
+    'pacote de imagens: "erro de imagem nunca pode impedir o treino"',
+    (tester) async {
+      final id = await repository.startSession(
+        dayLabel: 'Treino de teste',
+        items: const [
+          WorkoutSessionItem(
+            pattern: 'core_anti_extension',
+            exerciseSlug: 'exercicio_sem_imagem_alguma',
+            namePtBr: 'Exercício sem imagem',
+            setsRepsGuidance: '1 série de 2 segundos',
+            doseType: DoseType.duration,
+            targetSets: 1,
+            targetSeconds: 2,
+            restSeconds: 0,
+            mediaSlug: 'slug_que_nao_existe_no_catalogo',
+          ),
+        ],
+        planRuleVersion: 'v1',
+        catalogVersion: 'v1',
+        now: DateTime(2026, 7, 24, 8),
+      );
+
+      await tester.pumpWidget(wrap(id));
+      // Não usa `pumpAndSettle`: a mídia cai para `PatternIllustration`,
+      // que anima em loop contínuo por design e nunca "assenta" sozinha.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Nenhuma exceção não tratada até aqui já prova que a resolução de
+      // mídia com falha não travou a tela; confirma explicitamente que
+      // caiu no placeholder animado.
       expect(find.text('Alvo: 2 segundos'), findsOneWidget);
-      expect(find.text('Senti dor'), findsOneWidget);
 
       await _tapButton(tester, 'Iniciar');
-
-      // Preparação 3-2-1: começa em "3".
       expect(find.text('3'), findsOneWidget);
-
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('2'), findsOneWidget);
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('1'), findsOneWidget);
       await tester.pump(const Duration(seconds: 1));
-
-      // Agora rodando: botão "Pausar" disponível, dor continua acessível.
       await tester.pump();
+
+      // Terminou a preparação e entrou em "rodando" normalmente — o
+      // timer não depende de a imagem ter carregado.
       expect(find.text('Pausar'), findsOneWidget);
-      expect(find.text('Senti dor'), findsOneWidget);
-
-      await _tapButton(tester, 'Pausar');
-      expect(find.text('Continuar'), findsOneWidget);
-
-      await _tapButton(tester, 'Continuar');
-      expect(find.text('Pausar'), findsOneWidget);
-
-      // Deixa o alvo de 2s ser atingido: o `ActiveTimer` é monotônico e
-      // usa um `Stopwatch` de parede real (de propósito — é a garantia
-      // contra "trocar o relógio não deve aumentar o tempo ativo"), então
-      // só avançar o relógio falso do teste não é suficiente aqui; é
-      // preciso esperar tempo de parede de verdade e só então deixar o
-      // `Timer.periodic` de UI (esse sim, no relógio falso) perceber.
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 2300)),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      // A série já parou de contar (fase pausada antes da folha de
-      // efeito), então dá para deixar a animação da folha assentar.
-      await tester.pumpAndSettle();
-
-      expect(find.text('Tempo concluído! Como foi a série?'), findsOneWidget);
-      await tester.tap(find.text('Adequado'));
-      await tester.pumpAndSettle();
-
-      final logs = await repository.setLogsFor(id);
-      expect(logs, hasLength(1));
-      expect(logs.single.completionReason, 'targetReached');
-      expect(await repository.activeTimedSetFor(id), isNull);
     },
   );
 }

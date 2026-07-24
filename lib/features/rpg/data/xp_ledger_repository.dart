@@ -13,12 +13,15 @@ class XpLedgerRepository {
   /// confirmado — só acontece uma vez por nó). Idempotente: repetir a
   /// mesma `idempotencyKey` não duplica o crédito.
   Future<bool> grant(XpAward award, {required DateTime now}) async {
-    final existing = await (_db.select(_db.xpLedgerRecords)
-          ..where((t) => t.idempotencyKey.equals(award.idempotencyKey)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.xpLedgerRecords)
+              ..where((t) => t.idempotencyKey.equals(award.idempotencyKey)))
+            .getSingleOrNull();
     if (existing != null) return false;
 
-    await _db.into(_db.xpLedgerRecords).insert(
+    await _db
+        .into(_db.xpLedgerRecords)
+        .insert(
           XpLedgerRecordsCompanion.insert(
             amount: award.amount,
             eventType: award.eventType.name,
@@ -36,9 +39,10 @@ class XpLedgerRepository {
   /// concedido (pode ser menor que `award.amount`, ou zero se o teto do
   /// dia já foi atingido).
   Future<int> grantRepeatable(XpAward award, {required DateTime now}) async {
-    final existing = await (_db.select(_db.xpLedgerRecords)
-          ..where((t) => t.idempotencyKey.equals(award.idempotencyKey)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.xpLedgerRecords)
+              ..where((t) => t.idempotencyKey.equals(award.idempotencyKey)))
+            .getSingleOrNull();
     if (existing != null) return 0;
 
     final grantedToday = await xpGrantedToday(now);
@@ -46,7 +50,9 @@ class XpLedgerRepository {
     if (headroom <= 0) return 0;
 
     final amount = award.amount > headroom ? headroom : award.amount;
-    await _db.into(_db.xpLedgerRecords).insert(
+    await _db
+        .into(_db.xpLedgerRecords)
+        .insert(
           XpLedgerRecordsCompanion.insert(
             amount: amount,
             eventType: award.eventType.name,

@@ -30,6 +30,7 @@ class CatalogExercise {
     this.minCapabilityLevel = 0,
     this.maxCapabilityLevel = 100,
     this.isWarmup = false,
+    this.mediaSlug,
   });
 
   final String slug;
@@ -77,6 +78,19 @@ class CatalogExercise {
 
   final bool isWarmup;
 
+  /// Slug no catálogo de 195 imagens estáticas
+  /// (`assets/data/exercise_media_catalog.json`,
+  /// `App_RPG_Exercise_Images/`), quando existe uma associação
+  /// confiável — confirmada por referência cruzada de `starter_file`
+  /// (as 4 imagens já usadas na história vertical anterior) ou por nome
+  /// idêntico ao nó de `SKILL_TREES.md` no mesmo padrão/categoria.
+  /// `null` quando a correspondência não é inequívoca (ex.: aquecimento,
+  /// que não é um nó de nenhuma árvore) — nesses casos o placeholder
+  /// animado continua sendo usado, o que é seguro e esperado. Ver
+  /// `docs/PROJECT_STATUS.md` para a lista completa de associações e o
+  /// que ficou de fora.
+  final String? mediaSlug;
+
   bool suitableForLevel(int level) =>
       level >= minCapabilityLevel && level <= maxCapabilityLevel;
 
@@ -86,7 +100,7 @@ class CatalogExercise {
 
 /// Catálogo mínimo versionado. Nova versão sempre que dose, padrão ou
 /// requisito de equipamento mudar (EXERCISE_SCHEMA.md §6).
-const exerciseCatalogVersion = 'minimal-catalog-v2';
+const exerciseCatalogVersion = 'minimal-catalog-v3';
 
 /// Padrões cobertos nesta versão do catálogo. Os demais padrões oficiais de
 /// EXERCISE_SCHEMA.md §3 ainda não têm variação cadastrada.
@@ -126,6 +140,7 @@ const List<CatalogExercise> exerciseCatalog = [
     targetReps: 6,
     minCapabilityLevel: 0,
     maxCapabilityLevel: 1,
+    mediaSlug: 'flexao_na_parede',
   ),
   CatalogExercise(
     slug: 'push_up_incline',
@@ -140,6 +155,10 @@ const List<CatalogExercise> exerciseCatalog = [
     // segura serve (mesa, escada, parapeito), diferente de elástico/barra.
     minCapabilityLevel: 2,
     maxCapabilityLevel: 3,
+    // Confirmado por referência cruzada: o media_key deste nó do
+    // catálogo de 195 imagens cita "push_up_incline_start.png", o mesmo
+    // arquivo já usado para este slug na história vertical anterior.
+    mediaSlug: 'flexao_inclinada_media',
   ),
   CatalogExercise(
     slug: 'push_up_knees',
@@ -151,6 +170,7 @@ const List<CatalogExercise> exerciseCatalog = [
     targetReps: 6,
     minCapabilityLevel: 4,
     maxCapabilityLevel: 5,
+    mediaSlug: 'flexao_joelhos',
   ),
   CatalogExercise(
     slug: 'push_up_floor',
@@ -162,6 +182,7 @@ const List<CatalogExercise> exerciseCatalog = [
     targetReps: 5,
     minCapabilityLevel: 6,
     maxCapabilityLevel: 100,
+    mediaSlug: 'flexao_tradicional',
   ),
 
   // pull_horizontal — não avaliado ainda: variação única e conservadora,
@@ -174,6 +195,7 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 8,
+    mediaSlug: 'retracao_escapular_guiada',
   ),
   CatalogExercise(
     slug: 'band_row',
@@ -184,6 +206,7 @@ const List<CatalogExercise> exerciseCatalog = [
     targetSets: 3,
     targetReps: 8,
     requiredEquipment: {Equipment.elasticBand},
+    mediaSlug: 'remada_pe_elastico',
   ),
 
   // squat
@@ -196,6 +219,10 @@ const List<CatalogExercise> exerciseCatalog = [
     targetSets: 3,
     targetReps: 12,
     restSeconds: 60,
+    // Confirmado por referência cruzada: o media_key deste nó cita
+    // "bodyweight_squat_bottom.png", o mesmo arquivo já usado para este
+    // slug na história vertical anterior.
+    mediaSlug: 'agachamento_livre',
   ),
 
   // hinge_posterior_chain
@@ -207,6 +234,7 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 10,
+    mediaSlug: 'ponte_gluteos_completa',
   ),
 
   // core_anti_extension
@@ -218,6 +246,7 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 8,
+    mediaSlug: 'dead_bug_simplificado',
   ),
   CatalogExercise(
     slug: forearmPlankSlug,
@@ -231,6 +260,10 @@ const List<CatalogExercise> exerciseCatalog = [
     maxSeconds: 60,
     safetyCapSeconds: 90,
     restSeconds: 45,
+    // Confirmado por referência cruzada: o media_key deste nó cita
+    // "forearm_plank_hold.png", o mesmo arquivo já usado para este slug
+    // na história vertical anterior.
+    mediaSlug: 'prancha_completa',
   ),
 
   // Bônus — só entram quando o orçamento de tempo sobra ou o equipamento
@@ -243,6 +276,11 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 2,
     targetReps: 5,
+    // Nome/nível não são idênticos ao nó do catálogo (que distingue
+    // "inclinada" de "no chão") — escolhida a variação inclinada, mais
+    // conservadora, como aproximação razoável. Não confirmado por
+    // referência cruzada como os slugs acima.
+    mediaSlug: 'pike_push_up_inclinada',
   ),
   CatalogExercise(
     slug: 'parallel_bar_support_hold',
@@ -256,6 +294,11 @@ const List<CatalogExercise> exerciseCatalog = [
     maxSeconds: 20,
     safetyCapSeconds: 30,
     requiredEquipment: {Equipment.parallelBars},
+    // Sem associação confiável: nenhum nó de "dips_suporte" corresponde
+    // com segurança a um suporte estático não assistido em paralelas
+    // completas (os nós próximos são "assistido" ou já um dip dinâmico).
+    // Fica com o placeholder animado até essa variação existir no
+    // catálogo de imagens ou ser revisada manualmente.
   ),
   CatalogExercise(
     slug: 'wall_assisted_handstand',
@@ -268,6 +311,10 @@ const List<CatalogExercise> exerciseCatalog = [
     minSeconds: 10,
     maxSeconds: 20,
     safetyCapSeconds: 30,
+    // "Handstand de costas para parede" (nível 4 de handstand) é a
+    // aproximação mais próxima do apoio assistido na parede. Não
+    // confirmado por referência cruzada.
+    mediaSlug: 'handstand_costas_parede',
   ),
 ];
 
@@ -297,7 +344,8 @@ CatalogExercise? catalogExerciseForSlug(String slug) {
 /// `null` se nenhuma variação cobrir esse nível (fora da escala 0-7 desta
 /// versão do catálogo).
 String? pushHorizontalExerciseForLevel(int level) {
-  final matches = exercisesForPattern('push_horizontal')
-      .where((e) => e.suitableForLevel(level));
+  final matches = exercisesForPattern(
+    'push_horizontal',
+  ).where((e) => e.suitableForLevel(level));
   return matches.isEmpty ? null : matches.first.slug;
 }

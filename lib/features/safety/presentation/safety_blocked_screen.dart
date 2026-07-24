@@ -24,21 +24,21 @@ class SafetyBlockedScreen extends StatelessWidget {
             Text(
               isEmergency
                   ? 'Suas respostas indicam um sinal que merece atenção '
-                      'imediata.'
+                        'imediata.'
                   : 'Suas respostas indicam que você deve buscar orientação '
-                      'profissional antes de iniciar testes físicos neste '
-                      'app.',
+                        'profissional antes de iniciar testes físicos neste '
+                        'app.',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
             Text(
               isEmergency
                   ? 'Procure atendimento médico adequado antes de qualquer '
-                      'atividade física. Este aplicativo não realiza '
-                      'diagnóstico nem substitui avaliação profissional.'
+                        'atividade física. Este aplicativo não realiza '
+                        'diagnóstico nem substitui avaliação profissional.'
                   : 'Converse com um profissional de saúde ou de Educação '
-                      'Física habilitado antes de realizar testes de '
-                      'esforço ou treinos neste app.',
+                        'Física habilitado antes de realizar testes de '
+                        'esforço ou treinos neste app.',
             ),
             const SizedBox(height: 24),
             const Text(

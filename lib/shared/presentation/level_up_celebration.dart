@@ -40,7 +40,9 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final scale = Curves.elasticOut.transform(_controller.value.clamp(0, 1));
+        final scale = Curves.elasticOut.transform(
+          _controller.value.clamp(0, 1),
+        );
         return SizedBox(
           height: 160,
           child: Stack(
@@ -58,7 +60,11 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.military_tech, color: colorScheme.tertiary, size: 48),
+                    Icon(
+                      Icons.military_tech,
+                      color: colorScheme.tertiary,
+                      size: 48,
+                    ),
                     Text(
                       'Nível ${widget.level}!',
                       style: Theme.of(context).textTheme.headlineSmall,

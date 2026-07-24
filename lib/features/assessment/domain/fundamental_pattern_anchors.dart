@@ -18,7 +18,11 @@ const hingePosteriorChainPattern = 'hinge_posterior_chain';
 const coreAntiExtensionPattern = 'core_anti_extension';
 
 const pullHorizontalAnchors = [
-  MovementAnchor(name: 'elasticRow', skillLevel: 1, label: 'Remada em pé com elástico'),
+  MovementAnchor(
+    name: 'elasticRow',
+    skillLevel: 1,
+    label: 'Remada em pé com elástico',
+  ),
   MovementAnchor(
     name: 'inclineRow',
     skillLevel: 3,

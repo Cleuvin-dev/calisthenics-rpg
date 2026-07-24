@@ -35,13 +35,17 @@ class MissionEvaluator {
   List<MissionEvaluationResult> evaluateDaily(DailyMissionFacts facts) {
     return dailyMissionDefinitions.map((definition) {
       final completed = switch (definition.type) {
-        MissionType.completeWarmup =>
-          facts.loggedExerciseSlugs.contains(facts.warmupExerciseSlug),
+        MissionType.completeWarmup => facts.loggedExerciseSlugs.contains(
+          facts.warmupExerciseSlug,
+        ),
         MissionType.logAnySet => facts.loggedExerciseSlugs.isNotEmpty,
         MissionType.completeSession => facts.completedSessionCount > 0,
         _ => false,
       };
-      return MissionEvaluationResult(definition: definition, completed: completed);
+      return MissionEvaluationResult(
+        definition: definition,
+        completed: completed,
+      );
     }).toList();
   }
 
@@ -57,13 +61,16 @@ class MissionEvaluator {
                 '${facts.completedSessionCount}/${facts.requiredSessionCount} sessões',
           );
         case MissionType.trainAllPatterns:
-          final trainedCount =
-              facts.trainedPatterns.intersection(facts.plannedPatterns).length;
+          final trainedCount = facts.trainedPatterns
+              .intersection(facts.plannedPatterns)
+              .length;
           return MissionEvaluationResult(
             definition: definition,
-            completed: facts.plannedPatterns.isNotEmpty &&
+            completed:
+                facts.plannedPatterns.isNotEmpty &&
                 facts.plannedPatterns.every(facts.trainedPatterns.contains),
-            progressLabel: '$trainedCount/${facts.plannedPatterns.length} padrões',
+            progressLabel:
+                '$trainedCount/${facts.plannedPatterns.length} padrões',
           );
         case MissionType.confirmMastery:
           return MissionEvaluationResult(
@@ -71,7 +78,10 @@ class MissionEvaluator {
             completed: facts.masteryConfirmedThisWeek,
           );
         default:
-          return MissionEvaluationResult(definition: definition, completed: false);
+          return MissionEvaluationResult(
+            definition: definition,
+            completed: false,
+          );
       }
     }).toList();
   }

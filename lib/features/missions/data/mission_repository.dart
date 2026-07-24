@@ -29,8 +29,10 @@ class MissionRepository {
     final end = endOfDay(now);
 
     final logs = await _workoutSessionRepository.setLogsBetween(start, end);
-    final completedSessions =
-        await _workoutSessionRepository.completedBetween(start, end);
+    final completedSessions = await _workoutSessionRepository.completedBetween(
+      start,
+      end,
+    );
 
     final facts = DailyMissionFacts(
       loggedExerciseSlugs: logs.map((l) => l.exerciseSlug).toSet(),
@@ -48,8 +50,10 @@ class MissionRepository {
     final end = endOfWeek(now);
     final weeklyPlan = plan.toDomain();
 
-    final completedSessions =
-        await _workoutSessionRepository.completedBetween(start, end);
+    final completedSessions = await _workoutSessionRepository.completedBetween(
+      start,
+      end,
+    );
     final logs = await _workoutSessionRepository.setLogsBetween(start, end);
     final masteryRecords = await _capabilityEstimateRepository.confirmedBetween(
       reasonCode: masteryConfirmedReasonCode,
@@ -75,7 +79,11 @@ class MissionRepository {
   /// Idempotente: chamar de novo no mesmo dia não duplica crédito.
   Future<int> grantCompletedDaily(DateTime now) async {
     final results = await evaluateDaily(now);
-    return _grantCompleted(results, periodKey: _dayKey(startOfDay(now)), now: now);
+    return _grantCompleted(
+      results,
+      periodKey: _dayKey(startOfDay(now)),
+      now: now,
+    );
   }
 
   /// Mesma ideia para as missões semanais.

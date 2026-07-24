@@ -29,16 +29,20 @@ void main() {
   });
 
   test('grant credita e soma no total', () async {
-    final granted =
-        await repository.grant(nonRepeatableAward, now: DateTime(2026, 1, 1));
+    final granted = await repository.grant(
+      nonRepeatableAward,
+      now: DateTime(2026, 1, 1),
+    );
     expect(granted, isTrue);
     expect(await repository.totalXp(), 80);
   });
 
   test('grant é idempotente pela idempotencyKey', () async {
     await repository.grant(nonRepeatableAward, now: DateTime(2026, 1, 1));
-    final secondAttempt =
-        await repository.grant(nonRepeatableAward, now: DateTime(2026, 1, 2));
+    final secondAttempt = await repository.grant(
+      nonRepeatableAward,
+      now: DateTime(2026, 1, 2),
+    );
 
     expect(secondAttempt, isFalse);
     expect(await repository.totalXp(), 80); // não duplicou
@@ -53,8 +57,10 @@ void main() {
       repeatable: true,
     );
 
-    final granted =
-        await repository.grantRepeatable(award, now: DateTime(2026, 1, 1));
+    final granted = await repository.grantRepeatable(
+      award,
+      now: DateTime(2026, 1, 1),
+    );
     expect(granted, 40);
     expect(await repository.totalXp(), 40);
   });
@@ -74,7 +80,10 @@ void main() {
         now: now,
       );
     }
-    expect(await repository.xpGrantedToday(now), 200); // == dailyRepeatableXpCap
+    expect(
+      await repository.xpGrantedToday(now),
+      200,
+    ); // == dailyRepeatableXpCap
 
     final blocked = await repository.grantRepeatable(
       const XpAward(
@@ -90,34 +99,36 @@ void main() {
     expect(await repository.totalXp(), dailyRepeatableXpCap);
   });
 
-  test('grantRepeatable concede parcial quando falta pouco para o teto',
-      () async {
-    final now = DateTime(2026, 1, 1, 8);
-    await repository.grantRepeatable(
-      const XpAward(
-        eventType: XpEventType.sessionCompleted,
-        amount: 190,
-        sourceId: '1',
-        idempotencyKey: 'session-completed-1',
-        repeatable: true,
-      ),
-      now: now,
-    );
+  test(
+    'grantRepeatable concede parcial quando falta pouco para o teto',
+    () async {
+      final now = DateTime(2026, 1, 1, 8);
+      await repository.grantRepeatable(
+        const XpAward(
+          eventType: XpEventType.sessionCompleted,
+          amount: 190,
+          sourceId: '1',
+          idempotencyKey: 'session-completed-1',
+          repeatable: true,
+        ),
+        now: now,
+      );
 
-    final granted = await repository.grantRepeatable(
-      const XpAward(
-        eventType: XpEventType.allSetsLogged,
-        amount: 40,
-        sourceId: '1',
-        idempotencyKey: 'all-sets-logged-1',
-        repeatable: true,
-      ),
-      now: now,
-    );
+      final granted = await repository.grantRepeatable(
+        const XpAward(
+          eventType: XpEventType.allSetsLogged,
+          amount: 40,
+          sourceId: '1',
+          idempotencyKey: 'all-sets-logged-1',
+          repeatable: true,
+        ),
+        now: now,
+      );
 
-    expect(granted, 10); // só sobrava 10 de headroom
-    expect(await repository.totalXp(), dailyRepeatableXpCap);
-  });
+      expect(granted, 10); // só sobrava 10 de headroom
+      expect(await repository.totalXp(), dailyRepeatableXpCap);
+    },
+  );
 
   test('teto diário não afeta créditos de dias diferentes', () async {
     final day1 = DateTime(2026, 1, 1, 8);
@@ -151,8 +162,7 @@ void main() {
     expect(await repository.totalXp(), dailyRepeatableXpCap + 40);
   });
 
-  test('dailyTotals agrupa por dia e preenche dias sem XP com zero',
-      () async {
+  test('dailyTotals agrupa por dia e preenche dias sem XP com zero', () async {
     final today = DateTime(2026, 7, 24, 9);
     await repository.grant(
       const XpAward(
@@ -183,27 +193,23 @@ void main() {
     expect(totals.reduce((a, b) => a + b), 50);
   });
 
-  test('grantAwards roteia repetível e não-repetível corretamente',
-      () async {
-    final total = await repository.grantAwards(
-      const [
-        XpAward(
-          eventType: XpEventType.sessionCompleted,
-          amount: 40,
-          sourceId: '1',
-          idempotencyKey: 'session-completed-1',
-          repeatable: true,
-        ),
-        XpAward(
-          eventType: XpEventType.masteryConfirmed,
-          amount: 80,
-          sourceId: 'push_horizontal-level-1',
-          idempotencyKey: 'mastery-push_horizontal-level-1',
-          repeatable: false,
-        ),
-      ],
-      now: DateTime(2026, 1, 1),
-    );
+  test('grantAwards roteia repetível e não-repetível corretamente', () async {
+    final total = await repository.grantAwards(const [
+      XpAward(
+        eventType: XpEventType.sessionCompleted,
+        amount: 40,
+        sourceId: '1',
+        idempotencyKey: 'session-completed-1',
+        repeatable: true,
+      ),
+      XpAward(
+        eventType: XpEventType.masteryConfirmed,
+        amount: 80,
+        sourceId: 'push_horizontal-level-1',
+        idempotencyKey: 'mastery-push_horizontal-level-1',
+        repeatable: false,
+      ),
+    ], now: DateTime(2026, 1, 1));
 
     expect(total, 120);
     expect(await repository.totalXp(), 120);

@@ -54,16 +54,20 @@ void main() {
       equipment: {},
     );
 
-    await repository.save(generator.generate(
-      preferences: prefs,
-      pushHorizontalCapabilityLevel: 0,
-      now: DateTime(2026, 1, 1),
-    ));
-    await repository.save(generator.generate(
-      preferences: prefs,
-      pushHorizontalCapabilityLevel: 6,
-      now: DateTime(2026, 6, 1),
-    ));
+    await repository.save(
+      generator.generate(
+        preferences: prefs,
+        pushHorizontalCapabilityLevel: 0,
+        now: DateTime(2026, 1, 1),
+      ),
+    );
+    await repository.save(
+      generator.generate(
+        preferences: prefs,
+        pushHorizontalCapabilityLevel: 6,
+        now: DateTime(2026, 6, 1),
+      ),
+    );
 
     final latest = await repository.latest();
     expect(latest!.generatedAt, DateTime(2026, 6, 1));

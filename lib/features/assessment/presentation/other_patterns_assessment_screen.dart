@@ -80,8 +80,10 @@ class _OtherPatternsAssessmentScreenState
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 4),
-                      const Text('Qual variação você acredita conseguir com '
-                          'boa técnica hoje?'),
+                      const Text(
+                        'Qual variação você acredita conseguir com '
+                        'boa técnica hoje?',
+                      ),
                       RadioGroup<MovementAnchor?>(
                         groupValue: _selections[ladder.pattern],
                         onChanged: (v) =>

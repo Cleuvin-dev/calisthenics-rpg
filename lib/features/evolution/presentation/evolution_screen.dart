@@ -122,8 +122,6 @@ class EvolutionScreen extends ConsumerWidget {
       '${date.month.toString().padLeft(2, '0')}/${date.year}';
 }
 
-
-
 class _PatternPlacementTile extends ConsumerWidget {
   const _PatternPlacementTile({required this.pattern});
 
@@ -144,7 +142,7 @@ class _PatternPlacementTile extends ConsumerWidget {
             estimate == null
                 ? 'Não avaliado'
                 : '${estimate.levelName} (nível ${estimate.level}, '
-                    'confiança ${estimate.confidence})',
+                      'confiança ${estimate.confidence})',
           ),
         ),
       ),

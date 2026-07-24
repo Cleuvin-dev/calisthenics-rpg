@@ -30,6 +30,7 @@ class PlannedExerciseItem {
     this.targetReps,
     this.targetSeconds,
     this.restSeconds = 60,
+    this.mediaSlug,
   });
 
   final String pattern;
@@ -44,18 +45,25 @@ class PlannedExerciseItem {
   final int? targetSeconds;
   final int restSeconds;
 
+  /// Slug no catálogo de mídia estática (`exercise_catalog.dart`'s
+  /// `CatalogExercise.mediaSlug`), copiado no momento em que o plano é
+  /// gerado — mesma filosofia de instantâneo congelado dos demais
+  /// campos aqui.
+  final String? mediaSlug;
+
   Map<String, dynamic> toJson() => {
-        'pattern': pattern,
-        'exerciseSlug': exerciseSlug,
-        'namePtBr': namePtBr,
-        'setsRepsGuidance': setsRepsGuidance,
-        'reasonCode': reasonCode.name,
-        'doseType': doseType.name,
-        'targetSets': targetSets,
-        'targetReps': targetReps,
-        'targetSeconds': targetSeconds,
-        'restSeconds': restSeconds,
-      };
+    'pattern': pattern,
+    'exerciseSlug': exerciseSlug,
+    'namePtBr': namePtBr,
+    'setsRepsGuidance': setsRepsGuidance,
+    'reasonCode': reasonCode.name,
+    'doseType': doseType.name,
+    'targetSets': targetSets,
+    'targetReps': targetReps,
+    'targetSeconds': targetSeconds,
+    'restSeconds': restSeconds,
+    'mediaSlug': mediaSlug,
+  };
 
   /// Tolerante a planos salvos antes da dose estruturada existir: sem
   /// `doseType`, assume `reps` com `targetReps` nulo — o player usa um
@@ -75,6 +83,7 @@ class PlannedExerciseItem {
       targetReps: json['targetReps'] as int?,
       targetSeconds: json['targetSeconds'] as int?,
       restSeconds: json['restSeconds'] as int? ?? 60,
+      mediaSlug: json['mediaSlug'] as String?,
     );
   }
 }
@@ -92,10 +101,10 @@ class PlannedSession {
   final List<PlannedExerciseItem> items;
 
   Map<String, dynamic> toJson() => {
-        'dayLabel': dayLabel,
-        'targetMinutes': targetMinutes,
-        'items': items.map((e) => e.toJson()).toList(),
-      };
+    'dayLabel': dayLabel,
+    'targetMinutes': targetMinutes,
+    'items': items.map((e) => e.toJson()).toList(),
+  };
 
   factory PlannedSession.fromJson(Map<String, dynamic> json) {
     return PlannedSession(
@@ -137,16 +146,16 @@ class WeeklyPlan {
   final String? frequencyDowngradeReason;
 
   Map<String, dynamic> toJson() => {
-        'ruleVersion': ruleVersion,
-        'catalogVersion': catalogVersion,
-        'requestedDaysPerWeek': requestedDaysPerWeek,
-        'actualDaysPerWeek': actualDaysPerWeek,
-        'minutesPerSession': minutesPerSession,
-        'sessions': sessions.map((s) => s.toJson()).toList(),
-        'generatedAt': generatedAt.toIso8601String(),
-        'validUntil': validUntil.toIso8601String(),
-        'frequencyDowngradeReason': frequencyDowngradeReason,
-      };
+    'ruleVersion': ruleVersion,
+    'catalogVersion': catalogVersion,
+    'requestedDaysPerWeek': requestedDaysPerWeek,
+    'actualDaysPerWeek': actualDaysPerWeek,
+    'minutesPerSession': minutesPerSession,
+    'sessions': sessions.map((s) => s.toJson()).toList(),
+    'generatedAt': generatedAt.toIso8601String(),
+    'validUntil': validUntil.toIso8601String(),
+    'frequencyDowngradeReason': frequencyDowngradeReason,
+  };
 
   factory WeeklyPlan.fromJson(Map<String, dynamic> json) {
     return WeeklyPlan(
