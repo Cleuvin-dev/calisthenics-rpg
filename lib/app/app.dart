@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_flow_gate.dart';
+import 'theme.dart';
 
 class CalisthenicsRpgApp extends StatelessWidget {
   const CalisthenicsRpgApp({super.key});
@@ -10,7 +11,9 @@ class CalisthenicsRpgApp extends StatelessWidget {
     return MaterialApp(
       title: 'Calisthenics RPG',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.deepPurple),
+      themeMode: ThemeMode.dark,
+      darkTheme: buildCalisthenicsRpgTheme(),
+      theme: buildCalisthenicsRpgTheme(),
       home: const AppFlowGate(),
     );
   }

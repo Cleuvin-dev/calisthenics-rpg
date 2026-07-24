@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/presentation/fade_slide_in.dart';
 import '../../missions/data/mission_providers.dart';
 import '../../missions/presentation/mission_list.dart';
 import '../../rpg/data/rpg_providers.dart';
+import '../../rpg/presentation/xp_evolution_chart.dart';
 import '../../rpg/presentation/xp_level_badge.dart';
 import '../../training_plan/data/training_plan_repository.dart';
 import '../../training_plan/domain/training_plan.dart';
@@ -53,6 +55,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     ref.invalidate(weeklyMissionsProvider);
     ref.invalidate(levelProgressProvider);
     ref.invalidate(recentXpProvider);
+    ref.invalidate(weeklyXpEvolutionProvider);
   }
 
   void _openPlan() {
@@ -74,85 +77,145 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     final dailyMissionsAsync = ref.watch(dailyMissionsProvider);
     final weeklyMissionsAsync = ref.watch(weeklyMissionsProvider);
     final recentXpAsync = ref.watch(recentXpProvider);
+    final evolutionAsync = ref.watch(weeklyXpEvolutionProvider);
+
+    var cardIndex = 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Jornada')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const XpLevelBadge(),
+          FadeSlideIn(index: cardIndex++, child: const XpLevelBadge()),
           const SizedBox(height: 12),
-          completedSessionsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (completed) => _NextSessionCard(
-              plan: plan,
-              completedDayLabels: completed.map((s) => s.dayLabel).toSet(),
-              onTap: _openPlan,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          FadeSlideIn(
+            index: cardIndex++,
+            child: completedSessionsAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (completed) => Column(
                 children: [
-                  Text(
-                    'Próxima habilidade',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  _StatusCard(
+                    plan: plan,
+                    completedCount: completed.length,
                   ),
-                  const SizedBox(height: 4),
-                  Text('Empurrar horizontal: ${widget.placement.levelName}'),
-                  Text('Nível ${widget.placement.level} de 7 nesta escala'),
+                  const SizedBox(height: 12),
+                  _NextSessionCard(
+                    plan: plan,
+                    completedDayLabels: completed.map((s) => s.dayLabel).toSet(),
+                    onTap: _openPlan,
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          dailyMissionsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (missions) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MissionList(title: 'Missões de hoje', missions: missions),
-            ),
-          ),
-          weeklyMissionsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (missions) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MissionList(title: 'Missões da semana', missions: missions),
-            ),
-          ),
-          recentXpAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (entries) {
-              if (entries.isEmpty) return const SizedBox.shrink();
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Histórico recente',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      for (final entry in entries)
-                        ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(_eventLabel(entry.eventType)),
-                          trailing: Text('+${entry.amount} XP'),
-                        ),
-                    ],
-                  ),
+          FadeSlideIn(
+            index: cardIndex++,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Próxima habilidade',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Empurrar horizontal: ${widget.placement.levelName}'),
+                    Text('Nível ${widget.placement.level} de 7 nesta escala'),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FadeSlideIn(
+            index: cardIndex++,
+            child: evolutionAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (totals) {
+                if (totals.every((v) => v == 0)) return const SizedBox.shrink();
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Evolução de XP (7 dias)',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        XpEvolutionChart(dailyTotals: totals),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          FadeSlideIn(
+            index: cardIndex++,
+            child: dailyMissionsAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (missions) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MissionList(title: 'Missões de hoje', missions: missions),
+              ),
+            ),
+          ),
+          FadeSlideIn(
+            index: cardIndex++,
+            child: weeklyMissionsAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (missions) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MissionList(title: 'Missões da semana', missions: missions),
+              ),
+            ),
+          ),
+          FadeSlideIn(
+            index: cardIndex++,
+            child: recentXpAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (entries) {
+                if (entries.isEmpty) return const SizedBox.shrink();
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Histórico recente',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        for (final entry in entries)
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(_eventLabel(entry.eventType)),
+                            trailing: Text(
+                              '+${entry.amount} XP',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.tertiary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
@@ -177,6 +240,49 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
       default:
         return eventType;
     }
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({required this.plan, required this.completedCount});
+
+  final WeeklyPlan plan;
+  final int completedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final required = (plan.actualDaysPerWeek * 0.7).ceil();
+    final onTrack = completedCount >= required;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(
+              onTrack ? Icons.local_fire_department : Icons.trending_up,
+              color: onTrack ? colorScheme.tertiary : colorScheme.primary,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Frequência da semana',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text('$completedCount de ${plan.actualDaysPerWeek} sessões '
+                      '(meta: $required)'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

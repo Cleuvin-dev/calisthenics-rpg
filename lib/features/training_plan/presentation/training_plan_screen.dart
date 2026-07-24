@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/presentation/pattern_illustration.dart';
 import '../../assessment/presentation/placement_result_screen.dart';
 import '../../onboarding/data/training_preferences_repository.dart';
 import '../../rpg/presentation/xp_level_badge.dart';
@@ -238,20 +239,29 @@ class _ExerciseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            item.namePtBr,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          Text(item.setsRepsGuidance),
-          Text(
-            _reasonText(item.reasonCode),
-            style: Theme.of(context).textTheme.bodySmall,
+          PatternIllustration(pattern: item.pattern, size: 44),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.namePtBr,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(item.setsRepsGuidance),
+                Text(
+                  _reasonText(item.reasonCode),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
           ),
         ],
       ),

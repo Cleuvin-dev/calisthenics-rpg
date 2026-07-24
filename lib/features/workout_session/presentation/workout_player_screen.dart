@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/presentation/pattern_illustration.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../progression/data/progression_providers.dart';
 import '../../rpg/data/rpg_providers.dart';
@@ -232,6 +233,14 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  Center(
+                    child: PatternIllustration(
+                      key: ValueKey(currentItem.exerciseSlug),
+                      pattern: currentItem.pattern,
+                      size: 140,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     'Exercício ${_currentIndex + 1}/${items.length}',
                     style: Theme.of(context).textTheme.bodySmall,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/presentation/level_up_celebration.dart';
 import '../../progression/domain/mastery_evaluator.dart';
 import '../data/workout_session_providers.dart';
 import '../domain/workout_session.dart';
@@ -62,7 +63,8 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   ),
                 ],
                 if (leveledUp) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Center(child: LevelUpCelebration(level: newLevel ?? 0)),
                   Card(
                     color: Theme.of(context).colorScheme.tertiaryContainer,
                     child: Padding(

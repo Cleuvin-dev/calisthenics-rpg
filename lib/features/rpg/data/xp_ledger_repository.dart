@@ -108,4 +108,34 @@ class XpLedgerRepository {
       ..limit(limit);
     return query.get();
   }
+
+  /// XP total por dia nos últimos [days] dias (incluindo hoje), do mais
+  /// antigo ao mais recente — usado pelo gráfico de evolução. Todo tipo
+  /// de evento conta aqui, não só os repetíveis (diferente de
+  /// [xpGrantedToday], que existe só para aplicar o teto).
+  Future<List<int>> dailyTotals(int days, DateTime now) async {
+    final today = DateTime(now.year, now.month, now.day);
+    final start = today.subtract(Duration(days: days - 1));
+
+    final query = _db.select(_db.xpLedgerRecords)
+      ..where(
+        (t) => t.createdAt.isBetweenValues(
+          start,
+          today.add(const Duration(days: 1)),
+        ),
+      );
+    final records = await query.get();
+
+    final totals = List<int>.filled(days, 0);
+    for (final record in records) {
+      final day = DateTime(
+        record.createdAt.year,
+        record.createdAt.month,
+        record.createdAt.day,
+      );
+      final index = day.difference(start).inDays;
+      if (index >= 0 && index < days) totals[index] += record.amount;
+    }
+    return totals;
+  }
 }

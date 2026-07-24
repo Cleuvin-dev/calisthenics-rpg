@@ -16,3 +16,8 @@ final levelProgressProvider = FutureProvider<LevelProgress>((ref) async {
 final recentXpProvider = FutureProvider((ref) {
   return ref.watch(xpLedgerRepositoryProvider).recent(limit: 5);
 });
+
+/// XP dos últimos 7 dias, para o gráfico de evolução do dashboard.
+final weeklyXpEvolutionProvider = FutureProvider<List<int>>((ref) {
+  return ref.watch(xpLedgerRepositoryProvider).dailyTotals(7, DateTime.now());
+});

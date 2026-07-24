@@ -151,6 +151,38 @@ void main() {
     expect(await repository.totalXp(), dailyRepeatableXpCap + 40);
   });
 
+  test('dailyTotals agrupa por dia e preenche dias sem XP com zero',
+      () async {
+    final today = DateTime(2026, 7, 24, 9);
+    await repository.grant(
+      const XpAward(
+        eventType: XpEventType.masteryConfirmed,
+        amount: 30,
+        sourceId: 'a',
+        idempotencyKey: 'a',
+        repeatable: false,
+      ),
+      now: today.subtract(const Duration(days: 2)),
+    );
+    await repository.grant(
+      const XpAward(
+        eventType: XpEventType.masteryConfirmed,
+        amount: 20,
+        sourceId: 'b',
+        idempotencyKey: 'b',
+        repeatable: false,
+      ),
+      now: today,
+    );
+
+    final totals = await repository.dailyTotals(7, today);
+
+    expect(totals.length, 7);
+    expect(totals.last, 20); // hoje
+    expect(totals[totals.length - 3], 30); // 2 dias atrás
+    expect(totals.reduce((a, b) => a + b), 50);
+  });
+
   test('grantAwards roteia repetível e não-repetível corretamente',
       () async {
     final total = await repository.grantAwards(

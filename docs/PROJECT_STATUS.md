@@ -9,11 +9,13 @@
 Dar andamento ao MVP depois da primeira história vertical (triagem →
 onboarding → colocação): implementar, em sequência, o **motor de treino
 determinístico**, o **player de sessão offline**, a **confirmação de
-domínio/progressão**, o **épico de RPG/XP** e, nesta última parte,
-**missões diárias/semanais** e a **tela de dashboard "Jornada"**,
-seguindo a cadeia de dependências de `10_DELIVERY/ROADMAP.md` §7
-(avaliação → motor de treino → sessão offline → progressão/domínio →
-RPG).
+domínio/progressão**, o **épico de RPG/XP**, **missões diárias/semanais**
+e a **tela de dashboard "Jornada"**, seguindo a cadeia de dependências de
+`10_DELIVERY/ROADMAP.md` §7 (avaliação → motor de treino → sessão
+offline → progressão/domínio → RPG). Na segunda metade da sessão: testar
+tudo isso no aparelho físico do usuário e, a pedido dele, dar um
+**redesign visual completo** — tema escuro, identidade de "game",
+gráfico de evolução, animações e ilustrações animadas de exercício.
 
 ## Implementado
 
@@ -171,10 +173,74 @@ RPG).
   de missões (concessão idempotente por dia/semana, missão semanal sem
   plano salvo, cobertura de padrões parcial vs. completa).
   `flutter analyze` sem problemas.
-- **Não instalado/testado no aparelho físico nesta sessão** — o usuário
-  vai conectar o celular e testar por conta própria depois. Não há
-  ferramenta de automação de GUI neste ambiente para validar visualmente
-  o fluxo (apenas testes automatizados + `flutter analyze`).
+### Teste no aparelho físico
+
+- `flutter build apk --release` + `adb install -r` no aparelho do usuário
+  (`7549GMFUDA4DKZW8`) — segue sendo o caminho confiável neste Windows
+  (ver Pendências).
+- Testado via `adb shell input tap`/`swipe` + screenshots (sem framework
+  de automação de UI dedicado): app abre com os dados reais já
+  persistidos de sessões anteriores, `JourneyScreen` renderiza com
+  valores computados corretamente, navegação Jornada → Plano → Player
+  funciona, registrar série persiste de verdade (série sobreviveu a
+  reabrir o app depois do redesign visual), retomar sessão em andamento
+  funciona.
+- **Bug real encontrado:** o botão de voltar do sistema (hardware/gesto)
+  sai do `WorkoutPlayerScreen` sem chamar `_pauseAndExit`, deixando a
+  sessão com `status = inProgress` em vez de `paused`. Não perde dados
+  (o banner "sessão em andamento" continua aparecendo e permite
+  retomar), mas o status fica tecnicamente errado. Não corrigido nesta
+  sessão — precisa de um `PopScope` no `WorkoutPlayerScreen`.
+- Achado de ambiente, não do app: neste aparelho específico, rodar
+  `adb shell uiautomator dump` logo após um `adb shell input tap`
+  ocasionalmente abriu sozinho o assistente de configuração de
+  "Acesso por interruptor" do Android (acessibilidade do sistema, nada
+  a ver com o app). Contornado evitando `uiautomator dump` e usando só
+  screenshots com coordenadas calculadas a partir da resolução real do
+  aparelho (`adb shell wm size`).
+
+### Redesign visual — tema escuro/"game" (a pedido do usuário)
+
+- `lib/app/theme.dart` novo: `ColorScheme.fromSeed` escuro (violeta
+  `#7C4DFF`) com `tertiary` dourado (`#FFC947`) reservado para XP/
+  recompensas — progressão física usa a cor primária, XP usa dourado,
+  em toda a UI. Cards arredondados (raio 20), botões arredondados
+  (raio 16), tipografia mais pesada nos títulos. `MaterialApp` passou a
+  usar `themeMode: ThemeMode.dark` sempre (não há alternância clara/
+  escuro ainda — o pedido foi para escuro por padrão).
+  Sem pacotes novos (`ThemeData`/`ColorScheme` puros do Flutter).
+- `features/rpg/presentation/xp_evolution_chart.dart` novo: gráfico de
+  barras dos últimos 7 dias de XP, construído à mão com
+  `TweenAnimationBuilder` (sem `fl_chart` nem outro pacote de gráficos —
+  mesma filosofia de poucas dependências já seguida no projeto).
+  `XpLedgerRepository.dailyTotals(days, now)` novo, agrupando em Dart
+  (dataset pequeno, sem necessidade de `GROUP BY` no SQL).
+  `JourneyScreen` ganhou também um cartão de "status" (frequência da
+  semana) acima do gráfico.
+- `XpLevelBadge` redesenhado: avatar de nível com anel dourado, fundo em
+  gradiente, barra de progresso animada (dourada).
+- `lib/shared/presentation/`:
+  - `fade_slide_in.dart` — entrada animada (fade + leve deslize) dos
+    cards da Jornada, escalonada por índice.
+  - `level_up_celebration.dart` — explosão de partículas +
+    escala elástica (`CustomPainter` + `AnimationController`) exibida
+    em `WorkoutSummaryScreen` quando `leveledUp` é verdadeiro. Não
+    verificado visualmente no aparelho nesta sessão (precisaria
+    acumular XP suficiente para subir de nível de verdade); passou por
+    `flutter analyze` e é usado com dados reais na tela de resumo.
+  - `pattern_illustration.dart` — bonequinho de traços animado por
+    **família de movimento** (`MovementFamily`: empurrar/puxar
+    horizontal, agachar/hinge, core, vertical/suporte/equilíbrio,
+    mobilidade), não por exercício individual — decisão da pergunta que
+    fiz ao usuário sobre mídia de exercício: sem gerar vídeo/gif nem
+    baixar mídia de terceiros, ilustração 100% Flutter. Usado grande
+    (140px) no `WorkoutPlayerScreen` e pequeno (44px) como miniatura em
+    cada linha de exercício no `TrainingPlanScreen`. Confirmado
+    visualmente no aparelho — poses distintas por família, animação
+    rodando em loop.
+- 84 testes automatizados (mais um: `dailyTotals` agrupa por dia
+  corretamente), `flutter analyze` sem problemas, build+install+teste
+  visual no aparelho confirmados.
 
 ## Banco/migrations
 
@@ -194,11 +260,10 @@ RPG).
 | Comando | Resultado |
 |---|---|
 | `flutter analyze` | Sem problemas |
-| `flutter test` | 83 passed, 0 failed |
+| `flutter test` | 84 passed, 0 failed |
 | `dart run build_runner build` | OK |
-
-Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
-(fica para o usuário, que testará conectando o celular).
+| `flutter build apk --release` | OK (55,6MB) |
+| `adb install -r` no aparelho físico | OK, testado manualmente via `adb shell input` |
 
 ## Decisões e ADRs
 
@@ -239,6 +304,24 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
     check-in nem conceito de dia de descanso prescrito distinto de dia
     de treino; "revisar progresso" ficou de fora por não haver uma tela
     de Evolução para gerar esse evento.
+  - Mídia de exercício (perguntado ao usuário, ele escolheu): ilustração
+    animada 100% Flutter por família de movimento, não vídeo/gif real.
+    Motivo: não há como gerar vídeo, e baixar mídia de terceiros sem
+    saber a licença/origem seria problemático. Cinco famílias cobrem os
+    nove padrões do catálogo — se o catálogo editorial completo (com
+    mídia real) chegar algum dia, essas ilustrações são o degrau
+    intermediário, não o destino final (EXERCISE_SCHEMA.md §5 pede
+    vídeo com ângulo, regressão e saída — isso continua pendente).
+  - Tema escuro fixo (`ThemeMode.dark`), sem alternância clara/escuro —
+    o usuário pediu tema escuro para "melhor visualização", não pediu
+    opção configurável. Se um tema claro voltar a ser necessário,
+    `buildCalisthenicsRpgTheme()` já está isolado em `app/theme.dart`
+    para virar dois temas facilmente.
+  - Gráfico de evolução e animações são só Flutter puro (`CustomPainter`,
+    `TweenAnimationBuilder`, `AnimationController`) — nenhum pacote novo
+    adicionado (`fl_chart`, `lottie`, `confetti` etc. foram considerados
+    e descartados), mantendo a filosofia de poucas dependências já
+    seguida no resto do projeto.
   - `JourneyScreen` concede XP de missões num `initState` +
     post-frame-callback, não dentro do `FutureProvider` de leitura —
     separação deliberada entre "avaliar" (puro, seguro para watch
@@ -275,9 +358,25 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
   `JourneyScreen`, empilhada no Navigator), a tela não atualiza sozinha
   com o novo plano — só reflete ao sair e voltar (quando `JourneyScreen`
   é reconstruída com dados novos). Vale corrigir numa sessão futura.
+- **Bug novo encontrado testando no aparelho, não corrigido:** o botão
+  de voltar do sistema sai do `WorkoutPlayerScreen` sem marcar a sessão
+  como `paused` (fica `inProgress`). Sem perda de dados, mas o status
+  fica inconsistente — precisa de `PopScope`/`WillPopScope` chamando a
+  mesma lógica do botão de pausar.
+- `LevelUpCelebration` não foi vista rodando de verdade no aparelho
+  (precisaria acumular 125 XP para subir do nível 1) — só validada por
+  `flutter analyze` e revisão de código. Vale conferir visualmente na
+  próxima vez que alguém subir de nível de verdade.
+- Ilustrações de exercício são só 5 poses estilizadas por família, não
+  demonstração técnica real (sem critério de repetição válida, erro
+  comum, regressão — EXERCISE_SCHEMA.md §5 continua pendente).
 - `flutter run` em modo debug historicamente instável neste Windows
   (contenção de lock do Gradle) — usar `flutter build apk --release` +
   `adb install -r` quando for instalar no aparelho.
+- `adb shell uiautomator dump` mostrou-se não confiável neste aparelho
+  específico (abriu o assistente de acessibilidade do Android sozinho
+  mais de uma vez) — preferir screenshots + coordenadas calculadas a
+  partir de `adb shell wm size` em testes futuros neste dispositivo.
 
 ## Riscos/bloqueios
 
@@ -287,15 +386,16 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
 ## Próxima tarefa recomendada
 
 Com plano → sessão → registro → domínio → XP → missões → Jornada
-fechando o ciclo básico do MVP, as próximas opções naturais são:
-(a) estender avaliação/colocação real para os demais padrões
-fundamentais (hoje só push_horizontal tem anchor/teste — os outros usam
-sempre nível 0), o que destrava progressão, missão "treinar todos os
-padrões" e Xp de domínio de verdade neles também; (b) corrigir o bug de
-`TrainingPlanScreen` não atualizar sozinha após regenerar (ver
-Pendências); ou (c) uma tela de "Evolução" (histórico/atributos/
-recordes, SCREENS_AND_FLOWS.md), que também destrava a missão "revisar
-progresso" que ficou de fora desta rodada.
+fechando o ciclo básico do MVP e o visual já com cara de "game" no
+aparelho, as próximas opções naturais são: (a) corrigir os dois bugs
+notados em "Pendências" (voltar do sistema não pausa sessão;
+`TrainingPlanScreen` não atualiza sozinha após regenerar) — rápido e
+evita confusão do usuário; (b) estender avaliação/colocação real para
+os demais padrões fundamentais (hoje só push_horizontal tem anchor/
+teste), o que destrava progressão, a missão "treinar todos os padrões"
+e XP de domínio de verdade neles também; ou (c) uma tela de "Evolução"
+(histórico/atributos/recordes, SCREENS_AND_FLOWS.md), que também
+destrava a missão "revisar progresso" que ficou de fora desta rodada.
 
 ## Critério para retomar
 
