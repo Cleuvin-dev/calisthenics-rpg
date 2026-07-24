@@ -13,6 +13,7 @@ import 'tables/set_log_records.dart';
 import 'tables/training_plan_records.dart';
 import 'tables/training_preference_records.dart';
 import 'tables/workout_session_records.dart';
+import 'tables/xp_ledger_records.dart';
 
 part 'app_database.g.dart';
 
@@ -24,6 +25,7 @@ part 'app_database.g.dart';
   TrainingPlanRecords,
   WorkoutSessionRecords,
   SetLogRecords,
+  XpLedgerRecords,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -32,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -52,6 +54,10 @@ class AppDatabase extends _$AppDatabase {
             // Novas tabelas do player de sessão.
             await m.createTable(workoutSessionRecords);
             await m.createTable(setLogRecords);
+          }
+          if (from < 5) {
+            // Nova tabela do ledger de XP.
+            await m.createTable(xpLedgerRecords);
           }
         },
       );

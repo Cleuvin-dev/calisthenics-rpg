@@ -15,11 +15,17 @@ class MasteryEvaluationResult {
     required this.qualifyingConfirmations,
     required this.confirmationsRequired,
     required this.promoted,
+    this.newLevel,
   });
 
   final int qualifyingConfirmations;
   final int confirmationsRequired;
   final bool promoted;
+
+  /// Novo nível de capacidade, preenchido por `ProgressionRepository`
+  /// quando `promoted` é `true`. O avaliador em si é agnóstico de
+  /// padrão/nível — só sabe contar confirmações.
+  final int? newLevel;
 
   bool get hasPartialProgress => !promoted && qualifyingConfirmations > 0;
 }

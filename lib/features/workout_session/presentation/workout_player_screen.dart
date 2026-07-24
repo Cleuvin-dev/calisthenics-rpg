@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../progression/data/progression_providers.dart';
+import '../../rpg/data/rpg_providers.dart';
+import '../../rpg/domain/level_curve.dart';
+import '../../rpg/domain/xp_rules.dart';
 import '../data/workout_session_providers.dart';
 import '../data/workout_session_repository.dart';
 import '../domain/workout_session.dart';
@@ -127,11 +130,13 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     );
   }
 
-  Future<void> _completeSession(String dayLabel) async {
+  Future<void> _completeSession(
+    String dayLabel,
+    List<WorkoutSessionItem> items,
+  ) async {
     final now = DateTime.now();
-    await ref
-        .read(workoutSessionRepositoryProvider)
-        .complete(widget.workoutSessionId, now);
+    final sessionRepository = ref.read(workoutSessionRepositoryProvider);
+    await sessionRepository.complete(widget.workoutSessionId, now);
     ref.invalidate(latestActiveWorkoutSessionProvider);
 
     final masteryResult =
@@ -144,6 +149,23 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
     }
 
+    final xpRepository = ref.read(xpLedgerRepositoryProvider);
+    const levelCalculator = LevelCalculator();
+    final levelBefore = levelCalculator.levelFor(await xpRepository.totalXp()).level;
+
+    final logs = await sessionRepository.setLogsFor(widget.workoutSessionId);
+    final awards = awardsForCompletedSession(
+      workoutSessionId: widget.workoutSessionId,
+      items: items,
+      loggedExerciseSlugs: logs.map((l) => l.exerciseSlug).toSet(),
+      masteryPromoted: masteryResult?.promoted ?? false,
+      masteryPattern: 'push_horizontal',
+      masteryNewLevel: masteryResult?.newLevel,
+    );
+    final xpAwarded = await xpRepository.grantAwards(awards, now: now);
+    final levelAfter = levelCalculator.levelFor(await xpRepository.totalXp()).level;
+    ref.invalidate(levelProgressProvider);
+
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -151,6 +173,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           workoutSessionId: widget.workoutSessionId,
           dayLabel: dayLabel,
           masteryResult: masteryResult,
+          xpAwarded: xpAwarded,
+          leveledUp: levelAfter > levelBefore,
+          newLevel: levelAfter,
         ),
       ),
     );
@@ -262,7 +287,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
               child: FilledButton(
                 onPressed: () {
                   if (isLast) {
-                    _completeSession(session.dayLabel);
+                    _completeSession(session.dayLabel, items);
                   } else {
                     setState(() => _currentIndex++);
                   }

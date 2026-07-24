@@ -46,23 +46,28 @@ class ProgressionRepository {
     const evaluator = MasteryEvaluator();
     final result = evaluator.evaluate(rule: rule, sessions: sessions);
 
-    if (result.promoted) {
-      final newLevel = currentLevel + 1;
-      await _capabilityEstimateRepository.saveEstimate(
-        pattern: 'push_horizontal',
-        level: newLevel,
-        levelName: pushHorizontalLevelNames[newLevel] ?? 'Nível $newLevel',
-        // Confiança maior que a colocação por autorrelato: baseada em
-        // séries realmente executadas e confirmadas.
-        confidence: 'medium',
-        ruleVersion: masteryRuleVersion,
-        reasonCode: masteryConfirmedReasonCode,
-        computedAt: now,
-        validUntil: now.add(const Duration(days: 30)),
-      );
-    }
+    if (!result.promoted) return result;
 
-    return result;
+    final newLevel = currentLevel + 1;
+    await _capabilityEstimateRepository.saveEstimate(
+      pattern: 'push_horizontal',
+      level: newLevel,
+      levelName: pushHorizontalLevelNames[newLevel] ?? 'Nível $newLevel',
+      // Confiança maior que a colocação por autorrelato: baseada em
+      // séries realmente executadas e confirmadas.
+      confidence: 'medium',
+      ruleVersion: masteryRuleVersion,
+      reasonCode: masteryConfirmedReasonCode,
+      computedAt: now,
+      validUntil: now.add(const Duration(days: 30)),
+    );
+
+    return MasteryEvaluationResult(
+      qualifyingConfirmations: result.qualifyingConfirmations,
+      confirmationsRequired: result.confirmationsRequired,
+      promoted: true,
+      newLevel: newLevel,
+    );
   }
 
   Future<List<SessionEvidence>> _fetchSessionEvidence({

@@ -8,10 +8,10 @@
 
 Dar andamento ao MVP depois da primeira história vertical (triagem →
 onboarding → colocação): implementar, em sequência, o **motor de treino
-determinístico**, o **player de sessão offline** e a **confirmação de
-domínio/progressão**, seguindo a cadeia de dependências de
-`10_DELIVERY/ROADMAP.md` §7 (avaliação → motor de treino → sessão
-offline → progressão/domínio).
+determinístico**, o **player de sessão offline**, a **confirmação de
+domínio/progressão** e o início do **épico de RPG/XP**, seguindo a cadeia
+de dependências de `10_DELIVERY/ROADMAP.md` §7 (avaliação → motor de
+treino → sessão offline → progressão/domínio → RPG).
 
 ## Implementado
 
@@ -85,15 +85,48 @@ offline → progressão/domínio).
   em X de Y sessões") ou domínio confirmado, com aviso para gerar um novo
   plano manualmente (nada muda de plano "em silêncio").
 
+### RPG/XP (`features/rpg`)
+
+- **Domínio:** `xp_rules.dart` — valores base de RPG_SYSTEM.md §2 (sessão
+  concluída: 40, todas as séries registradas: 10, domínio confirmado:
+  80) e `awardsForCompletedSession(...)`, função pura que decide os
+  créditos de uma sessão a partir de fatos (itens da sessão, exercícios
+  logados, se houve promoção de domínio) — nenhuma dependência de banco.
+  `level_curve.dart` — fórmula de nível de RPG_SYSTEM.md §3
+  (`100 + 25 × nível^1.35`) e `LevelCalculator.levelFor(totalXp)`.
+- **Dados:** tabela `xp_ledger_records` (ledger imutável, saldo é sempre
+  a soma — nunca um campo mutável). `XpLedgerRepository.grant`/
+  `grantRepeatable`/`grantAwards`: idempotência por `idempotencyKey`
+  (repetir uma chamada não duplica crédito, ECONOMY_AND_ANTI_ABUSE.md
+  §2) e teto diário de XP repetível (`dailyRepeatableXpCap = 200`, §3) —
+  domínio confirmado não entra no teto porque só acontece uma vez por
+  nó, por natureza da própria chave de idempotência.
+- **Wiring:** `WorkoutPlayerScreen` concede XP ao concluir a sessão
+  (sessão + bônus de registro completo + domínio, se houve promoção
+  nesta mesma conclusão); `WorkoutSummaryScreen` mostra "+XX XP" e, se
+  subiu de nível, a mensagem de SCREENS_AND_FLOWS.md §6 ("Você alcançou
+  o nível N! A próxima habilidade será liberada quando os requisitos
+  físicos forem confirmados."). `XpLevelBadge` novo (nível + barra de
+  progresso) embutido no topo de `TrainingPlanScreen` — ainda não há
+  dashboard/"Jornada" dedicada.
+- Sem missões, campanha, atributos narrativos, Boss Test nem ranking
+  ainda — esta rodada cobriu só a fatia "XP e nível" de RPG_SYSTEM.md
+  §1 (participação/jornada, não libera exercício).
+- FR-040 pede "conceder XP apenas no backend"; como o MVP é local-only
+  single-device (ADR-0006), sem outros jogadores/ranking, não há
+  superfície de fraude a proteger ainda — mesma ressalva já aplicada ao
+  motor de treino e à triagem (regra determinística roda no cliente por
+  ora, migra para o backend quando ele voltar).
+
 ### Geral
 
-- 52 testes automatizados (era 20 no início da sessão), todos passando —
-  cobrem o gerador de plano, o repositório de sessão e, agora, o
-  avaliador de domínio (sessões insuficientes, intervalo entre
-  confirmações, dor desqualificando sessão, reps/esforço abaixo do
-  alvo) e o repositório de progressão (promoção real grava
-  `capability_estimate_records`, sessões antes da colocação atual não
-  contam, nível 7 não é reavaliado). `flutter analyze` sem problemas.
+- 70 testes automatizados (era 20 no início da sessão), todos passando —
+  cobrem o gerador de plano, o repositório de sessão, o avaliador/
+  repositório de domínio e, agora, a curva de nível, as regras de XP
+  (bônus só quando todos os itens foram logados, crédito de domínio só
+  quando promovido) e o ledger (idempotência, teto diário recortando ou
+  bloqueando conforme o headroom, isolamento por dia). `flutter analyze`
+  sem problemas.
 - **Não instalado/testado no aparelho físico nesta sessão** — o usuário
   vai conectar o celular e testar por conta própria depois. Não há
   ferramenta de automação de GUI neste ambiente para validar visualmente
@@ -104,11 +137,13 @@ offline → progressão/domínio).
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
   continua vazio. Sync (`OutboxEvents`) segue reservada e não usada
   (ADR-0005, `core/sync/README.md`).
-- Schema local Drift em `schemaVersion = 4` (sem mudança nesta parte da
-  sessão — progressão reaproveita `capability_estimate_records`):
+- Schema local Drift em `schemaVersion = 5` (progressão não mudou
+  schema — reaproveita `capability_estimate_records`; RPG/XP adicionou
+  `xp_ledger_records`):
   - `1→2`: recria `CapabilityEstimateRecords` (`inputAnchor` opcional).
   - `2→3`: cria `training_plan_records`.
   - `3→4`: cria `workout_session_records` e `set_log_records`.
+  - `4→5`: cria `xp_ledger_records`.
   - Todas aceitáveis por não haver dados reais em produção ainda.
 
 ## Testes executados
@@ -116,7 +151,7 @@ offline → progressão/domínio).
 | Comando | Resultado |
 |---|---|
 | `flutter analyze` | Sem problemas |
-| `flutter test` | 52 passed, 0 failed |
+| `flutter test` | 70 passed, 0 failed |
 | `dart run build_runner build` | OK |
 
 Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
@@ -147,6 +182,14 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
     (PROGRESSION_RULES.md §3/§9). `CapabilityEstimateRepository` ganhou
     `saveEstimate(...)` genérico para não duplicar a lógica de insert
     entre colocação conservadora e confirmação de domínio.
+  - XP roda client-side por enquanto (ver ressalva de FR-040 acima) —
+    decisão consciente de fase, não descuido: seguindo o mesmo padrão já
+    estabelecido para triagem/motor de treino/progressão neste projeto.
+  - Teto diário de XP repetível existe (`dailyRepeatableXpCap`), mas os
+    demais sinais de integridade de ECONOMY_AND_ANTI_ABUSE.md §4
+    (sessões sobrepostas, duração impossível, relógio alterado etc.) não
+    foram implementados — não fazem sentido sem múltiplos usuários/
+    competição para proteger ainda.
 
 ## Pendências
 
@@ -156,7 +199,10 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
   conteúdo além dos padrões fundamentais.
 - Progressão não cobre regressão temporária, platô, deload nem os demais
   padrões além de `push_horizontal` (PROGRESSION_RULES.md §4-6).
-- Sem XP, campanha ou dashboard/jornada ainda.
+- Sem missões, campanha/fases narrativas, atributos, Boss Test, classes
+  nem ranking (RPG_SYSTEM.md §4-11) — só "XP e nível" está implementado.
+  Sem dashboard/"Jornada" dedicada — o badge de nível vive dentro de
+  `TrainingPlanScreen` por enquanto.
 - Sem timer/descanso, substituição de exercício em tela ou vídeo no
   player (SCREENS_AND_FLOWS.md §4 lista esses itens; ficaram fora do
   escopo da primeira versão do player).
@@ -173,14 +219,16 @@ Não rodado nesta sessão: `flutter build apk` / instalação no aparelho
 
 ## Próxima tarefa recomendada
 
-Com plano → sessão → registro → confirmação de domínio fechando o ciclo
+Com plano → sessão → registro → domínio → XP fechando o ciclo básico
 para `push_horizontal`, as próximas opções naturais são: (a) estender
 avaliação/colocação real para os demais padrões fundamentais (hoje só
 push_horizontal tem anchor/teste — os outros usam sempre nível 0), o que
-destrava progressão de verdade neles também; ou (b) começar o épico de
-RPG/XP (`ROADMAP.md` §7), que depende de "domínio" e já tem uma fonte de
-eventos (`capability_estimate_records` promovido por
-`masteryConfirmedReasonCode`) para se pendurar.
+destrava progressão e XP de domínio de verdade neles também; (b) missões
+diárias/semanais (RPG_SYSTEM.md §8), que já têm fatos suficientes no
+banco (sessões concluídas, séries registradas) para serem avaliadas sem
+mudança estrutural grande; ou (c) uma tela de dashboard/"Jornada"
+dedicada (SCREENS_AND_FLOWS.md §3), já que o badge de nível hoje vive
+"emprestado" dentro da tela do plano.
 
 ## Critério para retomar
 

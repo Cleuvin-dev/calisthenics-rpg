@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../assessment/presentation/placement_result_screen.dart';
 import '../../onboarding/data/training_preferences_repository.dart';
+import '../../rpg/presentation/xp_level_badge.dart';
 import '../../workout_session/data/workout_session_providers.dart';
 import '../../workout_session/domain/workout_session.dart';
 import '../../workout_session/presentation/workout_player_screen.dart';
@@ -106,6 +107,8 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const XpLevelBadge(),
+          const SizedBox(height: 12),
           activeSessionAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
