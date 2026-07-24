@@ -52,10 +52,15 @@ const exerciseCatalogVersion = 'minimal-catalog-v1';
 
 /// Padrões cobertos nesta versão do catálogo. Os demais padrões oficiais de
 /// EXERCISE_SCHEMA.md §3 ainda não têm variação cadastrada.
+/// Slug do exercício de aquecimento, sempre o primeiro item de qualquer
+/// sessão gerada. Referenciado por fora do catálogo (ex.: missão diária
+/// "concluir o aquecimento" em `features/missions`).
+const warmupExerciseSlug = 'warmup_joint_mobility';
+
 const List<CatalogExercise> exerciseCatalog = [
   // Aquecimento — sempre o primeiro bloco da sessão (TRAINING_ENGINE.md §5).
   CatalogExercise(
-    slug: 'warmup_joint_mobility',
+    slug: warmupExerciseSlug,
     namePtBr: 'Mobilidade articular geral e marcha estacionária',
     pattern: 'mobility_specific',
     setsRepsGuidance: '3-5 min contínuos, ritmo confortável',

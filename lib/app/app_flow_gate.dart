@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/app_database.dart';
 import '../features/assessment/data/capability_estimate_providers.dart';
 import '../features/assessment/presentation/assessment_skip_test_screen.dart';
+import '../features/journey/presentation/journey_screen.dart';
 import '../features/onboarding/data/training_preferences_providers.dart';
 import '../features/onboarding/presentation/onboarding_preferences_screen.dart';
 import '../features/safety/data/safety_screening_providers.dart';
@@ -12,7 +13,6 @@ import '../features/safety/presentation/safety_blocked_screen.dart';
 import '../features/safety/presentation/safety_screening_screen.dart';
 import '../features/training_plan/data/training_plan_providers.dart';
 import '../features/training_plan/presentation/generate_training_plan_screen.dart';
-import '../features/training_plan/presentation/training_plan_screen.dart';
 
 /// Decide reativamente qual etapa da primeira história vertical mostrar,
 /// com base no que já existe no banco local: triagem -> onboarding ->
@@ -107,7 +107,7 @@ class _AfterPlacementGate extends ConsumerWidget {
             placement: placement,
           );
         }
-        return TrainingPlanScreen(
+        return JourneyScreen(
           record: plan,
           preferences: preferences,
           placement: placement,

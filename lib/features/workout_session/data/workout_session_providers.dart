@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/app_database_provider.dart';
+import '../../../core/time/date_period.dart';
 import 'workout_session_repository.dart';
 
 final workoutSessionRepositoryProvider =
@@ -27,4 +28,12 @@ final setLogsForSessionProvider =
   return ref
       .watch(workoutSessionRepositoryProvider)
       .setLogsFor(workoutSessionId);
+});
+
+final completedSessionsThisWeekProvider =
+    FutureProvider<List<WorkoutSessionRecord>>((ref) {
+  final now = DateTime.now();
+  return ref
+      .watch(workoutSessionRepositoryProvider)
+      .completedBetween(startOfWeek(now), endOfWeek(now));
 });

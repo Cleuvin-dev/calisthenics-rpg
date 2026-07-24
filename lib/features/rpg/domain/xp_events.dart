@@ -1,6 +1,11 @@
 /// Eventos que concedem XP (RPG_SYSTEM.md §2). Cobrem só a fatia
-/// implementada nesta versão — missões e Boss Test ficam para depois.
-enum XpEventType { sessionCompleted, allSetsLogged, masteryConfirmed }
+/// implementada nesta versão — Boss Test fica para depois.
+enum XpEventType {
+  sessionCompleted,
+  allSetsLogged,
+  masteryConfirmed,
+  missionCompleted,
+}
 
 /// Um crédito a lançar no ledger. `idempotencyKey` é a chave de
 /// deduplicação (ECONOMY_AND_ANTI_ABUSE.md §2 — repetir a chamada não

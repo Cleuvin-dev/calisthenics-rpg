@@ -99,6 +99,30 @@ class WorkoutSessionRepository {
       ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]);
     return query.get();
   }
+
+  /// Sessões concluídas com `completedAt` em `[start, end)` — usado por
+  /// missões semanais e pela tela Jornada ("próxima sessão da semana").
+  Future<List<WorkoutSessionRecord>> completedBetween(
+    DateTime start,
+    DateTime end,
+  ) {
+    final query = _db.select(_db.workoutSessionRecords)
+      ..where(
+        (t) =>
+            t.status.equals(WorkoutSessionStatus.completed.name) &
+            t.completedAt.isBetweenValues(start, end),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]);
+    return query.get();
+  }
+
+  /// Séries registradas com `completedAt` em `[start, end)`, qualquer
+  /// sessão — usado por missões diárias/semanais.
+  Future<List<SetLogRecord>> setLogsBetween(DateTime start, DateTime end) {
+    final query = _db.select(_db.setLogRecords)
+      ..where((t) => t.completedAt.isBetweenValues(start, end));
+    return query.get();
+  }
 }
 
 extension WorkoutSessionRecordDecoding on WorkoutSessionRecord {

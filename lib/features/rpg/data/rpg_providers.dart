@@ -12,3 +12,7 @@ final levelProgressProvider = FutureProvider<LevelProgress>((ref) async {
   final totalXp = await ref.watch(xpLedgerRepositoryProvider).totalXp();
   return const LevelCalculator().levelFor(totalXp);
 });
+
+final recentXpProvider = FutureProvider((ref) {
+  return ref.watch(xpLedgerRepositoryProvider).recent(limit: 5);
+});

@@ -59,4 +59,20 @@ class CapabilityEstimateRepository {
       ..limit(1);
     return query.getSingleOrNull();
   }
+
+  /// Estimativas com um `reasonCode` específico e `computedAt` em
+  /// `[start, end)` — usado pela missão semanal "confirmar domínio".
+  Future<List<CapabilityEstimateRecord>> confirmedBetween({
+    required String reasonCode,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final query = _db.select(_db.capabilityEstimateRecords)
+      ..where(
+        (t) =>
+            t.reasonCode.equals(reasonCode) &
+            t.computedAt.isBetweenValues(start, end),
+      );
+    return query.get();
+  }
 }
