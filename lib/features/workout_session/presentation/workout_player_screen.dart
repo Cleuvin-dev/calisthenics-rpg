@@ -187,7 +187,16 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     final sessionAsync =
         ref.watch(workoutSessionByIdProvider(widget.workoutSessionId));
 
-    return sessionAsync.when(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Voltar (gesto/botão do sistema) pausa a sessão como o botão de
+        // pausar do AppBar — sem isso, a sessão ficava presa em
+        // "inProgress" mesmo depois de o usuário sair da tela.
+        _pauseAndExit();
+      },
+      child: sessionAsync.when(
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
@@ -307,6 +316,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           ),
         );
       },
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../shared/presentation/fade_slide_in.dart';
+import '../../evolution/presentation/evolution_screen.dart';
 import '../../missions/data/mission_providers.dart';
 import '../../missions/presentation/mission_list.dart';
 import '../../rpg/data/rpg_providers.dart';
@@ -16,8 +17,9 @@ import '../../workout_session/data/workout_session_providers.dart';
 /// Dashboard principal (SCREENS_AND_FLOWS.md §1/§3 — "Jornada", primeiro
 /// dos cinco destinos de navegação). Hierarquia da tela: missão
 /// principal, próxima habilidade/progresso, nível/XP, missões, histórico
-/// curto. Ainda não há os outros quatro destinos (Habilidades, Evolução,
-/// Perfil) nem navegação por abas — só "Jornada" e "Treino" existem.
+/// curto. "Evolução" já existe (acessível pelo ícone do AppBar), mas
+/// Habilidades e Perfil ainda não — e nenhuma navegação por abas ainda,
+/// só pushes de tela.
 class JourneyScreen extends ConsumerStatefulWidget {
   const JourneyScreen({
     super.key,
@@ -82,7 +84,18 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     var cardIndex = 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Jornada')),
+      appBar: AppBar(
+        title: const Text('Jornada'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: 'Evolução',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EvolutionScreen()),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

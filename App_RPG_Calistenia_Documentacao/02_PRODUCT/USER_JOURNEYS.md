@@ -4,8 +4,8 @@
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Cadastro
-    Cadastro --> Triagem
+    [*] --> PerfilLocal
+    PerfilLocal --> Triagem
     Triagem --> OrientacaoProfissional: risco identificado
     Triagem --> Configuracao: fluxo geral
     Configuracao --> Avaliacao
@@ -37,7 +37,7 @@ stateDiagram-v2
 6. acessórios e core;
 7. volta à calma opcional;
 8. resumo com esforço, dor e observações;
-9. processamento no backend;
+9. processamento transacional no banco local;
 10. XP, progresso e próximo passo.
 
 ## 3. Jornada de desbloqueio
@@ -46,7 +46,7 @@ stateDiagram-v2
 - app mostra “candidato a domínio”, sem liberar ainda quando confirmação é exigida;
 - nova exposição ocorre após recuperação adequada;
 - critério técnico e quantitativo é novamente alcançado;
-- backend registra evidências e regra;
+- serviço de domínio local registra evidências e regra;
 - nó é dominado;
 - próxima variação entra como prática de baixa dose, não substitui todo o volume imediatamente.
 
@@ -86,20 +86,20 @@ Valores exatos devem ser configuráveis e aprovados por especialista.
 - triagem válida/expirada/requer revisão;
 - sem avaliação;
 - plano ativo/pausado/encerrado;
-- sessão programada/em execução/pendente de sincronização/processada;
+- sessão programada/em execução/processando/processada;
 - fase ativa/boss disponível/fase concluída;
 - nó bloqueado/disponível/em treino/candidato/dominado/temporariamente regressado;
-- conta normal/restrita/exclusão solicitada.
+- perfil local normal/reiniciado/apagamento solicitado.
 
 ## 8. Casos de borda
 
 - usuário não possui barra após iniciar plano;
 - agenda cai de 5 para 2 dias;
-- sessão é encerrada sem internet;
+- todo o fluxo é executado em modo avião;
 - aplicativo fecha no descanso;
 - relógio do aparelho é alterado;
-- sessão duplicada chega ao servidor;
-- exercício foi despublicado durante a semana;
+- a mesma sessão é finalizada duas vezes;
+- catálogo local é atualizado durante a semana;
 - usuário marcou repetições incompatíveis com o histórico;
 - teste dá empate entre duas variações;
 - plano tem menos tempo do que o mínimo para todos os blocos.

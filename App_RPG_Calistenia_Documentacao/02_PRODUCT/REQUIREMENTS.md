@@ -2,9 +2,11 @@
 
 ## 1. Perfis e onboarding
 
-### FR-001 — Conta
+### FR-001 — Perfil local
 
-O usuário DEVE criar conta, autenticar, recuperar acesso e excluir a conta.
+Na primeira versão, o usuário DEVE criar um perfil local sem login e deve poder
+reiniciar a jornada, exportar e apagar os dados do aparelho. Conta,
+autenticação e recuperação online pertencem à futura fase Supabase.
 
 ### FR-002 — Perfil físico e preferências
 
@@ -44,7 +46,8 @@ O sistema deve limitar objetivos simultâneos incompatíveis e explicar priorida
 - **FR-021:** aceitar reps/tempo/carga/assistência e percepção da série.
 - **FR-022:** oferecer “muito fácil”, “adequado”, “difícil”, “não completei” e “dor”.
 - **FR-023:** temporizador deve operar em segundo plano conforme limites do SO.
-- **FR-024:** sessão deve funcionar offline e sincronizar de forma idempotente.
+- **FR-024:** sessão deve funcionar integralmente offline e ser finalizada
+  localmente de forma idempotente.
 - **FR-025:** permitir substituir exercício mantendo padrão, dificuldade e restrições.
 - **FR-026:** diferenciar sessão iniciada, pausada, abandonada e concluída.
 
@@ -59,7 +62,8 @@ O sistema deve limitar objetivos simultâneos incompatíveis e explicar priorida
 
 ## 5. RPG
 
-- **FR-040:** conceder XP apenas no backend.
+- **FR-040:** conceder XP somente pelo serviço de domínio e ledger local; na
+  futura fase Supabase, a autoridade passa para o backend.
 - **FR-041:** possuir nível geral, atributos, títulos, conquistas e campanhas.
 - **FR-042:** missões não devem recompensar treino excessivo.
 - **FR-043:** Boss Test é adaptado ao nível e pode ser adiado sem punição.
@@ -93,7 +97,7 @@ O sistema deve limitar objetivos simultâneos incompatíveis e explicar priorida
 | Código | Requisito |
 |---|---|
 | NFR-001 | Operações críticas idempotentes |
-| NFR-002 | RLS e menor privilégio em todas as tabelas privadas |
+| NFR-002 | Dados privados isolados no banco local; RLS obrigatória na futura fase Supabase |
 | NFR-003 | Segredos ausentes do aplicativo cliente |
 | NFR-004 | Inicialização principal percebida em até 2 s em aparelho intermediário, salvo rede |
 | NFR-005 | Registro local da sessão sem depender de conexão |
@@ -106,7 +110,7 @@ O sistema deve limitar objetivos simultâneos incompatíveis e explicar priorida
 ## 9. Critérios globais de aceite
 
 - dado o mesmo perfil e a mesma versão de regras, a prescrição é reproduzível;
-- sincronizar a mesma sessão várias vezes não duplica XP;
+- finalizar a mesma sessão várias vezes não duplica XP;
 - marcar dor impede progressão automática daquele padrão;
 - alterar equipamento não insere exercício incompatível;
 - nível geral elevado não libera uma habilidade sem domínio;

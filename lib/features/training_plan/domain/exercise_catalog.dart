@@ -169,6 +169,16 @@ const List<CatalogExercise> exerciseCatalog = [
 List<CatalogExercise> exercisesForPattern(String pattern) =>
     exerciseCatalog.where((e) => e.pattern == pattern).toList();
 
+/// Nome amigável de um exercício pelo slug, ou o próprio slug se não
+/// estiver mais no catálogo (conteúdo aposentado permanece referenciável
+/// no histórico, DATA_MODEL.md §4).
+String exerciseNameForSlug(String slug) {
+  for (final exercise in exerciseCatalog) {
+    if (exercise.slug == slug) return exercise.namePtBr;
+  }
+  return slug;
+}
+
 /// Variação de push_horizontal treinada no nível de capacidade atual, ou
 /// `null` se nenhuma variação cobrir esse nível (fora da escala 0-7 desta
 /// versão do catálogo).

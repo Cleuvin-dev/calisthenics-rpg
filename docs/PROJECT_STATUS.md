@@ -16,6 +16,10 @@ offline → progressão/domínio → RPG). Na segunda metade da sessão: testar
 tudo isso no aparelho físico do usuário e, a pedido dele, dar um
 **redesign visual completo** — tema escuro, identidade de "game",
 gráfico de evolução, animações e ilustrações animadas de exercício.
+Por fim, o usuário autorizou trabalho autônomo pela lista de
+pendências: corrigir os dois bugs encontrados no teste do aparelho,
+estender avaliação real para mais padrões e criar a tela "Evolução".
+gráfico de evolução, animações e ilustrações animadas de exercício.
 
 ## Implementado
 
@@ -242,6 +246,53 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
   corretamente), `flutter analyze` sem problemas, build+install+teste
   visual no aparelho confirmados.
 
+### Correções e extensões autônomas (autorizadas pelo usuário)
+
+- **Bug corrigido:** `WorkoutPlayerScreen` agora usa `PopScope` para
+  interceptar o botão/gesto de voltar do sistema e chamar a mesma
+  lógica de `_pauseAndExit` do botão de pausar — antes, voltar deixava
+  a sessão presa em `status = inProgress` em vez de `paused`.
+- **Bug corrigido:** `TrainingPlanScreen` passou a observar
+  `latestTrainingPlanProvider` reativamente (com `widget.record` como
+  fallback enquanto carrega/erro) em vez de depender só do que recebeu
+  por construtor — agora "Gerar novamente" atualiza a tela na hora,
+  mesmo estando aberta a partir da Jornada.
+- **Avaliação real estendida a mais 4 padrões** (`features/assessment`):
+  `pull_horizontal`, `squat`, `hinge_posterior_chain`,
+  `core_anti_extension` ganharam escadas de autorrelato próprias
+  (`fundamental_pattern_anchors.dart`), usando nomes reais de
+  `SKILL_TREES.md` §4/7/8/9 (mesmo recorte 0-7 de push_horizontal). A
+  bateria "Puxar" de INITIAL_ASSESSMENT.md §4 termina em "barra
+  assistida", que é puxada vertical (§5 da árvore) — fora do escopo de
+  `pull_horizontal`, então os degraus ficaram só na escada horizontal.
+  `ConservativePlacementCalculator` ganhou `calculateForPattern`/
+  `calculateSkippedEntirelyForPattern` genéricos (reaproveitando
+  `ConservativePlacementResult`, cujo `inputAnchor` virou `String?` em
+  vez de `PushHorizontalAnchor?` — mudança que não quebrou nenhum teste
+  existente, conferido antes de aplicar). Nova tela opcional
+  `OtherPatternsAssessmentScreen` — **não bloqueia** o fluxo principal
+  (só push_horizontal continua obrigatório antes do primeiro plano);
+  cada padrão deixado em branco continua "não avaliado" indefinidamente.
+  Isso ainda não muda o que o motor de treino prescreve (o catálogo
+  continua com uma variação só por padrão, sem níveis) — só melhora os
+  dados mostrados e prepara terreno para quando o catálogo crescer.
+- **Tela "Evolução" nova** (`features/evolution`): colocação atual dos
+  5 padrões (com atalho para avaliar os pendentes), recordes informais
+  por exercício (maior número de reps já registrado, ignorando séries
+  com dor/não concluídas — `WorkoutSessionRepository.bestRepsByExercise`
+  novo) e histórico das últimas sessões concluídas
+  (`completedSessions` novo). Acessível pelo ícone no AppBar da
+  Jornada. Ainda não inclui atributos narrativos nem gráfico por
+  exercício ao longo do tempo (RPG_SYSTEM.md §4) — ficou para depois.
+- 91 testes automatizados (mais 7 desta parte: 5 sobre as novas escadas
+  de colocação, 2 sobre `completedSessions`/`bestRepsByExercise`).
+  `flutter analyze` sem problemas. Build de release gerado com sucesso
+  (`flutter build apk --release`), mas **não instalado/testado no
+  aparelho** — o celular desconectou do `adb` no meio do processo
+  (provavelmente ao computador ser bloqueado) e não reconectou; sem
+  acesso físico para replugar. Fica pendente confirmar visualmente esta
+  leva na próxima sessão.
+
 ## Banco/migrations
 
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
@@ -260,10 +311,10 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
 | Comando | Resultado |
 |---|---|
 | `flutter analyze` | Sem problemas |
-| `flutter test` | 84 passed, 0 failed |
+| `flutter test` | 91 passed, 0 failed |
 | `dart run build_runner build` | OK |
-| `flutter build apk --release` | OK (55,6MB) |
-| `adb install -r` no aparelho físico | OK, testado manualmente via `adb shell input` |
+| `flutter build apk --release` | OK (55,7MB), gerado duas vezes na sessão |
+| `adb install -r` no aparelho físico | OK na 1ª leva (tema escuro etc.), testado manualmente via `adb shell input`. **Não repetido na 2ª leva** (bugs/avaliação/Evolução) — aparelho desconectou do `adb` |
 
 ## Decisões e ADRs
 
@@ -343,26 +394,33 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
 - Missões diárias/semanais cobrem só 3+3 dos ~10 tipos de RPG_SYSTEM.md
   §8 (ver decisão acima); check-in/prontidão não existe como
   funcionalidade em lugar nenhum do app ainda.
-- `JourneyScreen` é a única tela nova de navegação — Habilidades,
-  Evolução e Perfil (os outros 3 destinos de SCREENS_AND_FLOWS.md §1)
-  não existem, nem navegação por abas.
+- `JourneyScreen` e `EvolutionScreen` são as únicas telas novas de
+  navegação — Habilidades e Perfil (2 dos 5 destinos de
+  SCREENS_AND_FLOWS.md §1) não existem, nem navegação por abas (tudo é
+  push de tela a partir da Jornada).
+- Recordes da tela Evolução são só "maior número de reps por exercício"
+  — não separam por variação/amplitude/assistência/contexto como
+  PROGRESSION_RULES.md §7 pede; e "atributos narrativos"
+  (força/resistência/controle/...) de RPG_SYSTEM.md §4 continuam sem
+  implementação nenhuma.
 - Sem timer/descanso, substituição de exercício em tela ou vídeo no
   player (SCREENS_AND_FLOWS.md §4 lista esses itens; ficaram fora do
   escopo da primeira versão do player).
 - Promoção de domínio não regenera o plano automaticamente — usuário
   precisa tocar "Gerar novamente" (decisão deliberada, ver acima).
-- **Bug pré-existente notado nesta sessão, não corrigido (fora do
-  escopo pedido):** `TrainingPlanScreen` recebe o `TrainingPlanRecord`
-  por construtor, não observa `latestTrainingPlanProvider` reativamente;
-  se o usuário tocar "Gerar novamente" estando dentro dela (chegou via
-  `JourneyScreen`, empilhada no Navigator), a tela não atualiza sozinha
-  com o novo plano — só reflete ao sair e voltar (quando `JourneyScreen`
-  é reconstruída com dados novos). Vale corrigir numa sessão futura.
-- **Bug novo encontrado testando no aparelho, não corrigido:** o botão
-  de voltar do sistema sai do `WorkoutPlayerScreen` sem marcar a sessão
-  como `paused` (fica `inProgress`). Sem perda de dados, mas o status
-  fica inconsistente — precisa de `PopScope`/`WillPopScope` chamando a
-  mesma lógica do botão de pausar.
+- ~~Bug: `TrainingPlanScreen` não atualiza sozinha após regenerar~~ —
+  **corrigido** (agora observa `latestTrainingPlanProvider`).
+- ~~Bug: voltar do sistema não pausa a sessão~~ — **corrigido** (
+  `PopScope` no `WorkoutPlayerScreen` chama a mesma lógica do botão de
+  pausar). Nenhum dos dois foi confirmado no aparelho físico ainda —
+  fica para a próxima sessão (ver nota sobre o `adb` desconectado).
+- Avaliação real agora cobre 5 padrões (push_horizontal + os 4 novos),
+  mas o motor de treino ainda não usa isso para variar o que prescreve
+  nesses 4 — o catálogo continua com uma única variação por padrão, sem
+  níveis. Progressão (`features/progression`) também continua só para
+  `push_horizontal`. Extensão natural: dar aos 4 padrões novos o mesmo
+  tratamento de catálogo em camadas + `MasteryRule` que push_horizontal
+  já tem.
 - `LevelUpCelebration` não foi vista rodando de verdade no aparelho
   (precisaria acumular 125 XP para subir do nível 1) — só validada por
   `flutter analyze` e revisão de código. Vale conferir visualmente na
@@ -382,24 +440,37 @@ gráfico de evolução, animações e ilustrações animadas de exercício.
 
 - Nenhum bloqueio técnico. Supabase CLI/Docker seguem não instalados,
   irrelevante enquanto o backend estiver pausado.
+- Build de release da 2ª leva desta sessão (bugs corrigidos + avaliação
+  estendida + Evolução) **não foi instalado/testado no aparelho físico**
+  — o `adb` perdeu o dispositivo no meio do trabalho autônomo e não
+  havia como replugar fisicamente. Tudo passou por `flutter analyze` +
+  `flutter test` (91 testes), mas não por verificação visual real.
+  **Primeira coisa a fazer na próxima sessão**: reconectar o aparelho,
+  rodar `flutter build apk --release` + `adb install -r` e conferir as
+  duas correções de bug + a tela Evolução + a avaliação dos 4 padrões
+  novos na prática.
 
 ## Próxima tarefa recomendada
 
-Com plano → sessão → registro → domínio → XP → missões → Jornada
-fechando o ciclo básico do MVP e o visual já com cara de "game" no
-aparelho, as próximas opções naturais são: (a) corrigir os dois bugs
-notados em "Pendências" (voltar do sistema não pausa sessão;
-`TrainingPlanScreen` não atualiza sozinha após regenerar) — rápido e
-evita confusão do usuário; (b) estender avaliação/colocação real para
-os demais padrões fundamentais (hoje só push_horizontal tem anchor/
-teste), o que destrava progressão, a missão "treinar todos os padrões"
-e XP de domínio de verdade neles também; ou (c) uma tela de "Evolução"
-(histórico/atributos/recordes, SCREENS_AND_FLOWS.md), que também
-destrava a missão "revisar progresso" que ficou de fora desta rodada.
+1. **Confirmar no aparelho** o que foi construído autonomamente nesta
+   sessão (bugs corrigidos, avaliação de 4 padrões novos, tela
+   Evolução) — nada disso foi visto rodando de verdade ainda.
+2. Depois disso, com o ciclo básico do MVP fechado (plano → sessão →
+   registro → domínio → XP → missões → Jornada → Evolução) e 5 padrões
+   com colocação real, as próximas opções naturais continuam sendo:
+   (a) dar aos 4 padrões novos o mesmo tratamento de catálogo em
+   camadas + `MasteryRule` que push_horizontal já tem, destravando
+   progressão/XP de domínio neles também; (b) uma tela de Habilidades
+   (mapa de árvores, SCREENS_AND_FLOWS.md §5); ou (c) missões/atributos
+   que ainda faltam (check-in, revisar progresso, atributos narrativos
+   de RPG_SYSTEM.md §4).
 
 ## Critério para retomar
 
-Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. Nada foi instalado
-no aparelho físico nesta sessão — qualquer divergência encontrada ao
-testar deve ser tratada como bug, não como escopo pendente, a menos que
-liste em "Pendências" acima.
+Ler este arquivo e `docs/adr/0006-mvp-local-only.md`. A última leva de
+mudanças (correção dos dois bugs, avaliação estendida, tela Evolução)
+foi testada só por `flutter analyze`/`flutter test`, **não no aparelho
+físico** — trate qualquer coisa estranha nelas como possível bug real,
+não como algo já confirmado funcionando. O resto (motor de treino,
+sessão, RPG/XP, missões, tema escuro/dashboard) foi confirmado
+visualmente no aparelho antes desta última leva.

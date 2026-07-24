@@ -100,7 +100,15 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final plan = widget.record.toDomain();
+    // Observa o provider (não só `widget.record`) para refletir sozinha
+    // quando o usuário regenera o plano nesta mesma tela — sem isso, a
+    // tela ficava presa no plano com que foi aberta até sair e voltar.
+    final latestPlanAsync = ref.watch(latestTrainingPlanProvider);
+    final record = latestPlanAsync.maybeWhen(
+      data: (latest) => latest ?? widget.record,
+      orElse: () => widget.record,
+    );
+    final plan = record.toDomain();
     final activeSessionAsync = ref.watch(latestActiveWorkoutSessionProvider);
 
     return Scaffold(

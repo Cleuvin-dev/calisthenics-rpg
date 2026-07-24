@@ -1,3 +1,4 @@
+import 'movement_anchor.dart';
 import 'push_horizontal_anchor.dart';
 
 /// Versão da regra de colocação conservadora aplicada nesta história.
@@ -28,9 +29,11 @@ class ConservativePlacementResult {
   final String ruleVersion;
   final PlacementReasonCode reasonCode;
 
-  /// Nulo quando o usuário optou por não responder nada
+  /// Nome estável da âncora autorrelatada (`PushHorizontalAnchor.name` ou
+  /// `MovementAnchor.name`, conforme o padrão). Nulo quando o usuário
+  /// optou por não responder nada
   /// (ver [PlacementReasonCode.skippedEntirely]).
-  final PushHorizontalAnchor? inputAnchor;
+  final String? inputAnchor;
   final DateTime computedAt;
   final DateTime validUntil;
 }
@@ -59,7 +62,7 @@ class ConservativePlacementCalculator {
       confidence: 'low',
       ruleVersion: conservativePlacementRuleVersion,
       reasonCode: PlacementReasonCode.skippedTestOneLevelBelow,
-      inputAnchor: anchor,
+      inputAnchor: anchor.name,
       computedAt: now,
       validUntil: now.add(const Duration(days: 30)),
     );
@@ -78,6 +81,49 @@ class ConservativePlacementCalculator {
       pattern: 'push_horizontal',
       level: level,
       levelName: pushHorizontalLevelNames[level]!,
+      confidence: 'low',
+      ruleVersion: conservativePlacementRuleVersion,
+      reasonCode: PlacementReasonCode.skippedEntirely,
+      inputAnchor: null,
+      computedAt: now,
+      validUntil: now.add(const Duration(days: 30)),
+    );
+  }
+
+  /// Mesma regra "um nó abaixo" de [calculate], generalizada para os
+  /// padrões de `fundamental_pattern_anchors.dart` (que usam
+  /// [MovementAnchor] em vez do enum dedicado de push_horizontal).
+  ConservativePlacementResult calculateForPattern({
+    required String pattern,
+    required MovementAnchor anchor,
+    required Map<int, String> levelNames,
+    required DateTime now,
+  }) {
+    final level = anchor.skillLevel - 1;
+    return ConservativePlacementResult(
+      pattern: pattern,
+      level: level,
+      levelName: levelNames[level] ?? 'Nível $level',
+      confidence: 'low',
+      ruleVersion: conservativePlacementRuleVersion,
+      reasonCode: PlacementReasonCode.skippedTestOneLevelBelow,
+      inputAnchor: anchor.name,
+      computedAt: now,
+      validUntil: now.add(const Duration(days: 30)),
+    );
+  }
+
+  /// Mesma regra de [calculateSkippedEntirely], generalizada.
+  ConservativePlacementResult calculateSkippedEntirelyForPattern({
+    required String pattern,
+    required Map<int, String> levelNames,
+    required DateTime now,
+  }) {
+    const level = 0;
+    return ConservativePlacementResult(
+      pattern: pattern,
+      level: level,
+      levelName: levelNames[level]!,
       confidence: 'low',
       ruleVersion: conservativePlacementRuleVersion,
       reasonCode: PlacementReasonCode.skippedEntirely,

@@ -123,6 +123,39 @@ class WorkoutSessionRepository {
       ..where((t) => t.completedAt.isBetweenValues(start, end));
     return query.get();
   }
+
+  /// Sessões concluídas mais recentes — histórico curto da tela Evolução.
+  Future<List<WorkoutSessionRecord>> completedSessions({int limit = 20}) {
+    final query = _db.select(_db.workoutSessionRecords)
+      ..where((t) => t.status.equals(WorkoutSessionStatus.completed.name))
+      ..orderBy([(t) => OrderingTerm.desc(t.completedAt)])
+      ..limit(limit);
+    return query.get();
+  }
+
+  /// Maior número de repetições já registrado por exercício, ignorando
+  /// séries com dor ou não concluídas — não é evidência de domínio
+  /// (PROGRESSION_RULES.md §7-8), só um recorde pessoal informal.
+  Future<Map<String, int>> bestRepsByExercise() async {
+    final query = _db.select(_db.setLogRecords)
+      ..where(
+        (t) => t.perceivedEffort.isIn([
+          PerceivedEffort.adequate.name,
+          PerceivedEffort.tooEasy.name,
+          PerceivedEffort.hardCompleted.name,
+        ]),
+      );
+    final logs = await query.get();
+
+    final best = <String, int>{};
+    for (final log in logs) {
+      final current = best[log.exerciseSlug];
+      if (current == null || log.repsCompleted > current) {
+        best[log.exerciseSlug] = log.repsCompleted;
+      }
+    }
+    return best;
+  }
 }
 
 extension WorkoutSessionRecordDecoding on WorkoutSessionRecord {

@@ -43,15 +43,18 @@ Cinco destinos:
 ### Treino
 
 - calendário semanal;
+- catálogo visual de treinos com filtros por nível;
 - detalhes da sessão;
 - check-in;
+- configuração prévia de durações permitidas;
 - player de exercício;
-- registro da série;
+- registro da série por repetições com confirmação manual;
+- contador regressivo para séries por tempo;
 - descanso;
 - substituição;
 - fluxo de dor;
 - resumo;
-- sincronização pendente.
+- salvamento local pendente.
 
 ### Habilidades
 
@@ -72,18 +75,30 @@ Cinco destinos:
 ### Perfil/configurações
 
 - dados;
+- acesso por engrenagem no canto superior direito da dashboard;
+- perfil físico, peso, altura e IMC informativo;
+- reavaliação física;
 - agenda;
 - equipamentos;
+- recuperação e prontidão;
+- preferências do cronômetro;
 - notificações;
 - privacidade;
+- recomeçar jornada sem apagar o perfil local;
 - exportar/excluir;
 - ajuda e segurança.
+
+Consultar `SETTINGS_AND_TIMED_EXERCISES.md` para fluxo, dados, segurança,
+reinício transacional e critérios de aceite.
+
+Consultar `VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md` para identidade visual,
+cards, catálogo, player por repetições, player por tempo, descanso e resumo.
 
 ## 3. Dashboard
 
 Hierarquia:
 
-1. estado de segurança ou sincronização, se existir;
+1. estado de segurança ou persistência local, se existir;
 2. missão principal: “Treino A — 32 min”;
 3. próxima habilidade e progresso;
 4. prontidão/check-in;
@@ -96,17 +111,27 @@ Não sobrecarregar com rankings antes de mostrar a tarefa física real.
 
 Elementos:
 
-- nome e vídeo;
+- nome e mídia local;
 - série atual/total;
 - alvo e variação;
 - instruções curtas;
 - critérios de repetição válida;
 - cronômetro e descanso;
+- para exercícios por tempo, duração configurável em segundos ou minutos
+  dentro dos limites da versão do exercício;
 - ações “registrar”, “substituir”, “dor”, “encerrar”;
 - indicador offline;
 - acesso a áudio e tela sempre ativa opcional.
 
 O botão de dor nunca fica escondido em menu.
+
+Para repetições, o alvo permanece visível até o usuário confirmar a série.
+O aplicativo salva separadamente repetições planejadas e realizadas e não
+presume que a abertura da tela representa execução.
+
+Para tempo, o player usa contagem preparatória, contador regressivo, pausa,
+retomada, conclusão, interrupção e recuperação após fechamento. O desenho do
+arco não é a autoridade do tempo.
 
 ## 5. Mapa de habilidades
 
@@ -163,7 +188,7 @@ Permitidas:
 - sessão planejada;
 - confirmação de domínio disponível;
 - plano ajustado;
-- sincronização concluída;
+- backup/exportação concluída, quando aplicável;
 - recuperação/descanso;
 - campanha e missão não compulsiva.
 

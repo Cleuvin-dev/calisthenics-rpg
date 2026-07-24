@@ -2,7 +2,10 @@
 
 ## 1. Autoridade
 
-O cliente envia fatos da sessão; o backend valida e calcula recompensas. O cliente nunca envia “XP ganho” como valor confiável.
+Na primeira versão, a interface envia fatos da sessão ao serviço de domínio
+local, que valida e calcula recompensas dentro de uma transação. Widgets nunca
+gravam “XP ganho” diretamente. Na futura fase Supabase, o backend assumirá essa
+autoridade.
 
 ## 2. Idempotência
 
@@ -15,7 +18,8 @@ Cada sessão possui `client_session_id` UUID e cada evento, `event_id`. A finali
 - domínio paga somente na primeira conquista válida;
 - recorde exige melhoria mínima e contexto comparável;
 - treinos extras podem ser registrados, mas não produzir farming ilimitado;
-- missões geradas pelo servidor têm janela e assinatura lógica.
+- missões locais têm janela, versão de regra e origem verificável; quando
+  existir servidor, também terão validação autoritativa remota.
 
 ## 4. Sinais de integridade
 

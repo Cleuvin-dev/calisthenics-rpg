@@ -1,9 +1,9 @@
 # App RPG de Calistenia — Documentação Mestre
 
 **Status:** especificação funcional e técnica inicial  
-**Versão:** 1.0  
-**Atualizado em:** 22/07/2026  
-**Público-alvo:** produto, UX/UI, Educação Física, desenvolvimento Flutter, backend e QA
+**Versão:** 1.2  
+**Atualizado em:** 24/07/2026  
+**Público-alvo:** produto, UX/UI, Educação Física, desenvolvimento Flutter e QA
 
 ## 1. Propósito
 
@@ -24,7 +24,9 @@ O aplicativo não é um catálogo de exercícios. Ele é um sistema de decisão 
 - **XP não prova capacidade:** XP representa jornada; domínio físico depende de critérios técnicos.
 - **Progressão é específica:** empurrar, puxar, pernas, core, equilíbrio e mobilidade evoluem separadamente.
 - **O treino é adaptável:** sono, dor, esforço, desempenho e disponibilidade alteram o plano.
-- **Backend é autoridade:** XP, desbloqueios, recordes, temporadas e regras competitivas são calculados no servidor.
+- **Autoridade por fase:** na primeira versão, regras e transações locais
+  calculam XP, desbloqueios e recordes. Quando houver Supabase e competição,
+  o backend passa a ser a autoridade.
 - **Sem punição por recuperação:** descanso e deload fazem parte do progresso.
 - **Conteúdo clínico não é automatizado:** o app não diagnostica, trata lesões nem substitui profissionais.
 
@@ -46,16 +48,20 @@ O aplicativo não é um catálogo de exercícios. Ele é um sistema de decisão 
 | 11 | `05_EXERCISES/EXERCISE_SCHEMA.md` | Modelo de dados de cada exercício |
 | 12 | `05_EXERCISES/SKILL_TREES.md` | Trilhas do básico ao avançado |
 | 13 | `05_EXERCISES/EXTREME_SKILLS.md` | Habilidades finais e seus pré-requisitos |
+| 13A | `05_EXERCISES/EXERCISE_MEDIA_GUIDE.md` | Imagens, animações, placeholders e revisão |
 | 14 | `06_GAMIFICATION/RPG_SYSTEM.md` | XP, níveis, classes, missões e bosses |
 | 15 | `06_GAMIFICATION/ECONOMY_AND_ANTI_ABUSE.md` | Economia, recompensas e antifraude |
 | 16 | `07_UX/SCREENS_AND_FLOWS.md` | Telas, navegação e estados de interface |
-| 17 | `08_ARCHITECTURE/TECHNICAL_ARCHITECTURE.md` | Arquitetura Flutter/Supabase/FCM |
+| 16A | `07_UX/SETTINGS_AND_TIMED_EXERCISES.md` | Configurações, perfil físico, reinício, reavaliação e cronômetro |
+| 16B | `07_UX/VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md` | Identidade visual, catálogo e player por reps/tempo |
+| 17 | `08_ARCHITECTURE/TECHNICAL_ARCHITECTURE.md` | Arquitetura Flutter offline e migração futura ao Supabase |
 | 18 | `08_ARCHITECTURE/DATA_MODEL.md` | Entidades, relações e invariantes |
-| 19 | `08_ARCHITECTURE/BACKEND_RULES.md` | RPCs, jobs, RLS e idempotência |
+| 19 | `08_ARCHITECTURE/BACKEND_RULES.md` | Regras reservadas para o roadmap Fase 4 com Supabase |
 | 20 | `09_QUALITY/TEST_STRATEGY.md` | Testes funcionais, de regra e segurança |
 | 20A | `09_QUALITY/RELEASE_CHECKLIST.md` | Portões para piloto e produção |
 | 21 | `10_DELIVERY/ROADMAP.md` | MVP, versões e critérios de saída |
 | 22 | `10_DELIVERY/IMPLEMENTATION_PROMPT.md` | Prompt de início para Claude Code/Codex |
+| 22A | `10_DELIVERY/CHANGELOG_v1.2.md` | Alterações e instruções de atualização |
 | 23 | `REFERENCES.md` | Referências e decisões baseadas em evidência |
 
 ## 4. Ordem recomendada de implementação
@@ -83,7 +89,10 @@ O produto será considerado funcionalmente completo quando conseguir:
 - reagir a dor, fadiga, falhas, ausência, platô e desempenho acima do previsto;
 - permitir metas avançadas como muscle-up, handstand push-up, front lever, back lever, planche, pistol squat e Nordic curl;
 - manter regras auditáveis e versionadas;
-- funcionar offline durante uma sessão e sincronizar sem duplicar recompensas;
+- funcionar integralmente offline e processar sessões sem duplicar recompensas;
+- mostrar o alvo de repetições até a confirmação manual do usuário;
+- executar isometrias, alongamentos e descansos com contador regressivo recuperável;
+- usar mídia local por versão de exercício e placeholder quando permitido;
 - oferecer histórico, testes de fase, missões, temporadas e cosméticos sem incentivar excesso de treino.
 
 ## 6. Aviso de escopo

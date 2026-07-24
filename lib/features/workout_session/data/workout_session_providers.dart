@@ -37,3 +37,12 @@ final completedSessionsThisWeekProvider =
       .watch(workoutSessionRepositoryProvider)
       .completedBetween(startOfWeek(now), endOfWeek(now));
 });
+
+final recentCompletedSessionsProvider =
+    FutureProvider<List<WorkoutSessionRecord>>((ref) {
+  return ref.watch(workoutSessionRepositoryProvider).completedSessions();
+});
+
+final bestRepsByExerciseProvider = FutureProvider<Map<String, int>>((ref) {
+  return ref.watch(workoutSessionRepositoryProvider).bestRepsByExercise();
+});

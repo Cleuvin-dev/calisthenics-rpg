@@ -55,7 +55,8 @@ Esses grupos não devem simplesmente reutilizar as regras gerais do adulto saud�
 - obter adesão a pelo menos 70% das sessões planejadas nas primeiras 4 semanas;
 - reduzir abandono causado por treino “difícil demais”;
 - fazer todo desbloqueio possuir evidência e versão de regra;
-- impedir dupla concessão de XP em sincronizações repetidas;
+- impedir dupla concessão de XP em finalizações locais repetidas e, no futuro,
+  em sincronizações;
 - registrar 100% dos eventos críticos de segurança e progressão.
 
 ## 7. Fora do escopo inicial

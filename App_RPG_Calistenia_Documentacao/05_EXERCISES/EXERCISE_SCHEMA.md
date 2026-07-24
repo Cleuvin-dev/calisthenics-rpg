@@ -31,15 +31,28 @@ exercise:
   progressions: []
   substitutions: []
   prescription:
+    dose_type: reps|duration|reps_or_duration
     rep_ranges_by_level: {}
     hold_ranges_by_level: {}
+    duration:
+      user_configurable: boolean
+      recommended_seconds: integer|null
+      min_seconds: integer|null
+      max_seconds: integer|null
+      safety_cap_seconds: integer|null
+      step_seconds: integer|null
     rest_seconds_range: []
     tempo_options: []
     max_test_cap: null
   media:
-    demonstration_front: url
-    demonstration_side: url
-    thumbnail: url
+    status: available|placeholder|under_review|missing|retired
+    thumbnail_key: string|null
+    start_key: string|null
+    end_key: string|null
+    demonstration_key: string|null
+    fallback_key: string
+    semantic_label_pt_br: string
+    technical_review_status: pending|approved|rejected
   review:
     reviewer_id: uuid
     reviewed_at: timestamp
@@ -91,9 +104,20 @@ Cada vídeo deve:
 - indicar configuração segura do equipamento;
 - corresponder exatamente à versão descrita.
 
+Cada exercício recebe um espaço de mídia mesmo quando o arquivo ainda não
+existe. No MVP, os assets são locais. O player resolve animação, posições
+estáticas ou placeholder sem depender de internet. Consultar
+`EXERCISE_MEDIA_GUIDE.md`.
+
 ## 6. Versionamento
 
 Alterar critério técnico, dificuldade, dose ou contraindicação cria nova versão. Correção meramente ortográfica pode atualizar metadados sem mudar prescrição. Planos existentes mantêm referência à versão usada.
+
+Para alongamentos, mobilidade e isometrias, o usuário só pode personalizar a
+duração quando `user_configurable` estiver ativo. A duração escolhida deve
+respeitar `min_seconds`, `max_seconds` e `safety_cap_seconds`. Minutos são
+convertidos para segundos; o log armazena separadamente a meta e o tempo ativo
+realmente executado. Consultar `../07_UX/SETTINGS_AND_TIMED_EXERCISES.md`.
 
 ## 7. Conteúdo inicial necessário
 

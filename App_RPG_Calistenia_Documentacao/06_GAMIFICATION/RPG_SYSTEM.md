@@ -31,7 +31,9 @@ Proposta simples:
 xp_necessario_para_proximo_nivel = arredondar(100 + 25 × nivel^1.35)
 ```
 
-O backend usa tabela pré-calculada e versionada para evitar divergência. Não deve haver vantagem física por nível alto.
+O motor local usa tabela pré-calculada e versionada para evitar divergência. Na
+futura fase Supabase, o backend usará a mesma versão. Não deve haver vantagem
+física por nível alto.
 
 ## 4. Atributos narrativos
 

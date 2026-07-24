@@ -7,6 +7,9 @@
 3. U.S. Department of Health and Human Services. **Physical Activity Guidelines for Americans, 2nd edition**. https://health.gov/sites/default/files/2019-09/Physical_Activity_Guidelines_2nd_edition.pdf
 4. Office of Disease Prevention and Health Promotion. **Current Guidelines**. https://odphp.health.gov/our-work/nutrition-physical-activity/physical-activity-guidelines/current-guidelines
 5. PAR-Q+ Collaboration. **PAR-Q+ and ePARmed-X+**. https://parqplus.org/
+6. World Health Organization. **Body mass index (BMI)**. https://www.who.int/data/gho/data/themes/topics/topic-details/GHO/body-mass-index
+7. World Health Organization. **Obesity and overweight**. https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight
+8. Centers for Disease Control and Prevention. **Child and Teen BMI Calculator**. https://www.cdc.gov/bmi/child-teen-calculator/index.html
 
 ## 2. Decisões apoiadas por essas fontes
 
@@ -15,6 +18,9 @@
 - pessoas com condições, sintomas ou necessidades especiais requerem fluxo apropriado;
 - a triagem pré-participação deve ser estruturada e revisada;
 - recomendações populacionais não são prescrição individual completa.
+- IMC é um indicador de triagem e não mede diretamente composição corporal ou
+  capacidade física;
+- faixas adultas de IMC não devem ser aplicadas diretamente a menores.
 
 ## 3. O que é regra de produto, não consenso clínico
 

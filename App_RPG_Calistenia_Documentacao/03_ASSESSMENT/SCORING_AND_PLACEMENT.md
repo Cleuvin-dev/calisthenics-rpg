@@ -4,7 +4,7 @@
 
 O sistema mantém quatro valores distintos:
 
-1. **Nível de conta:** derivado de XP e usado na narrativa.
+1. **Nível de personagem:** derivado de XP e usado na narrativa.
 2. **Nível de atributo:** resumo de força, resistência, controle, mobilidade, técnica e consistência.
 3. **Nó dominado:** comprovação específica dentro de uma árvore.
 4. **Capacidade estimada:** valor interno com confiança e validade temporal.

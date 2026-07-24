@@ -19,15 +19,17 @@ Antes de alterar código:
 
 Regras obrigatórias:
 
+- a primeira versão é totalmente offline e não se conecta ao Supabase;
 - segurança prevalece sobre gamificação;
 - XP nunca libera capacidade física;
 - domínio depende de critérios versionados;
-- regras críticas e recompensas são calculadas no backend;
+- regras críticas e recompensas são calculadas por serviços de domínio locais;
 - toda operação crítica deve ser idempotente;
-- RLS deve existir e ser testada;
-- sessões devem funcionar offline;
-- migrations e funções SQL precisam ficar versionadas no Git;
-- não aplicar SQL manual em produção;
+- todo o aplicativo deve funcionar em modo avião;
+- migrations do SQLite/Drift precisam ficar versionadas no Git;
+- widgets não acessam o banco ou ledger diretamente;
+- usar UUIDs, UTC, versões de regra e `sync_state = local_only` para preparar
+  a futura migração ao Supabase;
 - não inventar regras ausentes: registre a decisão pendente;
 - não prescrever conteúdo ainda não revisado;
 - preserve alterações existentes do usuário;
@@ -37,26 +39,40 @@ Regras obrigatórias:
 Stack preferencial:
 
 - Flutter/Dart;
-- Supabase Auth/PostgreSQL/Storage/Edge Functions;
-- Firebase Cloud Messaging somente para push;
 - banco local SQLite/Drift ou alternativa justificada;
-- ambientes separados e CI/CD.
+- assets locais versionados;
+- testes automatizados e CI.
+
+Não adicionar agora:
+
+- Supabase;
+- Firebase;
+- login online;
+- API;
+- sincronização em nuvem;
+- dependência de internet no fluxo principal.
 
 Primeira entrega recomendada:
 
-“Um adulto do público inicial cria conta, conclui triagem segura, informa agenda/equipamento, recebe uma colocação conservadora em um único padrão de empurrar e vê o resultado persistido.”
+“Um adulto do público inicial cria um perfil local, conclui triagem segura,
+informa agenda/equipamento, recebe uma colocação conservadora em um único
+padrão de empurrar e vê o resultado persistido no aparelho.”
 
 Para essa entrega:
 
 1. crie ADRs das decisões necessárias;
-2. modele migrations e RLS;
+2. modele migrations locais e constraints;
 3. implemente domínio sem acoplamento à UI;
-4. crie repositório local/remoto e estados offline;
+4. crie repositório local e estados persistentes;
 5. implemente telas acessíveis;
-6. adicione testes unitários, integração/RLS e fluxo principal;
+6. adicione testes unitários, integração com SQLite/Drift e fluxo principal;
 7. documente arquivos alterados, comandos executados, riscos e próxima história.
 
 Não implemente ainda XP, ranking, câmera, IA ou habilidades extremas. Primeiro prove segurança, versionamento, persistência e idempotência no menor fluxo vertical.
+
+Depois dessa primeira história, a entrega visual recomendada está especificada
+em `07_UX/VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md`. Ela deve ser feita com
+widgets nativos, não usando a prancha conceitual como uma única imagem.
 
 Ao terminar a análise inicial, responda com:
 
@@ -79,11 +95,28 @@ Ao terminar a análise inicial, responda com:
 
 ### Implementar sessão offline
 
-“Leia `USER_JOURNEYS`, `TECHNICAL_ARCHITECTURE`, `DATA_MODEL`, `BACKEND_RULES` e `TEST_STRATEGY`. Implemente o event log local, fila, finalização idempotente e recibo. Demonstre que repetir a sincronização não duplica XP nem sessão.”
+“Leia `USER_JOURNEYS`, `TECHNICAL_ARCHITECTURE`, `DATA_MODEL` e
+`TEST_STRATEGY`. Implemente o event log local, finalização transacional
+idempotente e recibo. Demonstre que finalizar repetidamente não duplica XP nem
+sessão. Não adicione rede.”
+
+### Implementar arquitetura visual e player
+
+“Leia `05_EXERCISES/EXERCISE_SCHEMA.md`,
+`05_EXERCISES/EXERCISE_MEDIA_GUIDE.md`,
+`07_UX/VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md`,
+`07_UX/SETTINGS_AND_TIMED_EXERCISES.md`, `DATA_MODEL` e `TEST_STRATEGY`.
+Implemente dashboard, detalhe do treino e uma sessão local com Flexão
+inclinada, Agachamento e Prancha. Em repetições, mantenha o alvo até a
+confirmação e salve alvo/realizado. Em tempo, implemente 3-2-1, regressivo,
+pausa, retomada, término e recuperação. Use assets locais com placeholder.
+Não adicione rede, câmera ou IA.”
 
 ### Implementar progressão
 
-“Leia `SCORING_AND_PLACEMENT`, `PROGRESSION_RULES`, `SKILL_TREES` e `ECONOMY_AND_ANTI_ABUSE`. Implemente os estados de nó e duas confirmações, sem usar XP como requisito. Inclua migrations, RLS e testes.”
+“Leia `SCORING_AND_PLACEMENT`, `PROGRESSION_RULES`, `SKILL_TREES` e
+`ECONOMY_AND_ANTI_ABUSE`. Implemente os estados de nó e duas confirmações, sem
+usar XP como requisito. Inclua migrations locais e testes.”
 
 ### Encerrar uma sessão de desenvolvimento
 

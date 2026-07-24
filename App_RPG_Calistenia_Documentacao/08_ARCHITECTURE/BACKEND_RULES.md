@@ -1,5 +1,10 @@
 # Regras do Backend
 
+> **Fase futura:** este documento não deve ser implementado na primeira versão.
+> O MVP usa somente SQLite/Drift e serviços de domínio locais, conforme
+> `TECHNICAL_ARCHITECTURE.md`. Estas regras serão usadas no roadmap Fase 4,
+> quando o Supabase for conectado.
+
 ## 1. Operações críticas
 
 ### `start_assessment`
@@ -46,6 +51,32 @@ Transação:
 - usa chave única;
 - registra ledger/inventário;
 - retorna resultado anterior em repetição.
+
+### `add_body_measurement`
+
+- valida unidade e faixa plausível;
+- converte para unidade canônica;
+- recalcula IMC no servidor;
+- mantém histórico;
+- não altera capacidade, XP ou treino isoladamente;
+- é idempotente por evento do cliente.
+
+### `request_reassessment`
+
+- valida triagem, prontidão e protocolo;
+- impede duas avaliações ativas;
+- cria uma nova avaliação versionada;
+- preserva o histórico quando não houver reinício.
+
+### `reset_user_journey`
+
+- mantém a conta e autenticação;
+- exige autenticação recente e confirmação forte;
+- resolve o usuário exclusivamente por `auth.uid()`;
+- executa limpeza e mudança de geração em transação;
+- cria recibo idempotente;
+- impede que eventos offline da geração anterior retornem;
+- nunca é implementado como exclusões sequenciais pelo cliente.
 
 ## 2. Idempotência
 
