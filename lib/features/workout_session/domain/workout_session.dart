@@ -104,6 +104,7 @@ class SetLog {
     required this.repsCompleted,
     required this.perceivedEffort,
     required this.completedAt,
+    this.activeDurationMs,
   });
 
   final String exerciseSlug;
@@ -112,4 +113,9 @@ class SetLog {
   final int repsCompleted;
   final PerceivedEffort perceivedEffort;
   final DateTime completedAt;
+
+  /// Tempo ativo realmente executado, em milissegundos — só para séries
+  /// por tempo (`DoseType.duration`), `null` para séries por repetição.
+  /// Espelha a coluna já existente em `set_log_records`.
+  final int? activeDurationMs;
 }

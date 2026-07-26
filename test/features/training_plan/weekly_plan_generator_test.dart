@@ -23,7 +23,7 @@ void main() {
   test('gera uma sessão por dia solicitado dentro do suportado', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 3, minutesPerSession: 30),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
 
@@ -37,7 +37,7 @@ void main() {
   test('reduz pedido de 6 dias para 5 e explica o motivo', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 6, minutesPerSession: 45),
-      pushHorizontalCapabilityLevel: 3,
+      capabilityLevelsByPattern: const {'push_horizontal': 3},
       now: now,
     );
 
@@ -50,7 +50,7 @@ void main() {
   test('toda sessão começa com o aquecimento', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 15),
-      pushHorizontalCapabilityLevel: null,
+      capabilityLevelsByPattern: const {'push_horizontal': null},
       now: now,
     );
 
@@ -62,7 +62,7 @@ void main() {
   test('sessão curta (15 min) respeita o orçamento de exercícios', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 15),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
 
@@ -75,12 +75,12 @@ void main() {
   test('sessão longa (75 min) inclui mais itens que uma curta', () {
     final shortPlan = generator.generate(
       preferences: prefs(daysPerWeek: 3, minutesPerSession: 15),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
     final longPlan = generator.generate(
       preferences: prefs(daysPerWeek: 3, minutesPerSession: 75),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
 
@@ -93,7 +93,7 @@ void main() {
   test('sem capacidade avaliada, usa a variação mais conservadora de push', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
-      pushHorizontalCapabilityLevel: null,
+      capabilityLevelsByPattern: const {'push_horizontal': null},
       now: now,
     );
 
@@ -106,7 +106,7 @@ void main() {
   test('nível de push_horizontal alto escolhe a variação avançada', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
-      pushHorizontalCapabilityLevel: 7,
+      capabilityLevelsByPattern: const {'push_horizontal': 7},
       now: now,
     );
 
@@ -120,7 +120,7 @@ void main() {
       'com motivo de substituição', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
 
@@ -138,7 +138,7 @@ void main() {
         minutesPerSession: 45,
         equipment: {Equipment.elasticBand},
       ),
-      pushHorizontalCapabilityLevel: 0,
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
       now: now,
     );
 
@@ -152,7 +152,7 @@ void main() {
   test('serialização JSON preserva os dados do plano (round-trip)', () {
     final plan = generator.generate(
       preferences: prefs(daysPerWeek: 4, minutesPerSession: 45),
-      pushHorizontalCapabilityLevel: 5,
+      capabilityLevelsByPattern: const {'push_horizontal': 5},
       now: now,
     );
 
@@ -166,5 +166,42 @@ void main() {
     );
     expect(decoded.generatedAt, plan.generatedAt);
     expect(decoded.validUntil, plan.validUntil);
+  });
+
+  test('nível baixo de squat usa a variação iniciante, nível alto usa a '
+      'variação livre', () {
+    final lowPlan = generator.generate(
+      preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
+      capabilityLevelsByPattern: const {'push_horizontal': 0, 'squat': 0},
+      now: now,
+    );
+    final highPlan = generator.generate(
+      preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
+      capabilityLevelsByPattern: const {'push_horizontal': 0, 'squat': 5},
+      now: now,
+    );
+
+    final lowSquat = lowPlan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'squat',
+    );
+    final highSquat = highPlan.sessions.first.items.firstWhere(
+      (i) => i.pattern == 'squat',
+    );
+    expect(lowSquat.exerciseSlug, 'medium_bench_sit_to_stand');
+    expect(highSquat.exerciseSlug, 'sit_to_stand_squat');
+  });
+
+  test('padrão ausente do mapa usa a variação mais conservadora, igual a '
+      'nível 0', () {
+    final plan = generator.generate(
+      preferences: prefs(daysPerWeek: 2, minutesPerSession: 45),
+      capabilityLevelsByPattern: const {'push_horizontal': 0},
+      now: now,
+    );
+
+    final hingeItem = plan.sessions
+        .expand((s) => s.items)
+        .firstWhere((i) => i.pattern == 'hinge_posterior_chain');
+    expect(hingeItem.exerciseSlug, 'glute_bridge');
   });
 }

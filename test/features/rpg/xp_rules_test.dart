@@ -24,7 +24,6 @@ void main() {
       workoutSessionId: 1,
       items: items,
       loggedExerciseSlugs: {},
-      masteryPromoted: false,
     );
 
     expect(awards.length, 1);
@@ -38,7 +37,6 @@ void main() {
       workoutSessionId: 1,
       items: items,
       loggedExerciseSlugs: {'push_up_wall'},
-      masteryPromoted: false,
     );
     expect(
       partialAwards.any((a) => a.eventType == XpEventType.allSetsLogged),
@@ -49,7 +47,6 @@ void main() {
       workoutSessionId: 1,
       items: items,
       loggedExerciseSlugs: {'push_up_wall', 'sit_to_stand_squat'},
-      masteryPromoted: false,
     );
     final bonus = fullAwards.firstWhere(
       (a) => a.eventType == XpEventType.allSetsLogged,
@@ -58,12 +55,11 @@ void main() {
     expect(bonus.repeatable, isTrue);
   });
 
-  test('crédito de domínio só aparece quando promovido com nível', () {
+  test('crédito de domínio só aparece quando há promoções', () {
     final withoutPromotion = awardsForCompletedSession(
       workoutSessionId: 1,
       items: items,
       loggedExerciseSlugs: {},
-      masteryPromoted: false,
     );
     expect(
       withoutPromotion.any((a) => a.eventType == XpEventType.masteryConfirmed),
@@ -74,9 +70,7 @@ void main() {
       workoutSessionId: 1,
       items: items,
       loggedExerciseSlugs: {},
-      masteryPromoted: true,
-      masteryPattern: 'push_horizontal',
-      masteryNewLevel: 1,
+      masteryPromotions: const {'push_horizontal': 1},
     );
     final masteryAward = withPromotion.firstWhere(
       (a) => a.eventType == XpEventType.masteryConfirmed,
@@ -86,12 +80,29 @@ void main() {
     expect(masteryAward.idempotencyKey, 'mastery-push_horizontal-level-1');
   });
 
+  test('duas promoções na mesma sessão geram um crédito de domínio cada', () {
+    final awards = awardsForCompletedSession(
+      workoutSessionId: 1,
+      items: items,
+      loggedExerciseSlugs: {},
+      masteryPromotions: const {'push_horizontal': 1, 'squat': 1},
+    );
+
+    final masteryAwards = awards
+        .where((a) => a.eventType == XpEventType.masteryConfirmed)
+        .toList();
+    expect(masteryAwards.length, 2);
+    expect(
+      masteryAwards.map((a) => a.idempotencyKey),
+      containsAll(['mastery-push_horizontal-level-1', 'mastery-squat-level-1']),
+    );
+  });
+
   test('idempotencyKey de sessão/bônus é estável por sessão', () {
     final awards = awardsForCompletedSession(
       workoutSessionId: 42,
       items: items,
       loggedExerciseSlugs: {'push_up_wall', 'sit_to_stand_squat'},
-      masteryPromoted: false,
     );
 
     expect(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../shared/presentation/pattern_illustration.dart';
+import '../../../shared/presentation/exercise_media.dart';
 import '../../assessment/presentation/placement_result_screen.dart';
 import '../../onboarding/data/training_preferences_repository.dart';
 import '../../rpg/presentation/xp_level_badge.dart';
@@ -38,10 +38,14 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen> {
   Future<void> _regenerate() async {
     setState(() => _regenerating = true);
 
+    final capabilityLevelsByPattern = await resolveCapabilityLevelsByPattern(
+      ref,
+      widget.placement.level,
+    );
     const generator = WeeklyPlanGenerator();
     final plan = generator.generate(
       preferences: widget.preferences.toDomain(),
-      pushHorizontalCapabilityLevel: widget.placement.level,
+      capabilityLevelsByPattern: capabilityLevelsByPattern,
       now: DateTime.now(),
     );
 
@@ -253,7 +257,13 @@ class _ExerciseRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PatternIllustration(pattern: item.pattern, size: 44),
+          ExerciseMedia(
+            exerciseSlug: item.exerciseSlug,
+            pattern: item.pattern,
+            namePtBr: item.namePtBr,
+            mediaSlug: item.mediaSlug,
+            size: 44,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

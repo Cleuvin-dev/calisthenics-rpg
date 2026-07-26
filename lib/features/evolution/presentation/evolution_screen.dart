@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/presentation/pattern_level_media.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../assessment/presentation/other_patterns_assessment_screen.dart';
@@ -134,6 +135,16 @@ class _PatternPlacementTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        leading: estimateAsync.whenOrNull(
+          data: (estimate) => estimate == null
+              ? null
+              : PatternLevelMedia(
+                  pattern: pattern,
+                  level: estimate.level,
+                  namePtBr: estimate.levelName,
+                  size: 48,
+                ),
+        ),
         title: Text(_patternTitles[pattern] ?? pattern),
         subtitle: estimateAsync.when(
           loading: () => const Text('Carregando...'),

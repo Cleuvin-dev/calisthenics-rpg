@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../assessment/data/capability_estimate_repository.dart';
+import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../assessment/domain/push_horizontal_anchor.dart';
 import '../../training_plan/domain/exercise_catalog.dart';
 import '../../workout_session/domain/workout_session.dart';
@@ -12,6 +13,16 @@ import '../domain/mastery_rules.dart';
 /// promoção vem de confirmação de domínio, não de autorrelato.
 const masteryConfirmedReasonCode = 'masteryConfirmed';
 
+/// Nomes de nível por padrão, reaproveitando as escadas já definidas na
+/// avaliação (`push_horizontal_anchor.dart` + `fundamental_pattern_anchors.dart`).
+/// A extensão de cada escala (0-7 ou 0-5) é o maior nível presente aqui —
+/// sem constante fixa separada para não arriscar dessincronizar as duas.
+final Map<String, Map<int, String>> levelNamesByPattern = {
+  'push_horizontal': pushHorizontalLevelNames,
+  for (final ladder in fundamentalPatternLadders)
+    ladder.pattern: ladder.levelNames,
+};
+
 class ProgressionRepository {
   ProgressionRepository(this._db, this._capabilityEstimateRepository);
 
@@ -19,23 +30,28 @@ class ProgressionRepository {
   final CapabilityEstimateRepository _capabilityEstimateRepository;
 
   /// Avalia se as sessões concluídas desde a colocação atual confirmam
-  /// domínio da variação de push_horizontal em treino e, se sim, grava a
+  /// domínio da variação de [pattern] em treino e, se sim, grava a
   /// promoção como uma nova estimativa de capacidade
   /// (PROGRESSION_RULES.md §3 — menor incremento possível).
   ///
-  /// Retorna `null` quando o nível já está fora da escala coberta por
-  /// este MVP (0-7, pushHorizontalLevelNames) ou não há regra cadastrada.
-  Future<MasteryEvaluationResult?> evaluateAndPromotePushHorizontal({
+  /// Retorna `null` quando o nível já está fora da escala coberta pelo
+  /// catálogo deste padrão ou não há regra cadastrada para a variação
+  /// atual.
+  Future<MasteryEvaluationResult?> evaluateAndPromote({
+    required String pattern,
     required int currentLevel,
     required DateTime placementComputedAt,
     required DateTime now,
   }) async {
-    if (currentLevel >= 7) return null;
+    final levelNames = levelNamesByPattern[pattern];
+    if (levelNames == null) return null;
+    final maxLevel = levelNames.keys.reduce((a, b) => a > b ? a : b);
+    if (currentLevel >= maxLevel) return null;
 
-    final exerciseSlug = pushHorizontalExerciseForLevel(currentLevel);
+    final exerciseSlug = exerciseForPatternAndLevel(pattern, currentLevel);
     if (exerciseSlug == null) return null;
 
-    final rule = pushHorizontalMasteryRules[exerciseSlug];
+    final rule = masteryRulesByPattern[pattern]?[exerciseSlug];
     if (rule == null) return null;
 
     final sessions = await _fetchSessionEvidence(
@@ -50,9 +66,9 @@ class ProgressionRepository {
 
     final newLevel = currentLevel + 1;
     await _capabilityEstimateRepository.saveEstimate(
-      pattern: 'push_horizontal',
+      pattern: pattern,
       level: newLevel,
-      levelName: pushHorizontalLevelNames[newLevel] ?? 'Nível $newLevel',
+      levelName: levelNames[newLevel] ?? 'Nível $newLevel',
       // Confiança maior que a colocação por autorrelato: baseada em
       // séries realmente executadas e confirmadas.
       confidence: 'medium',
@@ -108,6 +124,7 @@ class ProgressionRepository {
                     l.perceivedEffort,
                   ),
                   completedAt: l.completedAt,
+                  activeDurationMs: l.activeDurationMs,
                 ),
               )
               .toList(),

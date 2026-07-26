@@ -139,4 +139,92 @@ void main() {
 
     expect(result.qualifyingConfirmations, 0);
   });
+
+  group('regra por duração (minSecondsPerSet)', () {
+    const durationRule = MasteryRule(
+      exerciseSlug: 'forearm_plank_full',
+      minSecondsPerSet: 30,
+      minQualifyingSets: 2,
+      confirmationsRequired: 2,
+      minHoursBetweenConfirmations: 48,
+    );
+
+    SetLog timedSet({
+      required int durationMs,
+      PerceivedEffort effort = PerceivedEffort.adequate,
+      int setNumber = 1,
+    }) {
+      return SetLog(
+        exerciseSlug: 'forearm_plank_full',
+        pattern: 'core_anti_extension',
+        setNumber: setNumber,
+        // Séries por tempo sempre gravam repsCompleted: 0 na produção
+        // (workout_session_repository.dart) — a evidência real vem de
+        // activeDurationMs.
+        repsCompleted: 0,
+        perceivedEffort: effort,
+        completedAt: DateTime(2026, 1, 1),
+        activeDurationMs: durationMs,
+      );
+    }
+
+    test('duração suficiente conta como série qualificada mesmo com '
+        'repsCompleted zerado', () {
+      final result = evaluator.evaluate(
+        rule: durationRule,
+        sessions: [
+          SessionEvidence(
+            completedAt: DateTime(2026, 1, 1),
+            sets: [
+              timedSet(durationMs: 32000),
+              timedSet(durationMs: 31000, setNumber: 2),
+            ],
+          ),
+        ],
+      );
+
+      expect(result.qualifyingConfirmations, 1);
+    });
+
+    test('duração abaixo do limiar não conta como série qualificada', () {
+      final result = evaluator.evaluate(
+        rule: durationRule,
+        sessions: [
+          SessionEvidence(
+            completedAt: DateTime(2026, 1, 1),
+            sets: [
+              timedSet(durationMs: 10000),
+              timedSet(durationMs: 15000, setNumber: 2),
+            ],
+          ),
+        ],
+      );
+
+      expect(result.qualifyingConfirmations, 0);
+    });
+
+    test('duas sessões por duração com intervalo suficiente promovem', () {
+      final result = evaluator.evaluate(
+        rule: durationRule,
+        sessions: [
+          SessionEvidence(
+            completedAt: DateTime(2026, 1, 1, 8),
+            sets: [
+              timedSet(durationMs: 32000),
+              timedSet(durationMs: 31000, setNumber: 2),
+            ],
+          ),
+          SessionEvidence(
+            completedAt: DateTime(2026, 1, 3, 8),
+            sets: [
+              timedSet(durationMs: 33000),
+              timedSet(durationMs: 30000, setNumber: 2),
+            ],
+          ),
+        ],
+      );
+
+      expect(result.promoted, isTrue);
+    });
+  });
 }

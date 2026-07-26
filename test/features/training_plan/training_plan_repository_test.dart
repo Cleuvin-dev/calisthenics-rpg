@@ -29,7 +29,7 @@ void main() {
         location: TrainingLocation.home,
         equipment: {},
       ),
-      pushHorizontalCapabilityLevel: 2,
+      capabilityLevelsByPattern: const {'push_horizontal': 2},
       now: DateTime(2026, 7, 24),
     );
 
@@ -57,14 +57,14 @@ void main() {
     await repository.save(
       generator.generate(
         preferences: prefs,
-        pushHorizontalCapabilityLevel: 0,
+        capabilityLevelsByPattern: const {'push_horizontal': 0},
         now: DateTime(2026, 1, 1),
       ),
     );
     await repository.save(
       generator.generate(
         preferences: prefs,
-        pushHorizontalCapabilityLevel: 6,
+        capabilityLevelsByPattern: const {'push_horizontal': 6},
         now: DateTime(2026, 6, 1),
       ),
     );

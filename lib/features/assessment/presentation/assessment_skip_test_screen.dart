@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/presentation/pattern_level_media.dart';
 import '../data/capability_estimate_providers.dart';
 import '../domain/conservative_placement.dart';
 import '../domain/push_horizontal_anchor.dart';
@@ -69,6 +70,12 @@ class _AssessmentSkipTestScreenState
               children: PushHorizontalAnchor.values
                   .map(
                     (a) => RadioListTile<PushHorizontalAnchor>(
+                      secondary: PatternLevelMedia(
+                        pattern: 'push_horizontal',
+                        level: a.skillLevel,
+                        namePtBr: a.label,
+                        size: 48,
+                      ),
                       title: Text(a.label),
                       value: a,
                     ),

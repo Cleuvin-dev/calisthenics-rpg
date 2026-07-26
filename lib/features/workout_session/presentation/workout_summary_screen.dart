@@ -2,9 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/presentation/level_up_celebration.dart';
+import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../progression/domain/mastery_evaluator.dart';
 import '../data/workout_session_providers.dart';
 import '../domain/workout_session.dart';
+
+/// Rótulo amigável de um padrão de movimento, reaproveitando
+/// `FundamentalPatternLadder.titlePtBr` para os 4 padrões opcionais e um
+/// rótulo próprio para `push_horizontal` (que não está nessa lista por
+/// ter sua própria escada dedicada, `push_horizontal_anchor.dart`).
+String _patternLabelPtBr(String pattern) {
+  if (pattern == 'push_horizontal') return 'Empurrar horizontal';
+  for (final ladder in fundamentalPatternLadders) {
+    if (ladder.pattern == pattern) return ladder.titlePtBr;
+  }
+  return pattern;
+}
 
 /// Resumo ao final da sessão (SCREENS_AND_FLOWS.md §2 — "Treino: resumo").
 class WorkoutSummaryScreen extends ConsumerWidget {
@@ -12,7 +25,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
     super.key,
     required this.workoutSessionId,
     required this.dayLabel,
-    this.masteryResult,
+    this.masteryResults = const {},
     this.xpAwarded = 0,
     this.leveledUp = false,
     this.newLevel,
@@ -21,9 +34,10 @@ class WorkoutSummaryScreen extends ConsumerWidget {
   final int workoutSessionId;
   final String dayLabel;
 
-  /// Resultado da avaliação de domínio de push_horizontal rodada ao
-  /// concluir a sessão, se aplicável (ver WorkoutPlayerScreen).
-  final MasteryEvaluationResult? masteryResult;
+  /// Resultados da avaliação de domínio rodada ao concluir a sessão, por
+  /// padrão (ver `WorkoutPlayerScreen._completeSession`) — só inclui
+  /// padrões com regra avaliada nesta sessão, não os 5 sempre.
+  final Map<String, MasteryEvaluationResult> masteryResults;
 
   /// XP efetivamente concedido ao concluir a sessão (RPG_SYSTEM.md §2),
   /// já recortado por tetos anti-abuso quando aplicável.
@@ -87,33 +101,36 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                if (masteryResult != null && masteryResult!.promoted) ...[
-                  const SizedBox(height: 16),
-                  Card(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    child: const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                        'Domínio confirmado! Sua colocação em empurrar '
-                        'horizontal avançou de nível. Gere um novo plano '
-                        'para refletir a nova variação.',
+                for (final entry in masteryResults.entries) ...[
+                  if (entry.value.promoted) ...[
+                    const SizedBox(height: 16),
+                    Card(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          'Domínio confirmado! Sua colocação em '
+                          '${_patternLabelPtBr(entry.key)} avançou de '
+                          'nível. Gere um novo plano para refletir a nova '
+                          'variação.',
+                        ),
                       ),
                     ),
-                  ),
-                ] else if (masteryResult?.hasPartialProgress ?? false) ...[
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        'Você atingiu o alvo em '
-                        '${masteryResult!.qualifyingConfirmations} de '
-                        '${masteryResult!.confirmationsRequired} sessões '
-                        'necessárias. Repita em outra sessão com a mesma '
-                        'técnica para confirmar o domínio.',
+                  ] else if (entry.value.hasPartialProgress) ...[
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          '${_patternLabelPtBr(entry.key)}: você atingiu o '
+                          'alvo em ${entry.value.qualifyingConfirmations} de '
+                          '${entry.value.confirmationsRequired} sessões '
+                          'necessárias. Repita em outra sessão com a mesma '
+                          'técnica para confirmar o domínio.',
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
                 const SizedBox(height: 24),
                 const Text(

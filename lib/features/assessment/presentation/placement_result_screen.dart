@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/presentation/pattern_level_media.dart';
 import '../domain/conservative_placement.dart';
 import 'assessment_skip_test_screen.dart';
 
@@ -23,6 +24,15 @@ class PlacementResultScreen extends StatelessWidget {
             Text(
               'Empurrar horizontal',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: PatternLevelMedia(
+                pattern: 'push_horizontal',
+                level: estimate.level,
+                namePtBr: estimate.levelName,
+                size: 120,
+              ),
             ),
             const SizedBox(height: 8),
             Text(

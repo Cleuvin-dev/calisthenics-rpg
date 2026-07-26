@@ -36,55 +36,55 @@ visível na tela de Treino).
 ## P0/P1 — bugs reportados pelo uso real (2026-07-24)
 
 Achados pelo usuário usando o app de verdade no aparelho, não em teste
-automatizado — diagnosticados no código, prontos para corrigir.
+automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
-- [ ] **`TrainingPlanScreen` ("Ver plano da semana completo") não mostra
-  as imagens novas**: `_ExerciseRow` (`lib/features/training_plan/
-  presentation/training_plan_screen.dart:256`) chama
-  `PatternIllustration(pattern: item.pattern, size: 44)` diretamente, em
-  vez de `ExerciseMedia(..., mediaSlug: item.mediaSlug)`. O campo
-  `PlannedExerciseItem.mediaSlug` já existe e já é preenchido pelo
-  `WeeklyPlanGenerator` — a tela é que nunca foi migrada para o widget
-  novo quando as 195 imagens foram integradas (esse trabalho só cobriu
-  `WorkoutCatalogScreen`/`WorkoutDetailScreen`/`WorkoutPlayerScreen`/
-  `RestScreen`, o catálogo de treinos novo, não a tela antiga do plano
-  semanal). Fix contido: trocar a chamada do widget nessa linha.
-- [ ] **Texto "Sua próxima missão de treino" sem contraste** no card
-  verde-menta de destaque da Jornada: `_NextSessionCard`
-  (`lib/features/journey/presentation/journey_screen.dart:354-370`) usa
-  `Card(color: colorScheme.primaryContainer)` mas o `subtitle` do
-  `ListTile` não define cor própria — herda o estilo padrão de texto
-  claro/cinza pensado para o fundo escuro do app, não para o fundo
-  verde do card. Fix: definir explicitamente
-  `style: TextStyle(color: colorScheme.onPrimaryContainer)` (ou
-  equivalente) no `title`/`subtitle` desse `ListTile`. Vale checar os
-  outros cards com `color:` explícito na mesma tela pelo mesmo problema.
+- [x] **`TrainingPlanScreen` ("Ver plano da semana completo") não mostra
+  as imagens novas** — corrigido em 2026-07-26: `_ExerciseRow`
+  (`lib/features/training_plan/presentation/training_plan_screen.dart:256`)
+  agora chama `ExerciseMedia(exerciseSlug:, pattern:, namePtBr:,
+  mediaSlug: item.mediaSlug, size: 44)` em vez de `PatternIllustration`
+  direto. Ver `PROJECT_STATUS.md` §"Correções dos bugs reportados
+  (2026-07-26)".
+- [x] **Texto "Sua próxima missão de treino" sem contraste** no card
+  verde-menta de destaque da Jornada — corrigido em 2026-07-26:
+  `_NextSessionCard` (`lib/features/journey/presentation/
+  journey_screen.dart:356-372`) agora define
+  `style: TextStyle(color: colorScheme.onPrimaryContainer)` no
+  `title`/`subtitle` e `color:` no `trailing` `Icon`. Checados os
+  demais cards da tela — nenhum outro define `color:` explícito no
+  `Card`, então nenhum outro tinha o mesmo problema.
 
 ## P0 — épicos fundacionais ainda incompletos
 
-- [ ] **Avaliação/progressão nos 4 padrões novos** (`pull_horizontal`,
-  `squat`, `hinge_posterior_chain`, `core_anti_extension`): já têm
-  escada de autorrelato (`fundamental_pattern_anchors.dart`) e
-  colocação conservadora, mas o motor de treino ainda prescreve uma
-  única variação por padrão (sem níveis) e `MasteryRule`/
-  `ProgressionRepository` só cobrem `push_horizontal`. Extensão natural:
-  dar aos 4 o mesmo tratamento em camadas que `push_horizontal` já tem.
-  Relato real do usuário (2026-07-24) que evidencia o problema: o app
-  prescreveu "Flexão na parede" (`push_up_wall`, nível 0-1) mesmo já
-  conseguindo fazer flexão completa — sintoma direto de colocação
-  conservadora sem caminho fácil de corrigir/reavaliar (ver item de
-  reavaliação periódica abaixo, em P1).
+- [x] **Avaliação/progressão nos 4 padrões novos** (`pull_horizontal`,
+  `squat`, `hinge_posterior_chain`, `core_anti_extension`) — concluído em
+  2026-07-26: catálogo em camadas + `MasteryRule`/promoção automática
+  igual a `push_horizontal`. Verificado no aparelho físico: regenerar o
+  plano com dados reais prescreveu corretamente as novas variações por
+  nível (ex.: "Remada australiana inclinada" pra pull_horizontal nível
+  2-3). Ver `PROJECT_STATUS.md` §"Catálogo em camadas para os 4 padrões
+  novos". Continua pendente (não fazia parte deste item): revisão
+  profissional dos números de dose/mastery (placeholders de MVP) e o
+  caso de um padrão nunca autoavaliado (sem colocação salva, sem
+  progressão rastreada — ver item de reavaliação periódica abaixo, em
+  P1).
 - [ ] **Catálogo de exercícios ainda é mínimo** (1-2 variações por
   padrão, não o catálogo editorial de `EXERCISE_SCHEMA.md` §7 com 15+
   variações por padrão). Cresce junto com a revisão profissional acima.
-- [ ] **Ligar as 195 imagens às escadas de avaliação/Evolução**
-  (`fundamental_pattern_anchors.dart`, `push_horizontal_anchor.dart`,
-  telas de avaliação e `EvolutionScreen`) via
-  `MediaCatalogIndex.byCategoryLevel(categorySlug, level)` — já pronto
-  em `lib/shared/domain/exercise_media_catalog.dart`, só falta o
-  wiring nas telas. Hoje só 9 dos 13 exercícios prescritos mostram foto
-  real; as ~184 imagens restantes (níveis avançados de todas as 14
-  árvores) estão carregadas mas não aparecem em nenhuma tela.
+- [x] **Ligar as 195 imagens às escadas de avaliação/Evolução** —
+  concluído em 2026-07-26: novo `PatternLevelMedia`
+  (`lib/shared/presentation/pattern_level_media.dart`) traduz
+  `pattern`+`level` para `mediaSlug` via
+  `MediaCatalogIndex.byCategoryLevel`, usado em
+  `AssessmentSkipTestScreen`, `OtherPatternsAssessmentScreen`,
+  `EvolutionScreen` e `PlacementResultScreen`. Verificado no aparelho
+  físico (`EvolutionScreen`, `OtherPatternsAssessmentScreen`) — fotos
+  reais e distintas por opção/padrão, sem crash. Ver
+  `PROJECT_STATUS.md` §"Mídia real nas telas de avaliação/Evolução".
+  Ainda restam imagens de níveis avançados (front lever, planche etc.)
+  sem nenhum exercício prescrito que as referencie — fora do escopo
+  deste item (é sobre as escadas de avaliação/colocação, não sobre
+  expandir o catálogo de prescrição).
 - [ ] **2 exercícios prescritos sem `mediaSlug` associado**:
   `warmup_joint_mobility` (aquecimento não é nó de nenhuma árvore) e
   `parallel_bar_support_hold` (nenhum nó de `dips_suporte` corresponde
@@ -99,11 +99,13 @@ automatizado — diagnosticados no código, prontos para corrigir.
   15/30 dias — escolher quais exercícios/padrões quer reavaliar (não
   uma bateria fixa obrigatória). A partir do resultado, recalcular
   automaticamente as metas semanais (equivalente a rodar o
-  `WeeklyPlanGenerator` de novo com o novo `pushHorizontalCapabilityLevel`
-  e, quando os 4 padrões novos ganharem prescrição em camadas — item
-  acima —, também com os outros níveis). Resolve o caso relatado de o
-  app manter "Flexão na parede" prescrita sem o usuário conseguir dizer
-  "já sei fazer flexão completa" de forma simples. Peças que já
+  `WeeklyPlanGenerator` de novo com o `capabilityLevelsByPattern`
+  atualizado — os 4 padrões novos já ganharam prescrição em camadas,
+  ver item acima, então isso já vale pros 5 padrões, não só
+  push_horizontal). Resolve o caso relatado de o app manter "Flexão na
+  parede" prescrita sem o usuário conseguir dizer "já sei fazer flexão
+  completa" de forma simples, e o equivalente para os outros 4 padrões
+  quando nunca autoavaliados. Peças que já
   existem e podem ser reaproveitadas: `ConservativePlacementCalculator.
   calculateForPattern`/`calculateSkippedEntirelyForPattern`
   (`conservative_placement.dart`), `CapabilityEstimateRepository.
@@ -198,6 +200,18 @@ automatizado — diagnosticados no código, prontos para corrigir.
 
 ## Concluído recentemente
 
+- 2026-07-26 — Mídia real (foto em vez de placeholder) nas telas de
+  avaliação/Evolução, via `MediaCatalogIndex.byCategoryLevel`. Ver
+  `PROJECT_STATUS.md` §"Mídia real nas telas de avaliação/Evolução".
+- 2026-07-26 — Catálogo em camadas + `MasteryRule`/promoção automática
+  para os 4 padrões novos (`pull_horizontal`, `squat`,
+  `hinge_posterior_chain`, `core_anti_extension`), mesmo tratamento que
+  `push_horizontal` já tinha. Ver `PROJECT_STATUS.md` §"Catálogo em
+  camadas para os 4 padrões novos".
+- 2026-07-26 — Corrigidos os 2 bugs de mídia/contraste reportados pelo
+  usuário em 2026-07-24 (`TrainingPlanScreen` sem imagens reais; texto
+  sem contraste no card de destaque da Jornada). Ver
+  `PROJECT_STATUS.md` §"Correções dos bugs reportados (2026-07-26)".
 - 2026-07-24 — Integração das 195 imagens do pacote
   `App_RPG_Exercise_Images/` ao catálogo/detalhe/player/descanso, com
   associação por `mediaSlug` (9 de 13 exercícios prescritos, alta/média

@@ -351,6 +351,8 @@ class _NextSessionCard extends StatelessWidget {
       }
     }
 
+    final onPrimaryContainer = Theme.of(context).colorScheme.onPrimaryContainer;
+
     return Card(
       color: Theme.of(context).colorScheme.primaryContainer,
       child: ListTile(
@@ -358,13 +360,15 @@ class _NextSessionCard extends StatelessWidget {
           nextSession == null
               ? 'Todas as sessões desta semana concluídas'
               : '${nextSession.dayLabel} — ${nextSession.targetMinutes} min',
+          style: TextStyle(color: onPrimaryContainer),
         ),
         subtitle: Text(
           nextSession == null
               ? 'Você pode adiantar a próxima semana ou descansar.'
               : 'Sua próxima missão de treino',
+          style: TextStyle(color: onPrimaryContainer),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Icon(Icons.chevron_right, color: onPrimaryContainer),
         onTap: onTap,
       ),
     );

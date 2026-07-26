@@ -1,6 +1,6 @@
 # Project Status
 
-**Data:** 2026-07-24
+**Data:** 2026-07-24 (última atualização 2026-07-26)
 **Responsável:** Claude Code (sessão com Cleuvin)
 **Branch/commit:** `main` (working tree com alterações não commitadas — usuário commita manualmente)
 
@@ -593,6 +593,236 @@ animado, não a foto real):
 (`flutter build apk --release` desta leva não foi gerado nesta sessão —
 ver Riscos/bloqueios, aparelho segue desconectado).
 
+### Correções dos bugs reportados (2026-07-26)
+
+Continuação da sessão anterior: os 2 bugs de mídia/contraste
+diagnosticados em `IMPLEMENTATION_BACKLOG.md` (achados pelo usuário
+usando o app de verdade, 2026-07-24) foram corrigidos.
+
+- **`TrainingPlanScreen` não mostrava as imagens reais**: `_ExerciseRow`
+  (`lib/features/training_plan/presentation/training_plan_screen.dart`)
+  chamava `PatternIllustration` direto em vez de `ExerciseMedia`. Trocado
+  pela chamada correta, passando `mediaSlug: item.mediaSlug` — mesmo
+  widget já usado em `WorkoutCatalogScreen`/`WorkoutDetailScreen`/
+  `WorkoutPlayerScreen`/`RestScreen`. A tela do plano semanal agora
+  também mostra foto real para os 9 exercícios com `mediaSlug`
+  associado, com fallback automático para a ilustração animada nos
+  demais (mesma lógica de `ExerciseMedia`, nada novo).
+- **Contraste no card de destaque da Jornada**: `_NextSessionCard`
+  (`lib/features/journey/presentation/journey_screen.dart`) definia
+  `Card(color: colorScheme.primaryContainer)` mas o `title`/`subtitle`/
+  `trailing` do `ListTile` não tinham cor própria, herdando o texto
+  claro pensado para o fundo escuro padrão do app. Corrigido definindo
+  `TextStyle(color: colorScheme.onPrimaryContainer)` explicitamente nos
+  três. Conferidos os demais `Card` da mesma tela (`_StatusCard`,
+  "Treino em destaque", histórico de XP) — nenhum outro define `color:`
+  explícito no `Card`, então nenhum tinha o mesmo problema.
+- `flutter analyze`: sem problemas. `flutter test`: **119 passed, 0
+  failed** (nenhum teste novo — mudança visual/estrutural sem lógica
+  nova para cobrir; os testes existentes de widget continuam
+  encontrando os textos/imagens pelo mesmo `find.text`/`find.byType`).
+- Não testado no aparelho físico nesta sessão (sem acesso ao `adb`
+  agora) — fica para a próxima verificação manual.
+
+### Catálogo em camadas para os 4 padrões novos (2026-07-26)
+
+Continuação da mesma sessão: `pull_horizontal`, `squat`,
+`hinge_posterior_chain` e `core_anti_extension` ganharam o mesmo
+tratamento em camadas que `push_horizontal` já tinha (catálogo com
+múltiplas variações por nível de capacidade + `MasteryRule`/promoção
+automática de domínio). Antes, esses 4 padrões tinham só **uma**
+variação conservadora no catálogo, prescrita não importa o nível — o
+mesmo bug já corrigido para `push_horizontal` ("Flexão na parede" para
+quem já fazia flexão completa") continuava latente para os outros 4.
+
+**Descoberta que expandiu o escopo:** `core_anti_extension` tem
+variações por duração (prancha), não só por reps, e o
+`MasteryEvaluator` só sabia avaliar por `repsCompleted` — séries por
+tempo sempre gravam `repsCompleted: 0`
+(`workout_session_repository.dart`, `finalizeTimedSet`). Sem estender
+isso, a metade "por duração" desse padrão nunca confirmaria domínio.
+`MasteryRule` ganhou `minSecondsPerSet` (opcional, junto com
+`minRepsPerSet` que também virou opcional) e `SetLog` ganhou
+`activeDurationMs` (espelhando a coluna já existente em
+`set_log_records`); `MasteryEvaluator._meetsThreshold` decide qual
+limiar usar por regra.
+
+**Escada de exercícios por padrão** (cadência igual a
+`push_horizontal`: bucket nomeado pelo nível mais alto do grupo, ladeira
+aberta no topo; todos os `mediaSlug` conferidos linha a linha em
+`exercise_media_catalog.json` antes de usar, e depois confirmados pelo
+teste já existente que valida todo `mediaSlug` do catálogo contra as
+195 imagens):
+
+- `pull_horizontal` (0-7): `scapular_retraction_bodyweight`/`band_row`
+  (existentes, 0-1, alternativas por equipamento) → novo
+  `incline_australian_row` (2-3) → novo
+  `horizontal_row_straight_legs` (4-5) → novo `assisted_archer_row`
+  (6-100).
+- `squat` (0-5): novo `medium_bench_sit_to_stand` (0-1) → novo
+  `assisted_squat_comfortable_range` (2-3) → `sit_to_stand_squat`
+  (existente, 4-100, `namePtBr` simplificado pra "Agachamento livre").
+- `hinge_posterior_chain` (0-5): `glute_bridge` (existente, 0-1) → novo
+  `good_morning_bodyweight` (2-3) → novo `unilateral_bridge` (4-100).
+- `core_anti_extension` (0-7): `dead_bug_simplified` (existente, 0-2) →
+  novo `incline_plank` (3-4, duração) → `forearm_plank_full`
+  (existente, 5-6, duração, ganhou nível pela primeira vez) → novo
+  `hollow_tuck_hold` (7-100, duração).
+
+Todas as `MasteryRule` novas usam os mesmos placeholders de MVP de
+`push_horizontal` (`minQualifyingSets: 2`, `confirmationsRequired: 2`,
+`minHoursBetweenConfirmations: 48`) — mesma ressalva de números
+pendentes de revisão profissional.
+
+**Generalização de código** (`pattern` como parâmetro em vez de
+hardcoded `push_horizontal` em todo lugar, reaproveitando a
+infraestrutura genérica que já existia — `CapabilityEstimateRepository`,
+`latestCapabilityEstimateProvider`,
+`ConservativePlacementCalculator.calculateForPattern` não mudaram):
+
+- `exercise_catalog.dart`: `pushHorizontalExerciseForLevel` virou
+  `exerciseForPatternAndLevel(pattern, level)`.
+  `exerciseCatalogVersion` subiu para `minimal-catalog-v4`.
+- `weekly_plan_generator.dart`: `generate()` troca
+  `pushHorizontalCapabilityLevel: int?` por
+  `capabilityLevelsByPattern: Map<String, int?>` — cada padrão do
+  template resolve seu próprio nível (`?? 0` se ausente do mapa), em
+  vez de todos compartilharem o nível de push_horizontal.
+- `mastery_rules.dart`: `pushHorizontalMasteryRules` virou
+  `masteryRulesByPattern: Map<String, Map<String, MasteryRule>>`
+  (padrão → slug → regra), com os 5 padrões.
+- `progression_repository.dart`: `evaluateAndPromotePushHorizontal`
+  virou `evaluateAndPromote({pattern, currentLevel,
+  placementComputedAt, now})`. Nível máximo da escala passou a ser
+  derivado de `levelNamesByPattern[pattern].keys.reduce(max)` (novo
+  mapa, combina `pushHorizontalLevelNames` +
+  `fundamentalPatternLadders`) em vez do `>= 7` fixo — cobre as escadas
+  mais curtas (`squat`/`hinge_posterior_chain`, 0-5) corretamente.
+- `xp_rules.dart`: `awardsForCompletedSession` troca
+  `masteryPromoted`/`masteryPattern`/`masteryNewLevel` (um só) por
+  `masteryPromotions: Map<String, int>` — permite mais de um padrão
+  promovido na mesma sessão (ex.: full body day confirma push_horizontal
+  e squat juntos), um `XpAward` de domínio por entrada.
+- `workout_player_screen.dart`: `_completeSession` avalia progressão
+  pra `push_horizontal` (colocação já vinha por construtor) **e** os 4
+  padrões de `fundamentalPatternLadders`, buscando a colocação mais
+  recente de cada um via `latestCapabilityEstimateProvider(pattern)`.
+  **Decisão de escopo:** só avalia um padrão se já existe alguma
+  colocação salva pra ele (`placement != null`) — sem isso não há
+  `placementComputedAt` como marco de "que sessões contam como
+  evidência". Quem nunca respondeu a autoavaliação opcional
+  (`OtherPatternsAssessmentScreen`) continua recebendo a variação de
+  nível 0 no plano (isso já funcionava), só não acumula confirmações de
+  domínio pra esse padrão — resolver isso é o próximo item do backlog
+  (teste físico periódico/reavaliação sob demanda), não regressão desta
+  entrega.
+- `workout_summary_screen.dart`: `masteryResult` (um só) virou
+  `masteryResults: Map<String, MasteryEvaluationResult>` — um card por
+  padrão promovido/com progresso parcial, com rótulo amigável
+  (reaproveita `FundamentalPatternLadder.titlePtBr`).
+- `generate_training_plan_screen.dart`/`training_plan_screen.dart`:
+  novo `resolveCapabilityLevelsByPattern(ref, pushHorizontalLevel)` em
+  `training_plan_providers.dart` (reaproveitado pelos dois lugares que
+  chamam `generator.generate(...)`), monta o mapa lendo a colocação
+  mais recente de cada um dos 4 padrões opcionais.
+- `workout_catalog.dart`/`WorkoutDetailScreen` ("Treino A · Fundação")
+  **não mudaram** — catálogo fixo, deliberadamente sem variação por
+  nível, fora do escopo (o alvo era o motor de treino semanal).
+
+**Testes** (119 → **140 testes automatizados**, todos passando;
+`flutter analyze` e `dart format .` sem problemas): novo
+`test/features/training_plan/exercise_catalog_test.dart` (cobertura
+0..maxLevel sem buraco/sobreposição pros 5 padrões + variação de
+elástico pro `pull_horizontal`); `mastery_evaluator_test.dart` ganhou um
+grupo pra `minSecondsPerSet`; `progression_repository_test.dart` ganhou
+teste de promoção de `squat` (não-push_horizontal) e dois de promoção
+por duração (`core_anti_extension`, incluindo o caso de duração abaixo
+do limiar); `xp_rules_test.dart` e `weekly_plan_generator_test.dart`
+atualizados pras novas assinaturas, com um teste novo cada
+(duas promoções simultâneas; nível de `squat` variando a prescrição).
+
+**Não testado no aparelho físico nesta sessão** (sem `adb` disponível) —
+fica pendente confirmar visualmente na próxima verificação manual.
+
+### Mídia real nas telas de avaliação/Evolução (2026-07-26)
+
+Continuação da mesma sessão: o índice `MediaCatalogIndex.byCategoryLevel`
+já existia pronto desde a integração das 195 imagens, mas nenhuma tela
+de avaliação/colocação o usava — todas mostravam só texto ou a
+ilustração animada, mesmo quando havia foto real disponível para aquele
+nó específico da escada.
+
+**Novo widget compartilhado** (`lib/shared/presentation/
+pattern_level_media.dart`): `PatternLevelMedia(pattern, level, namePtBr,
+size)` resolve `mediaSlug` a partir de `pattern`+`level` via
+`patternMediaCategorySlug` (mapa novo, traduz o namespace de padrão do
+app — `push_horizontal`, `squat`, ... — para o `categorySlug` do JSON —
+`empurrar_horizontal`, `agachamento_unilateral`, ... — os dois nunca
+foram unificados, mesma decisão já registrada na integração das 195
+imagens) e delega pro `ExerciseMedia` já existente (mesmo fallback pro
+placeholder animado quando não há associação ou o catálogo ainda está
+carregando).
+
+**Detalhe que exigiu atenção:** o `level` usado difere conforme o
+contexto. Nas telas de **autoavaliação** (uma imagem por opção de
+autorrelato), o nível certo é `anchor.skillLevel` — o nó que a própria
+opção descreve (`PushHorizontalAnchor.wall.skillLevel == 1` mostra a
+imagem de "Flexão na parede", nível 1). Na **Evolução** (imagem da
+colocação já salva), o nível certo é `estimate.level` diretamente — que
+já é um nível **abaixo** do anchor reportado, porque
+`ConservativePlacementCalculator` sempre coloca conservadoramente um
+nível abaixo do que a pessoa disse conseguir
+(`level = anchor.skillLevel - 1`). Usar `anchor.skillLevel` na Evolução
+mostraria a imagem errada (um nível acima do que foi de fato salvo).
+Confirmado node a node comparando os nomes de `pushHorizontalLevelNames`/
+`fundamental_pattern_anchors.dart` com os rótulos dos anchors antes de
+decidir — não presumido.
+
+**Telas atualizadas:**
+
+- `AssessmentSkipTestScreen` (colocação obrigatória de push_horizontal):
+  cada `RadioListTile<PushHorizontalAnchor>` ganhou `secondary:
+  PatternLevelMedia(...)` com o nível do próprio anchor.
+- `OtherPatternsAssessmentScreen` (autoavaliação opcional dos 4 padrões
+  novos): mesma coisa, um `PatternLevelMedia` por anchor de cada
+  `FundamentalPatternLadder`.
+- `EvolutionScreen._PatternPlacementTile`: `leading:
+  PatternLevelMedia(...)` com `estimate.level`, só quando já existe uma
+  colocação salva (`estimate != null`) — "não avaliado" continua sem
+  imagem, não faz sentido mostrar uma sem nível pra buscar.
+- `PlacementResultScreen`: imagem de destaque (120px) da variação que
+  acabou de ser salva, acima do nome do nível.
+
+**Testes** (140 → **142 testes automatizados**, todos passando;
+`flutter analyze` e `dart format .` sem problemas): novo
+`test/shared/presentation/pattern_level_media_test.dart` — resolve a
+imagem certa via `categorySlug:level` (com override do provider, mesmo
+padrão de `exercise_media_test.dart` — carregar o JSON real via
+`rootBundle` trava sem tempo de parede real dentro de `testWidgets`) e
+cai pro placeholder animado quando o nível não tem associação.
+
+**Verificação manual no aparelho físico (`7549GMFUDA4DKZW8`, mesma
+sessão, `adb` reconectado depois):** `flutter build apk --release` +
+`adb install -r` sem apagar dados reais já salvos (nível 1, 70 XP,
+histórico preservado). Confirmado por interação real:
+
+- Regenerar o plano ("Gerar novamente") prescreveu as variações novas
+  corretamente a partir da colocação real salva do usuário — ex.:
+  "Remada australiana inclinada" (pull_horizontal, nível 2-3, novo
+  nesta sessão) e "Agachamento livre" com o nome simplificado (squat,
+  nível 4-100) — ambos com foto real, não mais placeholder.
+- `EvolutionScreen`: as 5 colocações mostram a foto do nó exato do
+  nível salvo (ex.: nível 0 → "Ponte de glúteos curta", nível 5 →
+  "Prancha de joelhos"), batendo com o que o motor de treino prescreveu
+  no mesmo plano.
+- `OtherPatternsAssessmentScreen`: cada opção de autorrelato dos 4
+  padrões mostra foto real distinta, sem repetição/troca entre opções.
+- `adb logcat` do processo do app durante toda a navegação: nenhum
+  crash, nenhuma exceção fatal.
+- Não testado isoladamente: `PlacementResultScreen` (mesmo widget já
+  validado em duas outras telas, risco baixo) e `AssessmentSkipTestScreen`
+  (não reexercitada pois a colocação de push_horizontal já existia).
+
 ## Banco/migrations
 
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
@@ -635,6 +865,13 @@ ver Riscos/bloqueios, aparelho segue desconectado).
 | `adb devices` (verificação manual) | Aparelho `7549GMFUDA4DKZW8` reconectado |
 | `flutter build apk --release` (verificação manual) | OK (100,6MB) |
 | `adb install -r` no aparelho físico (verificação manual) | OK — testado manualmente via `adb shell input`/`uiautomator`: catálogo/detalhe/player/descanso com imagens reais, recuperação de série por tempo após reabrir o app, sem crashes no `logcat` |
+| `flutter analyze` (catálogo em camadas, 2026-07-26) | Sem problemas |
+| `flutter test` (catálogo em camadas, 2026-07-26) | **140 passed, 0 failed** |
+| `dart format .` (catálogo em camadas, 2026-07-26) | 2 arquivos reformatados, nenhum erro |
+| `adb devices` (catálogo em camadas, 2026-07-26) | Não executado — sem acesso ao aparelho físico nesta sessão |
+| `flutter analyze` (mídia na avaliação/Evolução, 2026-07-26) | Sem problemas |
+| `flutter test` (mídia na avaliação/Evolução, 2026-07-26) | **142 passed, 0 failed** |
+| `dart format .` (mídia na avaliação/Evolução, 2026-07-26) | 1 arquivo reformatado, nenhum erro |
 
 ## Decisões e ADRs
 
@@ -739,13 +976,11 @@ concluído sai daqui e do backlog; item novo entra nos dois.
   `PopScope` no `WorkoutPlayerScreen` chama a mesma lógica do botão de
   pausar). Nenhum dos dois foi confirmado no aparelho físico ainda —
   fica para a próxima sessão (ver nota sobre o `adb` desconectado).
-- Avaliação real agora cobre 5 padrões (push_horizontal + os 4 novos),
-  mas o motor de treino ainda não usa isso para variar o que prescreve
-  nesses 4 — o catálogo continua com uma única variação por padrão, sem
-  níveis. Progressão (`features/progression`) também continua só para
-  `push_horizontal`. Extensão natural: dar aos 4 padrões novos o mesmo
-  tratamento de catálogo em camadas + `MasteryRule` que push_horizontal
-  já tem.
+- ~~Avaliação real agora cobre 5 padrões, mas o motor de treino ainda
+  não usa isso para variar o que prescreve nesses 4~~ — **corrigido em
+  2026-07-26**: catálogo em camadas + `MasteryRule`/promoção automática
+  para os 4 padrões novos, verificado no aparelho físico. Ver seção
+  "Catálogo em camadas para os 4 padrões novos" acima.
 - `LevelUpCelebration` não foi vista rodando de verdade no aparelho
   (precisaria acumular 125 XP para subir do nível 1) — só validada por
   `flutter analyze` e revisão de código. Vale conferir visualmente na
@@ -890,21 +1125,28 @@ Lista completa e priorizada em `docs/IMPLEMENTATION_BACKLOG.md` (P0 →
 P3). Resumo do topo da fila agora: (1) os três testes manuais que ainda
 faltam no aparelho — modo avião explícito, tela bloqueada durante
 série por tempo (`adb shell input keyevent KEYCODE_POWER`), toque
-duplo físico deliberado; (2) dar aos 4 padrões novos o mesmo tratamento
-de catálogo em camadas + `MasteryRule` que push_horizontal já tem; (3)
-ligar as 195 imagens às escadas de avaliação/Evolução via
-`MediaCatalogIndex.byCategoryLevel`, já pronto.
+duplo físico deliberado (nenhum é bloqueio, só não foram exercitados
+ainda); (2) teste físico periódico/reavaliação sob demanda (P1), que
+também resolve o caso de um padrão nunca autoavaliado nunca acumular
+confirmações de domínio; (3) trilha completa de treinos visível na tela
+de Treino (P1, outro pedido do usuário); (4) revisão profissional de
+conteúdo/mídia (bloqueia publicação comercial, precisa de alguém de
+fora do projeto).
 
 ## Critério para retomar
 
 Ler este arquivo, `docs/IMPLEMENTATION_BACKLOG.md` e
-`docs/adr/0006-mvp-local-only.md`. As três levas mais recentes
-(correção de bugs + avaliação estendida + Evolução; história vertical
-do player por reps/duração; integração das 195 imagens) agora têm
-verificação automatizada completa (119 testes) **e** verificação manual
-real no aparelho físico (`7549GMFUDA4DKZW8`), incluindo o cenário mais
-sensível a tempo real — recuperação de série por tempo após o app
-fechar/reabrir. Os únicos testes manuais ainda não feitos são modo
-avião explícito, tela bloqueada e toque duplo físico deliberado (ver
+`docs/adr/0006-mvp-local-only.md`. **Todas** as levas desta sessão —
+correção de bugs + avaliação estendida + Evolução; história vertical do
+player por reps/duração; integração das 195 imagens; correção dos 2
+bugs de mídia/contraste; catálogo em camadas para os 4 padrões novos;
+mídia real nas telas de avaliação/Evolução — têm verificação
+automatizada completa **e** verificação manual real no aparelho físico
+(`7549GMFUDA4DKZW8`), incluindo os cenários mais sensíveis a tempo
+real/dados reais: recuperação de série por tempo após o app fechar/
+reabrir, e regenerar o plano com a colocação real do usuário
+prescrevendo corretamente as variações novas por nível. Os únicos
+testes manuais ainda não feitos em nenhuma leva são modo avião
+explícito, tela bloqueada e toque duplo físico deliberado (ver
 `docs/IMPLEMENTATION_BACKLOG.md`, seção P0) — nenhum é bloqueio, o
 sistema já foi exercitado de verdade em cenários equivalentes.

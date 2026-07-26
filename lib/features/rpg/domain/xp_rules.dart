@@ -22,9 +22,7 @@ List<XpAward> awardsForCompletedSession({
   required int workoutSessionId,
   required List<WorkoutSessionItem> items,
   required Set<String> loggedExerciseSlugs,
-  required bool masteryPromoted,
-  String? masteryPattern,
-  int? masteryNewLevel,
+  Map<String, int> masteryPromotions = const {},
 }) {
   final awards = <XpAward>[
     XpAward(
@@ -51,13 +49,13 @@ List<XpAward> awardsForCompletedSession({
     );
   }
 
-  if (masteryPromoted && masteryPattern != null && masteryNewLevel != null) {
+  for (final entry in masteryPromotions.entries) {
     awards.add(
       XpAward(
         eventType: XpEventType.masteryConfirmed,
         amount: masteryConfirmedXp,
-        sourceId: '$masteryPattern-level-$masteryNewLevel',
-        idempotencyKey: 'mastery-$masteryPattern-level-$masteryNewLevel',
+        sourceId: '${entry.key}-level-${entry.value}',
+        idempotencyKey: 'mastery-${entry.key}-level-${entry.value}',
         repeatable: false,
       ),
     );

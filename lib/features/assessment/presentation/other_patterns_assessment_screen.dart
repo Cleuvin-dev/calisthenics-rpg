@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/presentation/pattern_level_media.dart';
 import '../data/capability_estimate_providers.dart';
 import '../domain/conservative_placement.dart';
 import '../domain/fundamental_pattern_anchors.dart';
@@ -92,6 +93,12 @@ class _OtherPatternsAssessmentScreenState
                           children: ladder.anchors
                               .map(
                                 (a) => RadioListTile<MovementAnchor?>(
+                                  secondary: PatternLevelMedia(
+                                    pattern: ladder.pattern,
+                                    level: a.skillLevel,
+                                    namePtBr: a.label,
+                                    size: 40,
+                                  ),
                                   title: Text(a.label),
                                   value: a,
                                   dense: true,

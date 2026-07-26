@@ -31,10 +31,14 @@ class _GenerateTrainingPlanScreenState
   Future<void> _generate() async {
     setState(() => _generating = true);
 
+    final capabilityLevelsByPattern = await resolveCapabilityLevelsByPattern(
+      ref,
+      widget.placement.level,
+    );
     const generator = WeeklyPlanGenerator();
     final plan = generator.generate(
       preferences: widget.preferences.toDomain(),
-      pushHorizontalCapabilityLevel: widget.placement.level,
+      capabilityLevelsByPattern: capabilityLevelsByPattern,
       now: DateTime.now(),
     );
 

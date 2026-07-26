@@ -69,10 +69,11 @@ class CatalogExercise {
   /// Vazio significa "sem equipamento" (sempre elegível).
   final Set<Equipment> requiredEquipment;
 
-  /// Faixa de nível de capacidade (0-7, escala de push_horizontal) em que
-  /// esta variação é apropriada. Padrões sem avaliação própria usam a
-  /// variação de nível 0 (mais conservadora), espelhando
-  /// `calculateSkippedEntirely` em conservative_placement.dart.
+  /// Faixa de nível de capacidade (escala própria de cada padrão — 0-7
+  /// para push_horizontal/pull_horizontal/core_anti_extension, 0-5 para
+  /// squat/hinge_posterior_chain) em que esta variação é apropriada.
+  /// Padrões sem colocação salva usam nível 0 (mais conservadora),
+  /// espelhando `calculateSkippedEntirely` em conservative_placement.dart.
   final int minCapabilityLevel;
   final int maxCapabilityLevel;
 
@@ -100,7 +101,7 @@ class CatalogExercise {
 
 /// Catálogo mínimo versionado. Nova versão sempre que dose, padrão ou
 /// requisito de equipamento mudar (EXERCISE_SCHEMA.md §6).
-const exerciseCatalogVersion = 'minimal-catalog-v3';
+const exerciseCatalogVersion = 'minimal-catalog-v4';
 
 /// Padrões cobertos nesta versão do catálogo. Os demais padrões oficiais de
 /// EXERCISE_SCHEMA.md §3 ainda não têm variação cadastrada.
@@ -185,8 +186,9 @@ const List<CatalogExercise> exerciseCatalog = [
     mediaSlug: 'flexao_tradicional',
   ),
 
-  // pull_horizontal — não avaliado ainda: variação única e conservadora,
-  // com alternativa quando há elástico disponível.
+  // pull_horizontal — escada em camadas espelhando push_horizontal (0-7),
+  // nomes/mediaSlug conferidos em exercise_media_catalog.json
+  // (categoria puxar_horizontal_escapula).
   CatalogExercise(
     slug: 'scapular_retraction_bodyweight',
     namePtBr: 'Retração escapular assistida (sem equipamento)',
@@ -195,6 +197,8 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 8,
+    minCapabilityLevel: 0,
+    maxCapabilityLevel: 1,
     mediaSlug: 'retracao_escapular_guiada',
   ),
   CatalogExercise(
@@ -206,26 +210,93 @@ const List<CatalogExercise> exerciseCatalog = [
     targetSets: 3,
     targetReps: 8,
     requiredEquipment: {Equipment.elasticBand},
+    minCapabilityLevel: 0,
+    maxCapabilityLevel: 1,
     mediaSlug: 'remada_pe_elastico',
   ),
+  CatalogExercise(
+    slug: 'incline_australian_row',
+    namePtBr: 'Remada australiana inclinada',
+    pattern: 'pull_horizontal',
+    setsRepsGuidance: '3 séries de 8-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
+    minCapabilityLevel: 2,
+    maxCapabilityLevel: 3,
+    mediaSlug: 'remada_australiana_inclinada',
+  ),
+  CatalogExercise(
+    slug: 'horizontal_row_straight_legs',
+    namePtBr: 'Remada horizontal com pernas estendidas',
+    pattern: 'pull_horizontal',
+    setsRepsGuidance: '3 séries de 8-10 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
+    minCapabilityLevel: 4,
+    maxCapabilityLevel: 5,
+    mediaSlug: 'remada_horizontal_pernas_estendidas',
+  ),
+  CatalogExercise(
+    slug: 'assisted_archer_row',
+    namePtBr: 'Archer row assistida',
+    pattern: 'pull_horizontal',
+    setsRepsGuidance: '3 séries de 6-8 repetições por lado',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 6,
+    minCapabilityLevel: 6,
+    maxCapabilityLevel: 100,
+    mediaSlug: 'archer_row_assistida',
+  ),
 
-  // squat
+  // squat — escada em camadas (0-5, ladeira mais curta que push_horizontal),
+  // nomes/mediaSlug conferidos em exercise_media_catalog.json
+  // (categoria agachamento_unilateral).
+  CatalogExercise(
+    slug: 'medium_bench_sit_to_stand',
+    namePtBr: 'Sentar e levantar de banco médio',
+    pattern: 'squat',
+    setsRepsGuidance: '3 séries de 10-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 10,
+    minCapabilityLevel: 0,
+    maxCapabilityLevel: 1,
+    mediaSlug: 'sentar_levantar_banco_medio',
+  ),
+  CatalogExercise(
+    slug: 'assisted_squat_comfortable_range',
+    namePtBr: 'Agachamento assistido em amplitude confortável',
+    pattern: 'squat',
+    setsRepsGuidance: '3 séries de 10-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 10,
+    minCapabilityLevel: 2,
+    maxCapabilityLevel: 3,
+    mediaSlug: 'agachamento_assistido_amplitude_confortavel',
+  ),
   CatalogExercise(
     slug: 'sit_to_stand_squat',
-    namePtBr: 'Agachamento livre (sentar e levantar)',
+    namePtBr: 'Agachamento livre',
     pattern: 'squat',
     setsRepsGuidance: '3 séries de 12 repetições',
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 12,
     restSeconds: 60,
+    minCapabilityLevel: 4,
+    maxCapabilityLevel: 100,
     // Confirmado por referência cruzada: o media_key deste nó cita
     // "bodyweight_squat_bottom.png", o mesmo arquivo já usado para este
     // slug na história vertical anterior.
     mediaSlug: 'agachamento_livre',
   ),
 
-  // hinge_posterior_chain
+  // hinge_posterior_chain — escada em camadas (0-5), nomes/mediaSlug
+  // conferidos em exercise_media_catalog.json (categoria cadeia_posterior).
   CatalogExercise(
     slug: 'glute_bridge',
     namePtBr: 'Ponte de glúteos',
@@ -234,10 +305,38 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 10,
+    minCapabilityLevel: 0,
+    maxCapabilityLevel: 1,
     mediaSlug: 'ponte_gluteos_completa',
   ),
+  CatalogExercise(
+    slug: 'good_morning_bodyweight',
+    namePtBr: 'Good morning sem carga/elástico',
+    pattern: 'hinge_posterior_chain',
+    setsRepsGuidance: '3 séries de 10-12 repetições',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 10,
+    minCapabilityLevel: 2,
+    maxCapabilityLevel: 3,
+    mediaSlug: 'good_morning_sem_carga_elastico',
+  ),
+  CatalogExercise(
+    slug: 'unilateral_bridge',
+    namePtBr: 'Ponte unilateral',
+    pattern: 'hinge_posterior_chain',
+    setsRepsGuidance: '3 séries de 8-10 repetições por lado',
+    doseType: DoseType.reps,
+    targetSets: 3,
+    targetReps: 8,
+    minCapabilityLevel: 4,
+    maxCapabilityLevel: 100,
+    mediaSlug: 'ponte_unilateral',
+  ),
 
-  // core_anti_extension
+  // core_anti_extension — escada em camadas (0-7), nomes/mediaSlug
+  // conferidos em exercise_media_catalog.json
+  // (categoria core_anterior_compressao).
   CatalogExercise(
     slug: 'dead_bug_simplified',
     namePtBr: 'Dead bug simplificado',
@@ -246,7 +345,24 @@ const List<CatalogExercise> exerciseCatalog = [
     doseType: DoseType.reps,
     targetSets: 3,
     targetReps: 8,
+    minCapabilityLevel: 0,
+    maxCapabilityLevel: 2,
     mediaSlug: 'dead_bug_simplificado',
+  ),
+  CatalogExercise(
+    slug: 'incline_plank',
+    namePtBr: 'Prancha inclinada',
+    pattern: 'core_anti_extension',
+    setsRepsGuidance: '3 séries de 20-30 segundos',
+    doseType: DoseType.duration,
+    targetSets: 3,
+    targetSeconds: 20,
+    minSeconds: 10,
+    maxSeconds: 40,
+    safetyCapSeconds: 60,
+    minCapabilityLevel: 3,
+    maxCapabilityLevel: 4,
+    mediaSlug: 'prancha_inclinada',
   ),
   CatalogExercise(
     slug: forearmPlankSlug,
@@ -260,10 +376,27 @@ const List<CatalogExercise> exerciseCatalog = [
     maxSeconds: 60,
     safetyCapSeconds: 90,
     restSeconds: 45,
+    minCapabilityLevel: 5,
+    maxCapabilityLevel: 6,
     // Confirmado por referência cruzada: o media_key deste nó cita
     // "forearm_plank_hold.png", o mesmo arquivo já usado para este slug
     // na história vertical anterior.
     mediaSlug: 'prancha_completa',
+  ),
+  CatalogExercise(
+    slug: 'hollow_tuck_hold',
+    namePtBr: 'Hollow tuck hold',
+    pattern: 'core_anti_extension',
+    setsRepsGuidance: '3 séries de 15-20 segundos',
+    doseType: DoseType.duration,
+    targetSets: 3,
+    targetSeconds: 15,
+    minSeconds: 10,
+    maxSeconds: 30,
+    safetyCapSeconds: 45,
+    minCapabilityLevel: 7,
+    maxCapabilityLevel: 100,
+    mediaSlug: 'hollow_tuck_hold',
   ),
 
   // Bônus — só entram quando o orçamento de tempo sobra ou o equipamento
@@ -340,12 +473,12 @@ CatalogExercise? catalogExerciseForSlug(String slug) {
   return null;
 }
 
-/// Variação de push_horizontal treinada no nível de capacidade atual, ou
-/// `null` se nenhuma variação cobrir esse nível (fora da escala 0-7 desta
-/// versão do catálogo).
-String? pushHorizontalExerciseForLevel(int level) {
+/// Variação de um padrão treinada no nível de capacidade atual, ou `null`
+/// se nenhuma variação cobrir esse nível (fora da escala coberta pelo
+/// catálogo para este padrão).
+String? exerciseForPatternAndLevel(String pattern, int level) {
   final matches = exercisesForPattern(
-    'push_horizontal',
+    pattern,
   ).where((e) => e.suitableForLevel(level));
   return matches.isEmpty ? null : matches.first.slug;
 }

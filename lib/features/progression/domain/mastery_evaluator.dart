@@ -52,7 +52,7 @@ class MasteryEvaluator {
       final qualifyingSets = session.sets
           .where(
             (s) =>
-                s.repsCompleted >= rule.minRepsPerSet &&
+                _meetsThreshold(s, rule) &&
                 (s.perceivedEffort == PerceivedEffort.adequate ||
                     s.perceivedEffort == PerceivedEffort.tooEasy),
           )
@@ -80,5 +80,18 @@ class MasteryEvaluator {
       confirmationsRequired: rule.confirmationsRequired,
       promoted: confirmations.length >= rule.confirmationsRequired,
     );
+  }
+
+  /// Exercícios por duração (`minSecondsPerSet`, ex.: pranchas) são
+  /// avaliados por `activeDurationMs`, não por `repsCompleted` — séries
+  /// por tempo sempre gravam `repsCompleted: 0`
+  /// (`workout_session_repository.dart`).
+  bool _meetsThreshold(SetLog set, MasteryRule rule) {
+    final minSeconds = rule.minSecondsPerSet;
+    if (minSeconds != null) {
+      final seconds = (set.activeDurationMs ?? 0) / 1000;
+      return seconds >= minSeconds;
+    }
+    return set.repsCompleted >= (rule.minRepsPerSet ?? 0);
   }
 }

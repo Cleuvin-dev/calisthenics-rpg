@@ -33,15 +33,13 @@ class WeeklyPlanGenerator {
 
   WeeklyPlan generate({
     required TrainingPreferences preferences,
-    required int? pushHorizontalCapabilityLevel,
+    required Map<String, int?> capabilityLevelsByPattern,
     required DateTime now,
   }) {
     final requestedDays = preferences.daysPerWeek;
     final template = _templateFor(requestedDays);
     final actualDays = template.length;
 
-    final capabilityLevel =
-        pushHorizontalCapabilityLevel ?? _unassessedCapabilityLevel;
     final budget = _exerciseBudget(preferences.minutesPerSession);
 
     final sessions = template
@@ -50,7 +48,7 @@ class WeeklyPlanGenerator {
             day: day,
             minutesPerSession: preferences.minutesPerSession,
             budget: budget,
-            capabilityLevel: capabilityLevel,
+            capabilityLevelsByPattern: capabilityLevelsByPattern,
             availableEquipment: preferences.equipment,
           ),
         )
@@ -79,7 +77,7 @@ class WeeklyPlanGenerator {
     required _DayTemplate day,
     required int minutesPerSession,
     required int budget,
-    required int capabilityLevel,
+    required Map<String, int?> capabilityLevelsByPattern,
     required Set<Equipment> availableEquipment,
   }) {
     final items = <PlannedExerciseItem>[];
@@ -92,6 +90,8 @@ class WeeklyPlanGenerator {
     var slotsFilled = 0;
     for (var i = 0; i < day.patterns.length && slotsFilled < budget; i++) {
       final pattern = day.patterns[i];
+      final capabilityLevel =
+          capabilityLevelsByPattern[pattern] ?? _unassessedCapabilityLevel;
       final chosen = _pickExercise(
         pattern: pattern,
         capabilityLevel: capabilityLevel,

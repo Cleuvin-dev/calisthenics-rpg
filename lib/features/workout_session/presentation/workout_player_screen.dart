@@ -7,7 +7,9 @@ import '../../../core/database/app_database.dart';
 import '../../../shared/data/exercise_media_catalog_provider.dart';
 import '../../../shared/presentation/exercise_media.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
+import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../progression/data/progression_providers.dart';
+import '../../progression/domain/mastery_evaluator.dart';
 import '../../rpg/data/rpg_providers.dart';
 import '../../rpg/domain/level_curve.dart';
 import '../../rpg/domain/xp_rules.dart';
@@ -329,15 +331,47 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     await sessionRepository.complete(widget.workoutSessionId, now);
     ref.invalidate(latestActiveWorkoutSessionProvider);
 
-    final masteryResult = await ref
-        .read(progressionRepositoryProvider)
-        .evaluateAndPromotePushHorizontal(
-          currentLevel: widget.pushHorizontalPlacement.level,
-          placementComputedAt: widget.pushHorizontalPlacement.computedAt,
-          now: now,
-        );
-    if (masteryResult?.promoted ?? false) {
+    final progressionRepository = ref.read(progressionRepositoryProvider);
+    final masteryResults = <String, MasteryEvaluationResult>{};
+    final masteryPromotions = <String, int>{};
+
+    final pushHorizontalResult = await progressionRepository.evaluateAndPromote(
+      pattern: 'push_horizontal',
+      currentLevel: widget.pushHorizontalPlacement.level,
+      placementComputedAt: widget.pushHorizontalPlacement.computedAt,
+      now: now,
+    );
+    if (pushHorizontalResult != null) {
+      masteryResults['push_horizontal'] = pushHorizontalResult;
+    }
+    if (pushHorizontalResult?.promoted ?? false) {
+      masteryPromotions['push_horizontal'] = pushHorizontalResult!.newLevel!;
       ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
+    }
+
+    // Os 4 padrões opcionais só têm progressão avaliada quando já existe
+    // uma colocação salva (o usuário respondeu a autoavaliação em algum
+    // momento) — sem isso não há `placementComputedAt` como marco pra
+    // saber quais sessões contam como evidência.
+    for (final ladder in fundamentalPatternLadders) {
+      final placement = await ref.read(
+        latestCapabilityEstimateProvider(ladder.pattern).future,
+      );
+      if (placement == null) continue;
+
+      final result = await progressionRepository.evaluateAndPromote(
+        pattern: ladder.pattern,
+        currentLevel: placement.level,
+        placementComputedAt: placement.computedAt,
+        now: now,
+      );
+      if (result != null) {
+        masteryResults[ladder.pattern] = result;
+      }
+      if (result?.promoted ?? false) {
+        masteryPromotions[ladder.pattern] = result!.newLevel!;
+        ref.invalidate(latestCapabilityEstimateProvider(ladder.pattern));
+      }
     }
 
     final xpRepository = ref.read(xpLedgerRepositoryProvider);
@@ -351,9 +385,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       workoutSessionId: widget.workoutSessionId,
       items: items,
       loggedExerciseSlugs: logs.map((l) => l.exerciseSlug).toSet(),
-      masteryPromoted: masteryResult?.promoted ?? false,
-      masteryPattern: 'push_horizontal',
-      masteryNewLevel: masteryResult?.newLevel,
+      masteryPromotions: masteryPromotions,
     );
     final xpAwarded = await xpRepository.grantAwards(awards, now: now);
     final levelAfter = levelCalculator
@@ -367,7 +399,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
         builder: (_) => WorkoutSummaryScreen(
           workoutSessionId: widget.workoutSessionId,
           dayLabel: dayLabel,
-          masteryResult: masteryResult,
+          masteryResults: masteryResults,
           xpAwarded: xpAwarded,
           leveledUp: levelAfter > levelBefore,
           newLevel: levelAfter,
