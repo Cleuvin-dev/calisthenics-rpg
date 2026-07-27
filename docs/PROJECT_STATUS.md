@@ -1075,6 +1075,19 @@ concluído sai daqui e do backlog; item novo entra nos dois.
   objetivo muda faixa de repetições/séries/descanso/estrutura da sessão
   e como o motor classifica/pontua cada exercício por objetivo. Detalhe
   completo em `docs/IMPLEMENTATION_BACKLOG.md`, seção P1.
+- **Registrado em 2026-07-27, ainda não implementado**: usuário pediu
+  uma nova curva de XP por nível, progressiva a 5% (nível 1→2 = 300 XP;
+  cada nível seguinte = 5% a mais que o anterior, arredondado para o
+  número par mais próximo — ex.: 315, 330,75→330, 346,5→346,
+  363,3→364 — até o nível 100), substituindo a fórmula atual de
+  `level_curve.dart` (`100 + 25 × nível^1.35`). O próprio exemplo do
+  usuário contém uma inconsistência (315, resultado do primeiro passo,
+  não foi arredondado para par, apesar da regra geral dizer "sempre
+  arredondar para par") que precisa ser esclarecida com ele antes de
+  implementar; e como o nível é sempre derivado do XP total acumulado,
+  trocar a curva reinterpreta retroativamente o XP de qualquer usuário
+  existente. Detalhe completo em `docs/IMPLEMENTATION_BACKLOG.md`,
+  seção P1.
 - Textos de triagem/segurança seguem placeholders — pendente de revisão
   profissional (SAFETY_AND_SCREENING.md §10).
 - Catálogo de exercícios mínimo — precisa crescer antes de qualquer

@@ -143,6 +143,46 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
     hoje. Vale desenhar a regra de classificação junto com a decisão de
     prescrição do item acima — são a mesma peça de motor, não duas
     peças separadas.
+- [ ] **Nova curva de XP por nível, progressiva a 5% por nível** (pedido
+  do usuário, 2026-07-27): substitui a fórmula atual de
+  `lib/features/rpg/domain/level_curve.dart`
+  (`xpRequiredForLevel(level) = round(100 + 25 × nível^1.35)`,
+  `levelCurveVersion = 'level-curve-v1'`). Regra exata pedida pelo
+  usuário, com seu próprio exemplo numérico:
+  - Nível 1 → 2: exige **300 XP**.
+  - A partir daí, o XP exigido para o próximo nível é **5% maior que o
+    do nível anterior**: nível 2 → 3 = `300 × 1.05 = 315`; nível 3 → 4 =
+    `315 × 1.05 = 330,75`, **arredondado para o número par mais
+    próximo = 330**; nível 4 → 5 = `330 × 1.05 = 346,5`, arredondado
+    para **346**; nível 5 → 6 = `346 × 1.05 = 363,3`, arredondado para
+    **364**. E assim sucessivamente até o **nível 100**.
+  - **Arredondamento "para o número par mais próximo"**: não é
+    arredondamento comum (que iria para o inteiro mais próximo depois
+    ajustaria a paridade) — é comparar a distância aos dois inteiros
+    pares vizinhos e escolher o mais próximo (confirmado batendo os 3
+    exemplos do usuário: 330,75→330, 346,5→346, 363,3→364 — todos batem
+    com "menor distância a um par", não com "arredondar e depois forçar
+    par").
+  - **Inconsistência a esclarecer com o usuário antes de implementar**:
+    o próprio exemplo do usuário deixa `300 × 1.05 = 315` **sem
+    arredondar para par** (315 é ímpar), embora a regra geral diga
+    "arredonde sempre para o número par mais próximo". Implementar a
+    regra geral ao pé da letra mudaria o nível 2→3 de 315 para 314 ou
+    316, contradizendo o exemplo dado. Perguntar ao usuário se o
+    arredondamento para par vale desde o primeiro passo (e o "315" do
+    exemplo foi só um lapso) ou se só passa a valer a partir do momento
+    em que o resultado tem casa decimal (já que `300 × 1,05` dá um
+    número inteiro exato, sem nada para arredondar).
+  - **Impacto em dados existentes**: como o nível é sempre derivado do
+    XP total acumulado (`LevelCalculator.levelFor`), trocar a curva
+    reinterpreta retroativamente todo XP já ganho por qualquer usuário
+    existente — decidir se isso é aceitável (coerente com o app ainda
+    não ter sido publicado/ter poucos usuários) ou se precisa de algum
+    tratamento de migração. Ao implementar, seguir o padrão já usado
+    pelo projeto de versionar a regra (`levelCurveVersion` sobe para
+    `level-curve-v2` ou similar) e cobrir com teste todos os pontos do
+    exemplo do usuário (níveis 1 a 5 pelo menos) mais o caso de borda do
+    nível 100.
 - [ ] **Teste físico periódico e adaptativo** (pedido do usuário,
   2026-07-24): tela nova acessível por um botão no Dashboard/Jornada,
   onde o usuário pode — a qualquer momento, ou como sugestão a cada
