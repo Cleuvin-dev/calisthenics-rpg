@@ -7,7 +7,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'tables/active_timed_set_records.dart';
+import 'tables/body_metric_records.dart';
 import 'tables/capability_estimate_records.dart';
+import 'tables/favorite_records.dart';
 import 'tables/outbox_events.dart';
 import 'tables/safety_screenings.dart';
 import 'tables/set_log_records.dart';
@@ -29,6 +31,8 @@ part 'app_database.g.dart';
     SetLogRecords,
     XpLedgerRecords,
     ActiveTimedSetRecords,
+    BodyMetricRecords,
+    FavoriteRecords,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -38,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -82,6 +86,23 @@ class AppDatabase extends _$AppDatabase {
           trainingPreferenceRecords,
           trainingPreferenceRecords.preferredWeekdaysJson,
         );
+      }
+      if (from < 8) {
+        // Peso/altura/IMC (Relatório §6.4, Definição §7.1): altura é
+        // preferência de perfil (coluna aditiva, sobrevive a reset,
+        // linhas antigas ficam nulas); peso é histórico editável em
+        // tabela própria (apagado no reset, junto das outras métricas
+        // de progresso).
+        await m.addColumn(
+          trainingPreferenceRecords,
+          trainingPreferenceRecords.heightCm,
+        );
+        await m.createTable(bodyMetricRecords);
+      }
+      if (from < 9) {
+        // Favoritos de treino/exercício na Descobrir (§5.2) — preferência
+        // pessoal, tabela nova sem impacto em dados existentes.
+        await m.createTable(favoriteRecords);
       }
     },
   );

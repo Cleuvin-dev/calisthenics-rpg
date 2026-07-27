@@ -76,8 +76,8 @@ da própria tela, por serem usados uma única vez):
   para ilustração animada por família de movimento.
 - `EmptyStateCard` (`shared/presentation/empty_state_card.dart`) —
   ícone + título + mensagem + ação opcional; usado em todo estado vazio
-  real (Relatório sem histórico, sem recordes, sem plano, peso/IMC ainda
-  não implementado etc.) — nunca dado fictício no lugar.
+  real (Relatório sem histórico, sem recordes, sem plano, sem peso
+  registrado etc.) — nunca dado fictício no lugar.
 - `FadeSlideIn` (`shared/presentation/fade_slide_in.dart`) — entrada
   animada escalonada por índice, usada nos cards da Jornada.
 
@@ -123,17 +123,18 @@ Filtros reais implementados: busca por texto (treino/exercício/padrão),
 nível (treinos), duração em faixas (`< 10`, `10–20`, `20–40`, `> 40 min`,
 treinos), padrão de movimento (exercícios, chips por padrão presente no
 catálogo), equipamento (`Equipment.none` = "sem equipamento", ou um item
-específico), tipo de medição (repetições/tempo). Seções: "Treinos
-disponíveis" (filtrados), "Recentes" (exercícios de sessões concluídas
-de verdade, só quando a busca está vazia), catálogo de exercícios
-agrupado por padrão de movimento (quando nenhum padrão específico está
-selecionado) ou lista plana em "Resultados" (quando há busca/filtro de
-padrão ativo).
+específico), tipo de medição (repetições/tempo), favoritos. Seções:
+"Treinos disponíveis" (filtrados), "Recentes" (exercícios de sessões
+concluídas de verdade, só quando a busca está vazia), catálogo de
+exercícios agrupado por padrão de movimento (quando nenhum padrão
+específico está selecionado) ou lista plana em "Resultados" (quando há
+busca/filtro de padrão ativo).
 
-Chip "Favoritos" existe, mas fica **desabilitado** (`onSelected: null`,
-com tooltip explicando que ainda não está disponível) — não há
-persistência de favoritos implementada; mostrar o chip como se
-funcionasse seria fingir uma funcionalidade que não existe.
+**Favoritos** (`favorite_records`, migração 8→9): botão de estrela em
+todo card de treino/exercício (`_FavoriteButton`, também aparece em
+"Recentes" por reaproveitar `_ExerciseCard`); chip "Favoritos" filtra a
+lista para mostrar só os marcados. É preferência pessoal, não progresso
+— sobrevive ao "Reiniciar progresso e métricas".
 
 **Não implementado desta especificação** (seção 5 do documento de
 redesenho), por falta de dado real que sustente a seção sem inventar
@@ -154,16 +155,19 @@ meta de dias/semana do plano ativo), evolução de XP (7 dias, mesmo
 componente da Jornada), recordes pessoais (maior número de repetições
 por exercício, via `bestRepsByExerciseProvider`), volume por padrão de
 movimento (soma de repetições por padrão, no período selecionado),
-card explícito "Peso, altura e IMC — ainda não disponível nesta versão"
-(`EmptyStateCard`, sem inventar dado), histórico de sessões (data,
-horário, duração, XP da sessão quando existe), progressão de
-habilidades.
+card de peso/altura/IMC real (`_BodyMetricsCard`): peso atual + IMC
+(indicador geral, sem diagnóstico médico) quando há registro, ou estado
+vazio com atalho para registrar quando não há; toque abre `BodyMetricScreen`
+(histórico completo, tendência, maior/menor, editar/excluir com
+confirmação — Relatório §6.4), histórico de sessões (data, horário,
+duração, XP da sessão quando existe), progressão de habilidades.
 
 ## Aba Definição (`SettingsScreen`)
 
 Seções: Perfil e avaliação (nome editável, dias/semana + meta de dias
-específicos da semana editável, "Refazer avaliação física" desabilitado
-com explicação), Treino (som/vibração/voz/início automático de descanso
+específicos da semana editável, altura editável com validação de faixa
+plausível, "Peso e IMC" abrindo `BodyMetricScreen`, "Refazer avaliação
+física" desabilitado com explicação), Treino (som/vibração/voz/início automático de descanso
 via `SwitchListTile`; contagem regressiva editável com diálogo de
 slider 0–10s, conectada de verdade ao `TimedSetPlayer`; "Descanso
 padrão" ainda só exibido, não editável — ver nota abaixo), Aparência e

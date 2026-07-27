@@ -8,7 +8,10 @@ import '../../missions/data/mission_providers.dart';
 import '../../onboarding/data/training_preferences_providers.dart';
 import '../../onboarding/data/training_preferences_repository.dart';
 import '../../onboarding/domain/training_preferences.dart';
+import '../../report/data/body_metric_providers.dart';
 import '../../report/data/report_providers.dart';
+import '../../report/domain/body_metric.dart';
+import '../../report/presentation/body_metric_screen.dart';
 import '../../rpg/data/rpg_providers.dart';
 import '../../training_plan/data/training_plan_providers.dart';
 import '../../workout_session/data/workout_session_providers.dart';
@@ -77,6 +80,28 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _editWeekdays(context, ref, activePreferences),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.height),
+                    title: const Text('Altura'),
+                    subtitle: Text(
+                      activePreferences.heightCm == null
+                          ? 'Não definida — necessária para calcular o IMC'
+                          : '${activePreferences.heightCm!.toStringAsFixed(0)} cm',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _editHeight(context, ref, activePreferences),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.monitor_weight_outlined),
+                    title: const Text('Peso e IMC'),
+                    subtitle: const Text('Ver histórico e registrar pesagem'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const BodyMetricScreen(),
+                      ),
+                    ),
                   ),
                   ListTile(
                     leading: const Icon(Icons.assignment_outlined),
@@ -258,6 +283,31 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(latestTrainingPreferencesProvider);
   }
 
+  Future<void> _editHeight(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingPreferenceRecord current,
+  ) async {
+    final currentDomain = current.toDomain();
+    final heightCm = await showDialog<double>(
+      context: context,
+      builder: (context) =>
+          _HeightDialog(initialHeightCm: currentDomain.heightCm),
+    );
+    if (heightCm == null) return;
+
+    final updated = TrainingPreferences(
+      daysPerWeek: currentDomain.daysPerWeek,
+      minutesPerSession: currentDomain.minutesPerSession,
+      location: currentDomain.location,
+      equipment: currentDomain.equipment,
+      preferredWeekdays: currentDomain.preferredWeekdays,
+      heightCm: heightCm,
+    );
+    await ref.read(trainingPreferencesRepositoryProvider).save(updated);
+    ref.invalidate(latestTrainingPreferencesProvider);
+  }
+
   String _weekdaysSummary(Set<int> preferredWeekdays) {
     if (preferredWeekdays.isEmpty) return 'Ainda não definido';
     const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -272,7 +322,8 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     final seconds = await showDialog<int>(
       context: context,
-      builder: (context) => _CountdownDialog(initialSeconds: current.countdownSeconds),
+      builder: (context) =>
+          _CountdownDialog(initialSeconds: current.countdownSeconds),
     );
     if (seconds == null) return;
     await _update(ref, current.copyWith(countdownSeconds: seconds));
@@ -465,6 +516,7 @@ class _ResetProgressDialogState extends ConsumerState<ResetProgressDialog> {
       ref.invalidate(dailyMissionsProvider);
       ref.invalidate(weeklyMissionsProvider);
       ref.invalidate(reportSnapshotProvider);
+      ref.invalidate(bodyMetricEntriesProvider);
       ref.invalidate(latestTrainingPreferencesProvider);
       if (!mounted) return;
       ref.read(appResetEpochProvider.notifier).bump();
@@ -566,6 +618,73 @@ class _WeekdaysDialogState extends State<_WeekdaysDialog> {
           child: const Text('Salvar'),
         ),
       ],
+    );
+  }
+}
+
+/// Formaliza a altura de perfil (Definição §7.1), usada só para IMC no
+/// Relatório — validação de valor plausível igual à do registro de peso.
+class _HeightDialog extends StatefulWidget {
+  const _HeightDialog({required this.initialHeightCm});
+
+  final double? initialHeightCm;
+
+  @override
+  State<_HeightDialog> createState() => _HeightDialogState();
+}
+
+class _HeightDialogState extends State<_HeightDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialHeightCm?.toStringAsFixed(0) ?? '',
+  );
+
+  double? get _parsedHeight =>
+      double.tryParse(_controller.text.replaceAll(',', '.'));
+
+  bool get _isValid {
+    final height = _parsedHeight;
+    return height != null && isPlausibleHeightCm(height);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Altura'),
+          content: TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(),
+            decoration: InputDecoration(
+              labelText: 'Altura (cm)',
+              errorText: _controller.text.isEmpty || _isValid
+                  ? null
+                  : 'Informe um valor entre ${minPlausibleHeightCm.round()} '
+                        'e ${maxPlausibleHeightCm.round()} cm',
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: _isValid
+                  ? () => Navigator.pop(context, _parsedHeight)
+                  : null,
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

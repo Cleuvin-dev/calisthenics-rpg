@@ -8,7 +8,9 @@ import 'package:path_provider/path_provider.dart';
 /// Definição > Dados. Nunca estima ou inventa um valor: arquivo ausente
 /// conta como 0 bytes.
 class StorageUsageService {
-  Future<int> totalBytes({Future<Directory> Function()? directoryProvider}) async {
+  Future<int> totalBytes({
+    Future<Directory> Function()? directoryProvider,
+  }) async {
     final dir = await (directoryProvider ?? getApplicationDocumentsDirectory)();
     final files = [
       File(p.join(dir.path, 'calisthenics_rpg.sqlite')),

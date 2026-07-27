@@ -10,6 +10,8 @@ import '../../training_plan/presentation/workout_detail_screen.dart';
 import '../../workout_session/data/workout_session_providers.dart';
 import '../../workout_session/data/workout_session_repository.dart'
     show WorkoutSessionRecordDecoding;
+import '../data/favorite_providers.dart';
+import '../domain/favorite.dart';
 
 enum _DoseFilter { all, reps, duration }
 
@@ -55,6 +57,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   WorkoutLevel? _levelFilter;
   Equipment? _equipmentFilter;
   String? _patternFilter;
+  bool _favoritesOnly = false;
 
   @override
   void dispose() {
@@ -71,6 +74,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _searchController.text.trim().toLowerCase();
+    final favoriteKeysAsync = ref.watch(favoriteKeysProvider);
+    final favoriteKeys = favoriteKeysAsync.maybeWhen(
+      data: (keys) => keys,
+      orElse: () => const <String>{},
+    );
     final exercises = exerciseCatalog.where((exercise) {
       final matchesText =
           query.isEmpty ||
@@ -88,20 +96,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       );
       final matchesPattern =
           _patternFilter == null || exercise.pattern == _patternFilter;
-      return matchesText && matchesDose && matchesEquipment && matchesPattern;
+      final matchesFavorite =
+          !_favoritesOnly ||
+          favoriteKeys.contains(
+            favoriteKey(FavoriteItemType.exercise, exercise.slug),
+          );
+      return matchesText &&
+          matchesDose &&
+          matchesEquipment &&
+          matchesPattern &&
+          matchesFavorite;
     }).toList();
     final workouts = workoutCatalog.where((workout) {
       final matchesText =
           query.isEmpty ||
           workout.namePtBr.toLowerCase().contains(query) ||
           workout.objectivePtBr.toLowerCase().contains(query);
-      final matchesLevel = _levelFilter == null || workout.level == _levelFilter;
+      final matchesLevel =
+          _levelFilter == null || workout.level == _levelFilter;
       final matchesDuration = _durationBucket.matches(workout.estimatedMinutes);
       final matchesEquipment = _matchesEquipment(
         workout.equipment,
         _equipmentFilter,
       );
-      return matchesText && matchesLevel && matchesDuration && matchesEquipment;
+      final matchesFavorite =
+          !_favoritesOnly ||
+          favoriteKeys.contains(
+            favoriteKey(FavoriteItemType.workout, workout.slug),
+          );
+      return matchesText &&
+          matchesLevel &&
+          matchesDuration &&
+          matchesEquipment &&
+          matchesFavorite;
     }).toList();
 
     final patterns = <String>[];
@@ -252,13 +279,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     onSelected: (_) =>
                         setState(() => _doseFilter = _DoseFilter.duration),
                   ),
-                  Tooltip(
-                    message: 'Favoritos ainda não estão disponíveis nesta versão',
-                    child: ChoiceChip(
-                      label: const Text('Favoritos'),
-                      selected: false,
-                      onSelected: null,
-                    ),
+                  ChoiceChip(
+                    avatar: const Icon(Icons.star, size: 18),
+                    label: const Text('Favoritos'),
+                    selected: _favoritesOnly,
+                    onSelected: (value) =>
+                        setState(() => _favoritesOnly = value),
                   ),
                 ],
               ),
@@ -298,25 +324,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ),
             )
-          else if (_patternFilter != null || query.isNotEmpty)
-            ...[
-              _SectionTitle(
-                title: query.isEmpty ? 'Catálogo de exercícios' : 'Resultados',
-              ),
-              SliverList.builder(
-                itemCount: exercises.length,
-                itemBuilder: (context, index) => _ExerciseCard(
-                  exercise: exercises[index],
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ExerciseDetailScreen(exercise: exercises[index]),
-                    ),
+          else if (_patternFilter != null || query.isNotEmpty) ...[
+            _SectionTitle(
+              title: query.isEmpty ? 'Catálogo de exercícios' : 'Resultados',
+            ),
+            SliverList.builder(
+              itemCount: exercises.length,
+              itemBuilder: (context, index) => _ExerciseCard(
+                exercise: exercises[index],
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ExerciseDetailScreen(exercise: exercises[index]),
                   ),
                 ),
               ),
-            ]
-          else
+            ),
+          ] else
             for (final pattern in patterns)
               if (exercises.any((e) => e.pattern == pattern)) ...[
                 _SectionTitle(title: _patternLabel(pattern)),
@@ -367,7 +391,9 @@ class _RecentExercisesSliver extends ConsumerWidget {
           }
           if (recent.length >= 8) break;
         }
-        if (recent.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+        if (recent.isEmpty) {
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        }
         return SliverMainAxisGroup(
           slivers: [
             const _SectionTitle(title: 'Recentes'),
@@ -377,7 +403,8 @@ class _RecentExercisesSliver extends ConsumerWidget {
                 exercise: recent[index],
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ExerciseDetailScreen(exercise: recent[index]),
+                    builder: (_) =>
+                        ExerciseDetailScreen(exercise: recent[index]),
                   ),
                 ),
               ),
@@ -405,10 +432,7 @@ class _FilterRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            for (final child in children) ...[
-              child,
-              const SizedBox(width: 8),
-            ],
+            for (final child in children) ...[child, const SizedBox(width: 8)],
           ],
         ),
       ),
@@ -429,13 +453,13 @@ class _SectionTitle extends StatelessWidget {
   );
 }
 
-class _WorkoutCard extends StatelessWidget {
+class _WorkoutCard extends ConsumerWidget {
   const _WorkoutCard({required this.workout, required this.onTap});
   final Workout workout;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context, WidgetRef ref) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
     child: Card(
       child: ListTile(
@@ -448,11 +472,47 @@ class _WorkoutCard extends StatelessWidget {
           '${workout.equipment.isEmpty ? 'Sem equipamento' : workout.equipment.map((e) => e.label).join(', ')}',
         ),
         isThreeLine: true,
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FavoriteButton(
+              itemType: FavoriteItemType.workout,
+              itemSlug: workout.slug,
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
         onTap: onTap,
       ),
     ),
   );
+}
+
+class _FavoriteButton extends ConsumerWidget {
+  const _FavoriteButton({required this.itemType, required this.itemSlug});
+
+  final FavoriteItemType itemType;
+  final String itemSlug;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favoriteKeysAsync = ref.watch(favoriteKeysProvider);
+    final isFavorite = favoriteKeysAsync.maybeWhen(
+      data: (keys) => keys.contains(favoriteKey(itemType, itemSlug)),
+      orElse: () => false,
+    );
+    return IconButton(
+      icon: Icon(isFavorite ? Icons.star : Icons.star_border),
+      color: isFavorite ? Theme.of(context).colorScheme.tertiary : null,
+      tooltip: isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+      onPressed: () async {
+        await ref
+            .read(favoriteRepositoryProvider)
+            .toggle(itemType: itemType, itemSlug: itemSlug);
+        ref.invalidate(favoriteKeysProvider);
+      },
+    );
+  }
 }
 
 class _ExerciseCard extends StatelessWidget {
@@ -508,6 +568,10 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              _FavoriteButton(
+                itemType: FavoriteItemType.exercise,
+                itemSlug: exercise.slug,
               ),
               const Icon(Icons.chevron_right),
             ],

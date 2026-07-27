@@ -114,17 +114,60 @@ void main() {
     },
   );
 
-  testWidgets('chip de Favoritos aparece desabilitado, sem fingir suporte', (
-    tester,
-  ) async {
-    await tester.pumpWidget(wrap());
-    await tester.pump(const Duration(milliseconds: 400));
+  testWidgets(
+    'favoritar um exercício marca a estrela e persiste entre reconstruções',
+    (tester) async {
+      useTallTestViewport(tester);
+      await tester.pumpWidget(wrap());
+      await tester.pump(const Duration(milliseconds: 400));
 
-    final chip = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Favoritos'),
-    );
-    expect(chip.onSelected, isNull);
-  });
+      final card = find.ancestor(
+        of: find.text('Remada com elástico'),
+        matching: find.byType(Card),
+      );
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.byIcon(Icons.star_border)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.descendant(of: card, matching: find.byIcon(Icons.star_border)),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        find.descendant(of: card, matching: find.byIcon(Icons.star)),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'filtro de Favoritos mostra só itens marcados, escondendo os demais',
+    (tester) async {
+      useTallTestViewport(tester);
+      await tester.pumpWidget(wrap());
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Flexão na parede'), findsOneWidget);
+
+      final card = find.ancestor(
+        of: find.text('Remada com elástico'),
+        matching: find.byType(Card),
+      );
+      await tester.tap(
+        find.descendant(of: card, matching: find.byIcon(Icons.star_border)),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Favoritos'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Remada com elástico'), findsOneWidget);
+      expect(find.text('Flexão na parede'), findsNothing);
+    },
+  );
 
   testWidgets(
     'seção Recentes mostra exercícios de sessões concluídas de verdade',

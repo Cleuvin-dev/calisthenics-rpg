@@ -31,25 +31,28 @@ void main() {
     expect(loaded.vibrationEnabled, isFalse);
   });
 
-  test('gravações consecutivas sobrescrevem o arquivo sem perder dados', () async {
-    final directory = await Directory.systemTemp.createTemp('rpg_settings_');
-    addTearDown(() => directory.delete(recursive: true));
-    final repository = SettingsRepository(
-      directoryProvider: () async => directory,
-    );
+  test(
+    'gravações consecutivas sobrescrevem o arquivo sem perder dados',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('rpg_settings_');
+      addTearDown(() => directory.delete(recursive: true));
+      final repository = SettingsRepository(
+        directoryProvider: () async => directory,
+      );
 
-    for (var i = 0; i < 5; i++) {
-      await repository.save(UserSettings(displayName: 'Atleta $i'));
-    }
+      for (var i = 0; i < 5; i++) {
+        await repository.save(UserSettings(displayName: 'Atleta $i'));
+      }
 
-    final loaded = await repository.load();
-    expect(loaded.displayName, 'Atleta 4');
+      final loaded = await repository.load();
+      expect(loaded.displayName, 'Atleta 4');
 
-    final settingsFile = File(
-      p.join(directory.path, 'calisthenics_rpg_settings.json'),
-    );
-    final tmpFile = File('${settingsFile.path}.tmp');
-    expect(await settingsFile.exists(), isTrue);
-    expect(await tmpFile.exists(), isFalse);
-  });
+      final settingsFile = File(
+        p.join(directory.path, 'calisthenics_rpg_settings.json'),
+      );
+      final tmpFile = File('${settingsFile.path}.tmp');
+      expect(await settingsFile.exists(), isTrue);
+      expect(await tmpFile.exists(), isFalse);
+    },
+  );
 }

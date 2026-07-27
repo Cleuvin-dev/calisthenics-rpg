@@ -416,7 +416,10 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     );
     final countdownSeconds = ref
         .watch(userSettingsProvider)
-        .maybeWhen(data: (settings) => settings.countdownSeconds, orElse: () => 3);
+        .maybeWhen(
+          data: (settings) => settings.countdownSeconds,
+          orElse: () => 3,
+        );
 
     return PopScope(
       canPop: false,

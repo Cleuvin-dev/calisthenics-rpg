@@ -38,5 +38,14 @@ void main() {
 
     expect(find.text('Nenhum treino concluído'), findsOneWidget);
     expect(find.textContaining('Conclua sua primeira sessão'), findsOneWidget);
+
+    await tester.dragUntilVisible(
+      find.text('Nenhum peso registrado'),
+      find.byType(ListView),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nenhum peso registrado'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Registrar peso'), findsOneWidget);
   });
 }

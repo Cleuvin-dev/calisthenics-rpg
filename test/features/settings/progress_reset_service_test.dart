@@ -23,6 +23,18 @@ void main() {
     await _expectProgressEmpty(db);
     expect(await db.select(db.safetyScreenings).get(), hasLength(1));
     expect(await db.select(db.trainingPreferenceRecords).get(), hasLength(1));
+    expect(
+      (await db.select(db.trainingPreferenceRecords).get()).single.heightCm,
+      175,
+      reason: 'altura é perfil, não progresso — sobrevive ao reset',
+    );
+    expect(await db.select(db.bodyMetricRecords).get(), isEmpty);
+    expect(
+      await db.select(db.favoriteRecords).get(),
+      hasLength(1),
+      reason:
+          'favorito é preferência pessoal, não progresso — sobrevive ao reset',
+    );
   });
 
   test('é idempotente quando executado repetidamente', () async {
@@ -50,6 +62,7 @@ void main() {
     expect(await db.select(db.activeTimedSetRecords).get(), hasLength(1));
     expect(await db.select(db.xpLedgerRecords).get(), hasLength(1));
     expect(await db.select(db.outboxEvents).get(), hasLength(1));
+    expect(await db.select(db.bodyMetricRecords).get(), hasLength(1));
   });
 }
 
@@ -81,6 +94,26 @@ Future<void> _seed(AppDatabase db) async {
           location: 'home',
           equipmentJson: '[]',
           updatedAt: now,
+          heightCm: const Value(175),
+        ),
+      );
+  await db
+      .into(db.bodyMetricRecords)
+      .insert(
+        BodyMetricRecordsCompanion.insert(
+          recordedAt: now,
+          weightKg: 80,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+  await db
+      .into(db.favoriteRecords)
+      .insert(
+        FavoriteRecordsCompanion.insert(
+          itemType: 'exercise',
+          itemSlug: 'push_up_incline',
+          createdAt: now,
         ),
       );
   await db
@@ -185,4 +218,5 @@ Future<void> _expectProgressEmpty(AppDatabase db) async {
   expect(await db.select(db.activeTimedSetRecords).get(), isEmpty);
   expect(await db.select(db.xpLedgerRecords).get(), isEmpty);
   expect(await db.select(db.outboxEvents).get(), isEmpty);
+  expect(await db.select(db.bodyMetricRecords).get(), isEmpty);
 }

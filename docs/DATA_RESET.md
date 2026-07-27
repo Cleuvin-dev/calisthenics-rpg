@@ -24,14 +24,21 @@ Uma única transação Drift (`_db.transaction()` em
    físicas, dos 5 padrões);
 6. `training_plan_records` (plano semanal ativo);
 7. `outbox_events` (fila de sincronização reservada — vazia hoje, mas
-   limpa por completude).
+   limpa por completude);
+8. `body_metric_records` (histórico de peso — métrica corporal, não
+   preferência).
 
 ## O que é preservado
 
 - `safety_screenings` — triagem/consentimento de segurança.
-- `training_preference_records` — agenda, local, equipamento **e** a
-  meta de dias específicos da semana (`preferredWeekdaysJson`,
-  adicionada nesta sessão) — é preferência pessoal, não progresso.
+- `training_preference_records` — agenda, local, equipamento, a meta de
+  dias específicos da semana (`preferredWeekdaysJson`) **e** a altura
+  (`heightCm`) — é preferência/perfil pessoal, não progresso. O peso
+  (`body_metric_records`) é diferente: é histórico de métrica corporal,
+  então é apagado (ver "O que é apagado" acima).
+- `favorite_records` — favoritos de treino/exercício na Descobrir; é
+  preferência pessoal (marcar o que se gosta), não progresso, mesmo
+  espírito da altura acima.
 - `calisthenics_rpg_settings.json` — nome, som, voz, vibração,
   acessibilidade, idioma. Fica inteiramente fora do banco Drift, então o
   reset (que só opera sobre o banco) nunca o toca — nem precisa de

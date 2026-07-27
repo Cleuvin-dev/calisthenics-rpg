@@ -25,6 +25,7 @@ class ProgressResetService {
       deleted += await _db.delete(_db.capabilityEstimateRecords).go();
       deleted += await _db.delete(_db.trainingPlanRecords).go();
       deleted += await _db.delete(_db.outboxEvents).go();
+      deleted += await _db.delete(_db.bodyMetricRecords).go();
       await beforeCommitForTesting?.call();
       return ProgressResetResult(deletedRows: deleted);
     });

@@ -9,12 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Backend em memória para `SettingsRepository` nos testes: usar o
-/// arquivo real de disco travaria `pumpAndSettle`/`pump` dentro da zona
-/// `FakeAsync` de `testWidgets` (mesma causa do hang corrigido em
-/// main_shell_test.dart), e `userSettingsProvider.overrideWith` fixo não
-/// refletiria o que `save()` grava. Isto permite o ciclo real
-/// salvar → invalidar → reler pela mesma cadeia de providers de produção.
 class _InMemorySettingsRepository extends SettingsRepository {
   UserSettings _current = const UserSettings();
 
@@ -58,36 +52,24 @@ void main() {
   }
 
   testWidgets(
-    'usuário formaliza dias de treino na semana e a meta atualiza na tela',
+    'usuário define a altura e o valor persiste sem perder outras preferências',
     (tester) async {
       await tester.pumpWidget(wrap());
       await tester.pumpAndSettle();
 
-      await tester.dragUntilVisible(
-        find.text('Dias de treino na semana'),
-        find.byType(ListView),
-        const Offset(0, -200),
+      expect(
+        find.text('Não definida — necessária para calcular o IMC'),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
 
-      expect(find.text('Ainda não definido'), findsOneWidget);
-      expect(find.text('3 dias por semana'), findsOneWidget);
-
-      await tester.tap(find.text('Dias de treino na semana'));
+      await tester.tap(find.text('Altura'));
       await tester.pumpAndSettle();
 
       final saveButtonFinder = find.widgetWithText(FilledButton, 'Salvar');
-      expect(
-        tester.widget<FilledButton>(saveButtonFinder).onPressed,
-        isNull,
-        reason: 'sem nenhum dia marcado, não deve deixar salvar',
-      );
+      expect(tester.widget<FilledButton>(saveButtonFinder).onPressed, isNull);
 
-      await tester.tap(find.widgetWithText(FilterChip, 'Seg'));
+      await tester.enterText(find.byType(TextField), '175');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilterChip, 'Qua'));
-      await tester.pump();
-
       expect(
         tester.widget<FilledButton>(saveButtonFinder).onPressed,
         isNotNull,
@@ -96,45 +78,29 @@ void main() {
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
-      expect(find.text('Seg, Qua'), findsOneWidget);
-      expect(
-        find.text('2 dias por semana'),
-        findsOneWidget,
-        reason:
-            'a quantidade formalizada deve seguir os dias escolhidos, não '
-            'ficar dessincronizada',
-      );
+      expect(find.text('175 cm'), findsOneWidget);
+      // A meta de dias por semana original não deve ter sido perdida ao
+      // gravar uma nova linha de preferências só com a altura mudando.
+      expect(find.text('3 dias por semana'), findsOneWidget);
     },
   );
 
-  testWidgets('usuário ajusta a contagem regressiva e o valor persiste', (
-    tester,
-  ) async {
+  testWidgets('rejeita altura fora da faixa plausível', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
-    await tester.dragUntilVisible(
-      find.text('Contagem regressiva'),
-      find.byType(ListView),
-      const Offset(0, -200),
-    );
+    await tester.tap(find.text('Altura'));
     await tester.pumpAndSettle();
 
-    expect(find.text('3s'), findsOneWidget);
-
-    await tester.tap(find.text('Contagem regressiva'));
-    await tester.pumpAndSettle();
-
-    final dialogSlider = find.descendant(
-      of: find.byType(AlertDialog),
-      matching: find.byType(Slider),
-    );
-    tester.widget<Slider>(dialogSlider).onChanged!(8);
+    await tester.enterText(find.byType(TextField), '999');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Salvar'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('8s'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Salvar'))
+          .onPressed,
+      isNull,
+    );
+    expect(find.textContaining('Informe um valor entre'), findsOneWidget);
   });
 }

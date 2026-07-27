@@ -29,6 +29,7 @@ class TrainingPreferences {
     required this.location,
     required this.equipment,
     this.preferredWeekdays = const {},
+    this.heightCm,
   });
 
   /// 2..6, conforme REQUIREMENTS.md FR-015.
@@ -44,4 +45,7 @@ class TrainingPreferences {
   /// 1=segunda..7=domingo). Vazio quando o usuário ainda não formalizou
   /// dias específicos, apenas a quantidade em [daysPerWeek].
   final Set<int> preferredWeekdays;
+
+  /// Altura em centímetros, para IMC. Nulo até o usuário informar.
+  final double? heightCm;
 }

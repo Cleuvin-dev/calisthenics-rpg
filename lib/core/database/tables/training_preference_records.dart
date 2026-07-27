@@ -16,4 +16,9 @@ class TrainingPreferenceRecords extends Table {
   /// `DateTime.weekday` (1=segunda..7=domingo). Nulo em linhas gravadas
   /// antes desta coluna existir — tratado como "não definido".
   TextColumn get preferredWeekdaysJson => text().nullable()();
+
+  /// Altura em centímetros, para cálculo de IMC (Relatório §6.2/§6.4,
+  /// Definição §7.1). É perfil, não progresso — sobrevive ao reset, ao
+  /// contrário do histórico de peso (`body_metric_records`).
+  RealColumn get heightCm => real().nullable()();
 }

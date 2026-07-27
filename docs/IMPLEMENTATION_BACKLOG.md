@@ -13,12 +13,10 @@ mova para "Concluído recentemente" com a data, e registre o detalhe
 pendência nova durante uma sessão, adicione aqui **e** explique o
 porquê em `PROJECT_STATUS.md` — nunca só em um dos dois.
 
-**Última sincronização:** 2026-07-27, após a continuação do redesenho
-de quatro abas (Descobrir/Relatório/Definição completos, Jornada
-reordenada, 3 bugs reais corrigidos — ver `PROJECT_STATUS.md` e
-`HANDOFF_CLAUDE.md`). Itens novos: peso/altura/IMC, favoritos e
-catálogo de treinos maior viraram bloqueadores explícitos de várias
-seções da especificação de redesenho.
+**Última sincronização:** 2026-07-27, após implementar peso/altura/IMC e,
+em seguida, favoritos (Descobrir) — ver `PROJECT_STATUS.md`. Item ainda
+aberto: catálogo de treinos maior continua bloqueador explícito de
+várias seções da especificação de redesenho (Descobrir §5.1).
 
 ## P0 — imediato
 
@@ -245,15 +243,13 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
   concluída via o redesenho de quatro abas + continuação de 2026-07-27:
   reset de jornada (`ProgressResetService`, ver `DATA_RESET.md`), meta
   de dias de treino da semana, contagem regressiva editável e conectada
-  ao player, uso de armazenamento real. Ainda falta especificamente:
-  - **perfil físico (altura/peso para IMC)** — sem modelo de dados nem
-    persistência; mostrado como estado vazio explícito no Relatório.
-    Precisa de nova tabela + migração + tela de CRUD (peso com data,
-    editar/excluir, tendência/maior/menor — ver seção 6.4 de
-    `APP_RPG_CALISTENIA_REDESENHO_NAVEGACAO_E_IMPLEMENTACAO.md`).
+  ao player, uso de armazenamento real,
+  **perfil físico (altura/peso para IMC)** — concluído em 2026-07-27,
+  ver item próprio abaixo. Ainda falta especificamente:
   - estimativa de gasto calórico por sessão/exercício — nem sequer
     decidido a fórmula (MET por padrão de movimento? por exercício?);
-    depende do item de peso/altura acima para fazer sentido.
+    agora que peso/altura existem, o dado de entrada já está disponível,
+    mas a fórmula em si continua sem decisão.
   - "Descanso padrão" (Definição) existe e é exibido, mas
     deliberadamente não conectado ao player — ver
     `docs/HANDOFF_CLAUDE.md` "Lacunas reais restantes" para o porquê
@@ -265,9 +261,10 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
   habilidade", "Para iniciantes/Intermediários/Avançados") continuam
   impossíveis de implementar sem inventar conteúdo — ver
   `docs/UI_UX.md` "Aba Descobrir".
-- [ ] **Favoritos** (Descobrir) — chip existe na interface, mas
-  desabilitado (`onSelected: null`); falta decidir onde persistir (nova
-  tabela Drift vs. campo em `UserSettings`/JSON) antes de implementar.
+- [x] **Favoritos** (Descobrir) — concluído em 2026-07-27: tabela
+  `favorite_records` (workout/exercise + slug, preferência pessoal,
+  sobrevive ao reset), botão de estrela em cada card de treino/exercício,
+  chip "Favoritos" filtra por eles. Ver `PROJECT_STATUS.md` §"Favoritos".
 - [ ] Placeholder de mídia sem lista de erros comuns/checklist de
   equipamento (`EXERCISE_MEDIA_GUIDE.md` §12) — mostra só nome,
   ilustração animada e dose.
@@ -305,6 +302,22 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## Concluído recentemente
 
+- 2026-07-27 — Favoritos (Descobrir): tabela `favorite_records`
+  (migração 8→9, aditiva), `FavoriteRepository`
+  (toggle/allKeys, `workout`/`exercise` não colidem por slug igual),
+  botão de estrela em `_WorkoutCard`/`_ExerciseCard`, chip "Favoritos"
+  agora filtra de verdade (antes desabilitado). Preferência pessoal —
+  `ProgressResetService` não toca na tabela. Ver `PROJECT_STATUS.md`
+  §"Favoritos".
+- 2026-07-27 — Peso, altura e IMC: tabela nova `body_metric_records`
+  (peso + data, editável/excluível) + coluna `heightCm` em
+  `training_preference_records` (migração 7→8, aditiva), domínio de
+  validação/IMC, "Altura" e "Peso e IMC" em Definição > Perfil, tela
+  `BodyMetricScreen` (resumo, tendência, histórico, editar/excluir com
+  confirmação), card real no Relatório substituindo o estado
+  "ainda não disponível". `ProgressResetService` apaga o histórico de
+  peso, preserva a altura. Ver `PROJECT_STATUS.md` §"Peso, altura e
+  IMC".
 - 2026-07-27 — Continuação do redesenho de quatro abas: Jornada
   reordenada, Descobrir/Relatório/Definição completos (filtros reais,
   aderência/recordes/volume, meta de dias de treino + contagem

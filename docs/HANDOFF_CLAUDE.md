@@ -1,173 +1,197 @@
 # Prompt de continuidade para Claude Code
 
 Você está continuando a implementação do projeto Flutter **App RPG
-Calistenia**. Leia primeiro `APP_RPG_CALISTENIA_REDESENHO_NAVEGACAO_E_IMPLEMENTACAO.md`
-(especificação do redesenho de navegação em quatro abas), depois
-`docs/ARCHITECTURE.md`, `docs/UI_UX.md`, `docs/DATA_RESET.md`,
-`docs/PROJECT_STATUS.md` e `docs/IMPLEMENTATION_BACKLOG.md`. Inspecione o
-Git antes de editar e preserve qualquer trabalho não commitado — nada
-desta sessão foi commitado ainda (o usuário commita manualmente).
+Calistenia**. Leia primeiro `docs/PROJECT_STATUS.md` (histórico
+narrativo completo, seções mais recentes no final) e
+`docs/IMPLEMENTATION_BACKLOG.md` (lista priorizada do que falta, sem
+prosa). Depois, se for mexer nas telas de quatro abas, também
+`APP_RPG_CALISTENIA_REDESENHO_NAVEGACAO_E_IMPLEMENTACAO.md`,
+`docs/ARCHITECTURE.md`, `docs/UI_UX.md` e `docs/DATA_RESET.md`.
+Inspecione o Git antes de editar e preserve qualquer trabalho não
+commitado — **nada desta sessão foi commitado ainda** (o usuário
+commita manualmente, geralmente no dia seguinte).
 
-Este handoff substitui a versão anterior (a implementação parcial da
-Codex mencionada ali já foi completada e verificada nesta sessão — ver
-abaixo). Não declare o escopo do documento de redesenho 100% concluído:
-seções inteiras (Descobrir §5, Relatório §6) têm itens explicitamente
-fora do escopo por falta de dado real (ver "Lacunas reais restantes").
+Este handoff substitui a versão anterior. Não declare o escopo do
+documento de redesenho 100% concluído: seções inteiras (Descobrir §5.1,
+Relatório) têm itens explicitamente fora do escopo por falta de
+conteúdo/dado real (ver "Lacunas reais restantes").
 
-## O que foi implementado e verificado nesta sessão
+## O que foi implementado e verificado nesta sessão (2026-07-27)
 
-Ponto de partida: shell de quatro abas (Treino/Descobrir/Relatório/
-Definição) e reset de progresso já existiam (herdados, não desta
-sessão). Esta sessão fechou o que o handoff anterior listava como
-pendente:
+Ponto de partida: redesenho de quatro abas já completo (herdado de
+sessão anterior — Jornada/Descobrir/Relatório/Definição, 169 testes).
+O usuário escolheu, em sequência, dois itens do topo do backlog:
 
-- **Correção de 3 bugs reais** (não features — ver `CHANGELOG.md` para
-  detalhe técnico de cada um): gravação de JSON reforçada com fallback
-  defensivo; `main_shell_test.dart` travava por I/O real fora de
-  `tester.runAsync()`; `XpEvolutionChart` estourava layout com XP real
-  no período (nunca tinha sido testado com dado não-zero antes).
-- **Aba Treino (Jornada)** reordenada conforme a especificação §4.1;
-  card de sessão pausada novo (dados reais); sequência atual nova
-  (streak real); card redundante removido.
-- **Aba Descobrir**: filtros reais (nível, duração, padrão, equipamento
-  completo); seção "Recentes"; "Favoritos" honestamente desabilitado.
-- **Aba Relatório**: aderência ao plano, recordes pessoais, volume por
-  padrão, XP por sessão, nível/XP, card explícito de peso/IMC
-  indisponível.
-- **Aba Definição**: meta de dias de treino da semana (nova, com
-  migração de banco); contagem regressiva editável e **conectada de
-  verdade** ao player (antes era decorativa); uso real de armazenamento.
-- **Ícone do app** trocado para `assets/images/icone.png`.
-- **Validação visual/responsiva automatizada**: 5 cenários (tela
-  pequena/grande, escala de fonte 1.0×/1.4×/2.0×, alto contraste) sem
-  overflow em nenhuma das quatro abas.
-- Toda a documentação em `docs/` (`ARCHITECTURE.md`, `UI_UX.md`,
-  `DATA_RESET.md`, `CHANGELOG.md` novos; `PROJECT_STATUS.md` e
-  `IMPLEMENTATION_BACKLOG.md` atualizados).
+### 1. Peso, altura e IMC
+
+- Banco (schemaVersion 7→8, aditivo): coluna `heightCm` em
+  `training_preference_records` (perfil, sobrevive ao reset) + tabela
+  nova `body_metric_records` (peso+data, editável/excluível — ao
+  contrário dos ledgers append-only do projeto).
+- Domínio puro `lib/features/report/domain/body_metric.dart`:
+  validação de faixa plausível (peso 20–300 kg, altura 100–250 cm) e
+  cálculo de IMC/categoria (indicador geral, sem diagnóstico médico).
+- Definição > Perfil ganhou "Altura" (editável) e "Peso e IMC" (abre a
+  tela nova `BodyMetricScreen`: resumo atual/maior/menor/tendência,
+  histórico com editar/excluir com confirmação, botão flutuante para
+  adicionar).
+- Relatório: o card "ainda não disponível nesta versão" virou card
+  real com peso atual + IMC (ou estado vazio com atalho "Registrar
+  peso").
+- `ProgressResetService` passa a apagar `body_metric_records`; altura
+  continua preservada (é preferência, não progresso).
+
+### 2. Favoritos (Descobrir)
+
+- Banco (schemaVersion 8→9, aditivo): tabela nova `favorite_records`
+  (`itemType` `workout`/`exercise` + `itemSlug`, chave única composta).
+- `FavoriteRepository.toggle`/`allKeys` (`lib/features/discover/data/`)
+  e `FavoriteItemType`/`favoriteKey` (`lib/features/discover/domain/`).
+- Botão de estrela em todo card de treino/exercício da Descobrir
+  (inclusive na seção "Recentes", que reaproveita `_ExerciseCard`);
+  chip "Favoritos" deixou de ficar desabilitado e agora filtra de
+  verdade.
+- É preferência pessoal — `ProgressResetService` deliberadamente não
+  foi alterado (a tabela nunca é tocada pelo reset).
+
+Ambos os itens têm detalhe técnico completo em `docs/PROJECT_STATUS.md`
+(seções "Peso, altura e IMC" e "Favoritos", nesta ordem, perto do
+final) e entradas próprias em `docs/CHANGELOG.md`.
 
 ## Arquivos principais criados/modificados nesta sessão
 
-- `lib/core/database/app_database.dart` (schemaVersion 6→7)
-- `lib/core/database/tables/training_preference_records.dart` (coluna nova)
-- `lib/core/time/date_period.dart` (`currentStreak` novo, compartilhado)
-- `lib/features/discover/presentation/discover_screen.dart` (reescrito)
-- `lib/features/journey/presentation/journey_screen.dart` (reordenado + cards novos)
+- `lib/core/database/app_database.dart` (schemaVersion 7→9, duas
+  migrações novas)
+- `lib/core/database/tables/body_metric_records.dart`,
+  `favorite_records.dart` (novos)
+- `lib/core/database/tables/training_preference_records.dart`
+  (`heightCm` novo)
 - `lib/features/onboarding/domain/training_preferences.dart` /
-  `data/training_preferences_repository.dart` (`preferredWeekdays`)
-- `lib/features/report/data/report_repository.dart` /
-  `presentation/report_screen.dart` (seções novas)
-- `lib/features/rpg/presentation/xp_evolution_chart.dart` (bugfix de overflow)
-- `lib/features/settings/data/settings_repository.dart` (fallback de escrita)
-- `lib/features/settings/data/storage_usage_service.dart` /
-  `storage_usage_providers.dart` (novos)
-- `lib/features/settings/presentation/settings_screen.dart` (tiles novos)
-- `lib/features/workout_session/presentation/timed_set_player.dart` /
-  `workout_player_screen.dart` (contagem regressiva conectada)
-- `pubspec.yaml` (ícone), `assets/images/icone.png` (novo)
-- `test/app/responsive_visual_test.dart` (novo)
-- `test/core/database/migration_v7_test.dart` (novo)
-- `test/features/discover/discover_screen_test.dart` (novo)
-- `test/features/onboarding/training_preferences_repository_test.dart` (novo)
-- `test/features/report/report_screen_data_test.dart` (novo)
-- `test/features/settings/settings_screen_reset_test.dart` (novo)
-- `test/features/settings/settings_screen_weekdays_test.dart` (novo)
-- `test/features/settings/storage_usage_service_test.dart` (novo)
-- Mais correções pontuais em `test/app/main_shell_test.dart`,
-  `test/core/database/migration_v6_test.dart`,
-  `test/features/settings/settings_repository_test.dart`,
-  `test/features/report/report_screen_test.dart`,
-  `test/features/workout_session/timed_set_player_flow_test.dart`.
-
-## Decisões arquiteturais tomadas
-
-- Riverpod, Drift e `Navigator`/`IndexedStack` existentes mantidos —
-  nenhum segundo padrão introduzido.
-- Migração v7 aditiva (`m.addColumn`), testada com banco legado
-  simulado no formato real da v6 — mesmo padrão já usado nas migrações
-  anteriores.
-- Meta de dias de treino formalizada em `TrainingPreferenceRecord`
-  (preferência pessoal), não em `UserSettings`/JSON — é dado que o
-  motor de plano (`daysPerWeek`) já consome, faz sentido ficar junto.
-- "Descanso padrão" (Definição) **não** foi conectado ao player — ver
-  "Lacunas reais restantes".
-- Ícone de app trocado via `flutter_launcher_icons`, sem tocar em código
-  de UI.
+  `data/training_preferences_repository.dart` (`heightCm`)
+- `lib/features/report/domain/body_metric.dart`,
+  `data/body_metric_repository.dart`, `data/body_metric_providers.dart`,
+  `presentation/body_metric_screen.dart` (todos novos)
+- `lib/features/report/presentation/report_screen.dart`
+  (`_BodyMetricsCard` real)
+- `lib/features/discover/domain/favorite.dart`,
+  `data/favorite_repository.dart`, `data/favorite_providers.dart`
+  (todos novos)
+- `lib/features/discover/presentation/discover_screen.dart`
+  (`_FavoriteButton`, chip habilitado)
+- `lib/features/settings/presentation/settings_screen.dart` ("Altura",
+  "Peso e IMC")
+- `lib/features/settings/data/progress_reset_service.dart` (apaga
+  `body_metric_records`)
+- Testes novos: `test/core/database/migration_v8_test.dart`,
+  `migration_v9_test.dart`; `test/features/report/
+  body_metric_repository_test.dart`, `body_metric_test.dart`,
+  `body_metric_screen_test.dart`; `test/features/discover/
+  favorite_repository_test.dart`; `test/features/settings/
+  settings_screen_height_test.dart`. Testes existentes atualizados:
+  `training_preferences_repository_test.dart`, `report_screen_test.dart`,
+  `report_screen_data_test.dart`, `progress_reset_service_test.dart`,
+  `discover_screen_test.dart` (o teste antigo do chip desabilitado foi
+  substituído por dois novos, já que o comportamento mudou de
+  propósito).
+- Documentação: `docs/CHANGELOG.md`, `docs/DATA_RESET.md`,
+  `docs/UI_UX.md`, `docs/IMPLEMENTATION_BACKLOG.md`,
+  `docs/PROJECT_STATUS.md` (todos atualizados).
 
 ## Validações executadas
 
-- `flutter analyze`: sem problemas, verificado repetidamente a cada
-  etapa (não só ao final).
-- `flutter test`: suíte completa passando integralmente ao final da
-  sessão — ver o resultado exato (contagem de testes) no topo de
-  `docs/PROJECT_STATUS.md`, seção desta data. Rodada muitas vezes ao
-  longo da sessão (não só uma vez ao final), a cada mudança.
-- `test/app/responsive_visual_test.dart`: 5/5 cenários passando
-  (celular pequeno 360×690 em três escalas de fonte, tablet 1024×1366,
-  alto contraste) — nenhum overflow nas quatro abas.
-- Reset de progresso: cobertura de serviço (idempotência, rollback em
-  falha, preservação seletiva) e de interface (fluxo completo de
-  confirmação, toque duplo, redirecionamento) — ver `docs/DATA_RESET.md`.
+- `flutter analyze`: sem problemas, verificado repetidamente ao longo
+  da sessão.
+- `dart format lib test`: sem mudanças pendentes (rodado ao final de
+  cada entrega).
+- `flutter test`: **194 passed, 0 failed** (eram 169 no início da
+  sessão — 189 depois de peso/altura/IMC, 194 depois de favoritos).
+- `dart run build_runner build`: OK nas duas vezes (gerou
+  `body_metric_records`/`heightCm`, depois `favorite_records`).
+- **Não testado no aparelho físico nesta sessão** (sem acesso ao
+  `adb`) — ambos os itens ficam pendentes de verificação manual, junto
+  dos três testes físicos já pendentes de sessões anteriores.
 
-## Observação do ambiente
+## Decisões arquiteturais tomadas
 
-`dart analyze`/`build_runner` funcionaram normalmente **fora do
-sandbox** nesta sessão (rodando via Bash direto, não a ferramenta
-restrita) — a limitação registrada no handoff anterior ("build_runner
-ficou bloqueado no ambiente") não se repetiu aqui. `flutter run` para
-Web/Windows desktop não está disponível: o projeto nunca teve
-`flutter create --platforms=web,windows .` executado (só Android/iOS
-existem), e não há toolchain MSVC nem `chromium-cli`/Playwright
-instalados neste ambiente para rodar/screenshotar a Web. Isso bloqueou
-apenas a validação visual manual (screenshots) — a validação
-automatizada (`responsive_visual_test.dart`) cobre o mesmo critério de
-aceite sem depender disso.
+- `body_metric_records` é editável/excluível (UPDATE/DELETE por linha),
+  diferente dos ledgers append-only do projeto (`xp_ledger_records`,
+  `set_log_records`) — o usuário precisa poder corrigir uma pesagem
+  errada (Relatório §6.4 pede isso explicitamente).
+- Altura é preferência de perfil (`training_preference_records`,
+  sobrevive ao reset); peso é histórico de métrica corporal
+  (`body_metric_records`, apagado no reset) — mesma distinção que a
+  especificação já fazia (§8.1 lista "peso e métricas corporais" entre
+  o que se apaga).
+- Favorito é preferência pessoal (like/bookmark), não progresso — não
+  faz sentido zerar ao reiniciar a jornada. `favorite_records` nunca é
+  tocada pelo reset, mesmo padrão de `training_preference_records`/
+  `safety_screenings`.
+- Chave composta `(itemType, itemSlug)` para favoritos, não duas
+  tabelas separadas — `workout` e `exercise` com o mesmo slug não
+  colidem, e um único `Set<String>` (`favoriteKeysProvider`) resolve
+  pertencimento para toda a tela sem consulta por item.
+- IMC nunca é calculado/mostrado sem peso **e** altura reais — nunca
+  inventa dado (mesma filosofia de `EmptyStateCard` em todo o app).
 
 ## Lacunas reais restantes
 
 Nenhuma é bug — todas são escopo deliberadamente não coberto, com o
 porquê registrado:
 
-1. **"Descanso padrão" (Definição) não está conectado ao player.**
-   Conectá-lo substituiria o `restSeconds` já curado por exercício no
-   catálogo (um item usa 45s deliberadamente, não 60s) por um valor
-   global — arriscaria descartar uma tunagem existente. Se for
-   conectar, decidir primeiro: o valor do usuário deve ser um piso/teto,
-   ou realmente substituir o catálogo por completo?
-2. **Peso/altura/IMC** (Relatório e Definição §7.1) — sem modelo de
-   dados nem persistência. Mostrado como estado vazio explícito, nunca
-   fabricado. Precisa de nova tabela + migração + tela de CRUD (seção
-   6.4 da especificação tem os requisitos completos).
-3. **Seções "Alongar e aquecer", "Desafios", "Progressões de
-   habilidade", "Para iniciantes/Intermediários/Avançados" (Descobrir)
-   e conteúdo bloqueado por nível** — o catálogo de treinos hoje tem só
-   "Treino A · Fundação"; construir essas seções sem mais conteúdo
-   real seria só estados vazios repetidos. Ganha valor real quando o
-   catálogo de treinos crescer (ver `IMPLEMENTATION_BACKLOG.md`).
-4. **Favoritos** — chip existe desabilitado; falta decidir onde
-   persistir (banco ou JSON) antes de implementar de verdade.
-5. **Validação visual manual (screenshots)** — ver "Observação do
-   ambiente" acima. Se este ambiente ganhar suporte Web/Windows desktop
-   no projeto (`flutter create --platforms=...`) e uma ferramenta de
-   automação de browser, vale revisitar.
-6. Lacunas anteriores a esta sessão continuam registradas em
+1. **Catálogo de treinos maior** — hoje só "Treino A · Fundação"; sem
+   isso, seções da Descobrir §5.1 ("Alongar e aquecer", "Desafios",
+   "Para iniciantes/Intermediários/Avançados", conteúdo bloqueado por
+   nível) continuam impossíveis de implementar sem inventar conteúdo.
+   Provavelmente o próximo item de maior alavancagem.
+2. **"Descanso padrão" (Definição) não está conectado ao player** —
+   conectá-lo substituiria o `restSeconds` curado por exercício no
+   catálogo por um valor global; decidir primeiro se deve ser
+   piso/teto ou substituição completa antes de codar.
+3. **Estimativa de gasto calórico** — agora que peso/altura existem
+   (dado de entrada disponível), falta decidir a fórmula (MET por
+   padrão de movimento? por exercício?).
+4. **Objetivo de treino escolhido pelo usuário** (perder gordura/ganhar
+   força/manter condicionamento) — pedido pelo usuário em 2026-07-27,
+   mas com uma pergunta em aberto antes de codar: é multi-seleção
+   ("e/ou" do pedido)? Ver `docs/IMPLEMENTATION_BACKLOG.md` P1 para o
+   detalhe completo (o motor precisa classificar exercícios por
+   objetivo, não só guardar a preferência).
+5. **Nova curva de XP progressiva a 5%/nível** — pedida pelo usuário em
+   2026-07-27, mas o próprio exemplo numérico dele tem uma
+   inconsistência de arredondamento (315 não virou par, apesar da regra
+   geral dizer "sempre arredondar para par") que precisa esclarecimento
+   antes de implementar. Ver `docs/IMPLEMENTATION_BACKLOG.md` P1.
+6. **3 testes manuais físicos pendentes** de sessões anteriores: modo
+   avião explícito, tela bloqueada durante série por tempo, toque duplo
+   físico deliberado — nenhum é bloqueio (cenários equivalentes já
+   testados), mas nenhuma leva desde então (peso/altura/IMC, favoritos)
+   foi verificada no aparelho.
+7. **Revisão profissional de conteúdo/mídia** (Educação Física) —
+   bloqueia publicação comercial; depende de validação externa, não é
+   trabalho de código.
+8. Lacunas anteriores continuam registradas em
    `docs/IMPLEMENTATION_BACKLOG.md` (catálogo de exercícios mínimo,
-   revisão profissional de conteúdo/mídia pendente, campanha/atributos
-   RPG não implementados, etc.) — não foram tocadas nesta sessão.
+   campanha/atributos RPG, missões incompletas, progressão sem
+   regressão/platô/deload, etc.) — não foram tocadas nesta sessão.
 
 ## Sequência recomendada para continuar
 
-1. `git status --short`, ler a documentação acima.
-2. Escolher uma lacuna da lista acima com o usuário (a mais barata/
-   valiosa costuma ser peso/altura/IMC ou favoritos — ambas exigem
-   decisão de modelo de dados antes de codar).
-3. Implementar em etapas pequenas e testáveis, seguindo o mesmo padrão
-   já estabelecido: domínio puro → repositório/provider → tela → teste
-   de cada camada → `flutter analyze` + `flutter test` completos antes
-   de seguir para a próxima etapa.
+1. `git status --short` (nada deve estar commitado ainda — confirme
+   antes de assumir que é limpo), ler `docs/PROJECT_STATUS.md` (seções
+   finais) e `docs/IMPLEMENTATION_BACKLOG.md`.
+2. Escolher o próximo item com o usuário — a lacuna 1 (catálogo de
+   treinos maior) tem o maior efeito cascata sobre a Descobrir; as
+   lacunas 4 e 5 exigem uma pergunta de esclarecimento antes de
+   qualquer código.
+3. Implementar em etapas pequenas e testáveis: domínio puro →
+   repositório/provider → tela → teste de cada camada → `flutter
+   analyze` + `flutter test` completos antes de seguir para a próxima
+   etapa. `dart run build_runner build` sempre que uma tabela/coluna
+   Drift mudar.
 4. Atualizar `docs/CHANGELOG.md` (nova entrada datada),
-   `docs/PROJECT_STATUS.md` (seção narrativa) e este `HANDOFF_CLAUDE.md`
-   ao final.
+   `docs/PROJECT_STATUS.md` (seção narrativa + "Próxima tarefa
+   recomendada") e este `HANDOFF_CLAUDE.md` ao final.
 
-Preserve o tema escuro, verde como ação principal, roxo só para XP, e
-todas as funcionalidades já existentes de Jornada, missões, plano,
-sessão pausada e progressão.
+Preserve o tema escuro, verde-menta como ação principal, roxo só para
+XP, e todas as funcionalidades já existentes (Jornada, missões, plano,
+sessão pausada, progressão, peso/altura/IMC, favoritos).

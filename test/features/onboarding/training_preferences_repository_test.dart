@@ -45,4 +45,35 @@ void main() {
 
     expect(latest!.toDomain().preferredWeekdays, isEmpty);
   });
+
+  test('altura persiste e volta a mesma altura', () async {
+    final repository = TrainingPreferencesRepository(db);
+    const preferences = TrainingPreferences(
+      daysPerWeek: 3,
+      minutesPerSession: 30,
+      location: TrainingLocation.home,
+      equipment: {},
+      heightCm: 175,
+    );
+
+    await repository.save(preferences);
+    final latest = await repository.latest();
+
+    expect(latest!.toDomain().heightCm, 175);
+  });
+
+  test('sem altura definida, volta nula', () async {
+    final repository = TrainingPreferencesRepository(db);
+    const preferences = TrainingPreferences(
+      daysPerWeek: 3,
+      minutesPerSession: 30,
+      location: TrainingLocation.home,
+      equipment: {},
+    );
+
+    await repository.save(preferences);
+    final latest = await repository.latest();
+
+    expect(latest!.toDomain().heightCm, isNull);
+  });
 }

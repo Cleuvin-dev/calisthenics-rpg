@@ -3,14 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/time/date_period.dart';
 import '../../../shared/presentation/empty_state_card.dart';
+import '../../onboarding/data/training_preferences_providers.dart';
 import '../../rpg/data/rpg_providers.dart';
 import '../../rpg/presentation/xp_evolution_chart.dart';
 import '../../rpg/presentation/xp_level_badge.dart';
 import '../../training_plan/data/training_plan_providers.dart';
 import '../../training_plan/domain/exercise_catalog.dart';
 import '../../workout_session/data/workout_session_providers.dart';
+import '../data/body_metric_providers.dart';
 import '../data/report_providers.dart';
 import '../data/report_repository.dart';
+import '../domain/body_metric.dart';
+import 'body_metric_screen.dart';
 
 class ReportScreen extends ConsumerStatefulWidget {
   const ReportScreen({super.key});
@@ -94,14 +98,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const EmptyStateCard(
-              icon: Icons.monitor_weight_outlined,
-              title: 'Ainda não disponível nesta versão',
-              message:
-                  'O registro de peso, altura e IMC ainda não tem modelo de '
-                  'dados nem persistência real neste app. Nada é mostrado '
-                  'aqui até que essa funcionalidade exista de verdade.',
-            ),
+            const _BodyMetricsCard(),
             const SizedBox(height: 20),
             Text(
               'Histórico de treinos',
@@ -328,6 +325,64 @@ class _VolumeByPatternCard extends StatelessWidget {
             )
             .toList(),
       ),
+    );
+  }
+}
+
+class _BodyMetricsCard extends ConsumerWidget {
+  const _BodyMetricsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesAsync = ref.watch(bodyMetricEntriesProvider);
+    final preferencesAsync = ref.watch(latestTrainingPreferencesProvider);
+    return entriesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (entries) {
+        if (entries.isEmpty) {
+          return EmptyStateCard(
+            icon: Icons.monitor_weight_outlined,
+            title: 'Nenhum peso registrado',
+            message:
+                'Registre seu peso para acompanhar tendência, recordes e '
+                'IMC (indicador geral, sem diagnóstico médico).',
+            action: FilledButton.tonalIcon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BodyMetricScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Registrar peso'),
+            ),
+          );
+        }
+        final heightCm = preferencesAsync.maybeWhen(
+          data: (record) => record?.heightCm,
+          orElse: () => null,
+        );
+        final current = entries.first.weightKg;
+        final bmi = calculateBmi(weightKg: current, heightCm: heightCm);
+        final category = bmiCategoryFor(bmi);
+        return Card(
+          child: ListTile(
+            leading: const Icon(Icons.monitor_weight_outlined),
+            title: Text('${current.toStringAsFixed(1)} kg'),
+            subtitle: Text(
+              bmi == null
+                  ? (heightCm == null
+                        ? 'Altura não definida'
+                        : 'IMC indisponível')
+                  : 'IMC: ${bmi.toStringAsFixed(1)} · ${category!.label}',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BodyMetricScreen()),
+            ),
+          ),
+        );
+      },
     );
   }
 }

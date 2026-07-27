@@ -25,6 +25,7 @@ class TrainingPreferencesRepository {
             preferredWeekdaysJson: Value(
               jsonEncode(preferences.preferredWeekdays.toList()..sort()),
             ),
+            heightCm: Value(preferences.heightCm),
           ),
         );
   }
@@ -51,6 +52,7 @@ extension TrainingPreferenceRecordDecoding on TrainingPreferenceRecord {
       location: TrainingLocation.values.byName(location),
       equipment: equipmentNames.map(Equipment.values.byName).toSet(),
       preferredWeekdays: preferredWeekdays,
+      heightCm: heightCm,
     );
   }
 }

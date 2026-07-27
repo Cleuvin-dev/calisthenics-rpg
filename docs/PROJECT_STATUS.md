@@ -988,6 +988,12 @@ automatizada.
 | `test/app/responsive_visual_test.dart` isolado | 5/5 cenários passando (tela pequena/grande, escala de fonte 1.0×/1.4×/2.0×, alto contraste) |
 | `flutter run -d windows` | Falhou: plataforma Windows nunca configurada neste projeto (`flutter create --platforms=windows .` não foi rodado) |
 | `where cl.exe` / `where msbuild.exe` | Nenhum toolchain MSVC instalado — build desktop não seria possível mesmo com a plataforma configurada |
+| `dart run build_runner build` (peso/altura/IMC, 2026-07-27) | OK — gerou `body_metric_records` e a coluna `heightCm` |
+| `flutter analyze` (peso/altura/IMC, 2026-07-27) | Sem problemas |
+| `flutter test` (peso/altura/IMC, 2026-07-27) | **189 passed, 0 failed** |
+| `dart run build_runner build` (favoritos, 2026-07-27) | OK — gerou `favorite_records` |
+| `flutter analyze` (favoritos, 2026-07-27) | Sem problemas |
+| `flutter test` (favoritos, 2026-07-27) | **194 passed, 0 failed** |
 
 ## Decisões e ADRs
 
@@ -1273,19 +1279,149 @@ está em `docs/IMPLEMENTATION_BACKLOG.md`:
    backlog, próximo conceitualmente da Tela de Habilidades que já
    estava pendente.
 
+### Peso, altura e IMC (2026-07-27)
+
+Continuação da mesma sessão, item escolhido pelo usuário entre as
+opções do topo do backlog. Implementa o que antes era um card
+"ainda não disponível nesta versão" no Relatório.
+
+- **Banco (schemaVersion 7→8, aditiva):** coluna nova `heightCm`
+  (nullable, REAL) em `training_preference_records` — altura é
+  perfil/preferência, sobrevive ao reset, mesmo padrão de
+  `preferredWeekdaysJson` (v6→7). Tabela nova `body_metric_records`
+  (`id`, `recordedAt`, `weightKg`, `createdAt`, `updatedAt`) —
+  deliberadamente **não** é um ledger append-only como
+  `xp_ledger_records`/`set_log_records`: o usuário precisa poder
+  editar/excluir uma pesagem registrada errada (Relatório §6.4 pede
+  isso explicitamente), então tem UPDATE/DELETE por linha. Testado em
+  `test/core/database/migration_v8_test.dart` com um banco montado no
+  formato real da v7 (linha existente preservada, coluna nova nula,
+  tabela nova vazia e gravável).
+- **Domínio** (`lib/features/report/domain/body_metric.dart`, puro):
+  `isPlausibleWeightKg`/`isPlausibleHeightCm` (20–300 kg, 100–250 cm —
+  mesmo espírito de "validar valores plausíveis" do §6.4, números
+  MVP sem revisão profissional, mesma ressalva já aplicada a outras
+  regras do projeto), `calculateBmi` (`null`-safe, nunca inventa valor
+  quando falta peso ou altura) e `bmiCategoryFor` (faixas OMS padrão,
+  só rótulo informativo — "IMC deve ser apresentado como indicador
+  geral, sem diagnóstico médico", §6.3, texto reforça isso na UI).
+- **Repositório/providers** (`lib/features/report/data/
+  body_metric_repository.dart`/`body_metric_providers.dart`): `add`/
+  `update`/`delete`/`all` (mais recente primeiro).
+- **Definição > Perfil e avaliação** (`settings_screen.dart`): tile
+  "Altura" (novo diálogo `_HeightDialog`, mesmo padrão de validação
+  inline do peso) e tile "Peso e IMC" que navega para a tela de
+  histórico — altura fica em Definição (perfil, valor único) porque é
+  isso que a especificação pede em §7.1; peso fica em uma tela própria
+  porque §6.4 pede histórico com data, não um valor único.
+- **Tela nova `BodyMetricScreen`** (`lib/features/report/presentation/`):
+  cartão de resumo (atual/maior/menor, tendência desde a última
+  pesagem, IMC + categoria quando há altura), lista de pesagens com
+  editar (reabre o mesmo diálogo pré-preenchido) e excluir (confirmação
+  em `AlertDialog` antes de apagar, §6.4 "editar/excluir... com
+  confirmação"), botão flutuante "Adicionar peso" com date picker.
+- **Relatório** (`_BodyMetricsCard`): card de peso atual + IMC quando
+  há pelo menos um registro (toque abre o histórico completo); estado
+  vazio com botão "Registrar peso" (abre a mesma tela) quando não há
+  nenhum — nunca dado fabricado, mesma filosofia dos outros cards do
+  Relatório.
+- `ProgressResetService` passa a apagar `body_metric_records` (peso é
+  métrica corporal/progresso, §8.1 do documento de redesenho lista
+  "histórico de peso e métricas corporais" explicitamente); `heightCm`
+  continua preservado por estar na mesma linha de
+  `training_preference_records` que já sobrevive ao reset.
+- **Testes** (169 → **189 testes automatizados**, todos passando;
+  `flutter analyze` sem problemas): migração v8; repositório
+  (add/update/delete/ordenação); domínio (limites de plausibilidade,
+  IMC nulo quando falta dado, categorias); `BodyMetricScreen` (estado
+  vazio, validação bloqueia peso implausível, editar atualiza o valor
+  mostrado, excluir pede confirmação e só remove ao confirmar);
+  `SettingsScreen` (altura persiste sem perder outras preferências já
+  salvas, valor implausível não libera "Salvar"); Relatório (estado
+  vazio com atalho "Registrar peso"; card real com IMC/categoria
+  calculados a partir de dados semeados).
+- **Não testado no aparelho físico nesta sessão** (sem acesso ao `adb`)
+  — fica para a próxima verificação manual, junto dos demais itens já
+  pendentes.
+- Documentação atualizada: `docs/CHANGELOG.md` (entrada nova),
+  `docs/DATA_RESET.md` (item 8 da lista de apagados + altura na lista
+  de preservados), `docs/UI_UX.md` (Relatório e Definição),
+  `docs/IMPLEMENTATION_BACKLOG.md` (item marcado concluído, movido para
+  "Concluído recentemente").
+
+### Favoritos (2026-07-27)
+
+Continuação da mesma sessão, segundo item escolhido pelo usuário entre
+as opções do topo do backlog (logo depois de peso/altura/IMC).
+Transforma o chip "Favoritos" da Descobrir, antes desabilitado com
+tooltip explicando a ausência de persistência, em funcionalidade real.
+
+- **Banco (schemaVersion 8→9, aditiva):** tabela nova
+  `favorite_records` (`itemType`, `itemSlug`, `createdAt`, chave única
+  composta `(itemType, itemSlug)` — evita duplicata no nível do schema,
+  não só na lógica de aplicação). Testado em
+  `test/core/database/migration_v9_test.dart` (banco montado no formato
+  real da v8, linha existente preservada, tabela nova vazia e
+  gravável).
+- **Domínio** (`lib/features/discover/domain/favorite.dart`, puro):
+  `FavoriteItemType` (`workout`/`exercise`) e `favoriteKey` — chave
+  composta usada para checar pertencimento num `Set<String>` já
+  carregado, sem uma consulta por item na UI (a mesma ideia de
+  `MediaCatalogIndex.byCategoryLevel`, evitar N consultas numa lista).
+- **Repositório/providers** (`lib/features/discover/data/
+  favorite_repository.dart`/`favorite_providers.dart`):
+  `FavoriteRepository.toggle` (adiciona se não existe, remove se
+  existe — sem estado de "favoritado" separado do que está no banco) e
+  `allKeys()` (todas as chaves compostas de uma vez, para o filtro e os
+  botões de estrela não fazerem uma consulta cada).
+- **Descobrir** (`discover_screen.dart`): `_WorkoutCard` e
+  `_ExerciseCard` viraram/ganharam `_FavoriteButton` (estrela cheia/
+  vazia conforme `favoriteKeysProvider`, toque chama `toggle` e
+  invalida o provider) — como `_ExerciseCard` é reaproveitado pela seção
+  "Recentes", o botão aparece lá também sem código extra. Chip
+  "Favoritos" deixou de ter `onSelected: null`; agora filtra
+  treinos/exercícios pela chave composta, junto dos demais filtros já
+  existentes (texto, nível, duração, padrão, equipamento, tipo de
+  medição).
+- **Decisão de escopo:** favorito é preferência pessoal (like/bookmark),
+  não progresso — ao contrário do peso (que é métrica de corpo,
+  histórico), não faz sentido zerar favoritos ao reiniciar a jornada.
+  `ProgressResetService` deliberadamente não foi alterado (nenhuma
+  linha nova de delete) — a tabela simplesmente nunca é tocada pelo
+  reset, mesmo padrão de `training_preference_records`/
+  `safety_screenings`.
+- **Testes** (189 → **194 testes automatizados**, todos passando;
+  `flutter analyze`/`dart format` sem problemas): migração v9;
+  `FavoriteRepository` (toggle liga/desliga, `workout`/`exercise` com o
+  mesmo slug não colidem, múltiplos favoritos independentes);
+  `discover_screen_test.dart` (favoritar marca a estrela visualmente;
+  filtro "Favoritos" mostra só os marcados e esconde os demais — a
+  suíte antiga que verificava o chip desabilitado foi substituída por
+  essas duas, já que o comportamento mudou de propósito);
+  `progress_reset_service_test.dart` ganhou asserção explícita de que
+  um favorito sobrevive ao reset.
+- **Não testado no aparelho físico nesta sessão** (sem acesso ao `adb`)
+  — fica para a próxima verificação manual, junto dos demais itens já
+  pendentes.
+- Documentação atualizada: `docs/CHANGELOG.md` (entrada nova),
+  `docs/DATA_RESET.md` (favoritos na lista de preservados),
+  `docs/UI_UX.md` (Descobrir), `docs/IMPLEMENTATION_BACKLOG.md` (item
+  marcado concluído, movido para "Concluído recentemente").
+
 ## Próxima tarefa recomendada
 
 Lista completa e priorizada em `docs/IMPLEMENTATION_BACKLOG.md` (P0 →
-P3). Resumo do topo da fila em 2026-07-27, depois da continuação das
-quatro abas: (1) decidir e implementar peso/altura/IMC (Relatório +
-Definição) ou favoritos (Descobrir) — ambos exigem decisão de modelo de
-dados antes de codar, ver `docs/HANDOFF_CLAUDE.md` "Lacunas reais
-restantes"; (2) crescer o catálogo de treinos além de "Treino A" — sem
-isso, várias seções da especificação de Descobrir continuam impossíveis
-de implementar sem inventar conteúdo; (3) os três testes manuais físicos
+P3). Resumo do topo da fila em 2026-07-27, depois de peso/altura/IMC e
+favoritos: (1) crescer o catálogo de treinos além de "Treino A" — sem
+isso, várias seções da especificação de Descobrir (§5.1: "Alongar e
+aquecer", "Desafios", níveis de experiência) continuam impossíveis de
+implementar sem inventar conteúdo; (2) os três testes manuais físicos
 ainda pendentes de sessões anteriores (modo avião, tela bloqueada, toque
-duplo físico); (4) revisão profissional de conteúdo/mídia (bloqueia
-publicação comercial).
+duplo físico); (3) revisão profissional de conteúdo/mídia (bloqueia
+publicação comercial); (4) objetivo de treino e nova curva de XP — ambos
+pedidos pelo usuário em 2026-07-27, mas com uma pergunta de
+esclarecimento em aberto cada um antes de implementar (ver seção
+"Pendências" acima).
 
 ## Critério para retomar
 

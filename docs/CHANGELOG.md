@@ -5,6 +5,62 @@ de cada entrada, ver `PROJECT_STATUS.md`. Entradas anteriores a
 2026-07-27 são resumidas a partir do histórico de commits e de
 `PROJECT_STATUS.md` — não presenciadas por quem escreveu este arquivo.
 
+## 2026-07-27 — Favoritos (Descobrir)
+
+Segundo item escolhido pelo usuário do topo do backlog, logo após
+peso/altura/IMC.
+
+- **Banco (schemaVersion 8→9, aditiva):** tabela nova `favorite_records`
+  (`itemType` — `workout`/`exercise` —, `itemSlug`, `createdAt`, chave
+  única `(itemType, itemSlug)` para evitar duplicata). Testado em
+  `test/core/database/migration_v9_test.dart` com um banco montado no
+  formato real da v8.
+- **Domínio** (`lib/features/discover/domain/favorite.dart`):
+  `FavoriteItemType` (workout/exercise) e `favoriteKey` (chave composta
+  para checar pertencimento em `Set<String>` sem consulta por item).
+- **Repositório** (`FavoriteRepository.toggle`/`allKeys`): sem tabela
+  separada por tipo — `workout` e `exercise` com o mesmo slug não
+  colidem porque a chave é composta.
+- **Descobrir:** botão de estrela (`_FavoriteButton`) em todo card de
+  treino/exercício, inclusive na seção "Recentes" (reaproveita
+  `_ExerciseCard`); chip "Favoritos" deixou de ficar desabilitado e
+  agora filtra a lista de verdade.
+- É preferência pessoal, não progresso — `ProgressResetService`
+  deliberadamente não toca em `favorite_records`.
+- 194 testes automatizados (eram 189), todos passando; `flutter
+  analyze` sem problemas.
+
+## 2026-07-27 — Peso, altura e IMC
+
+Implementa o item do topo do backlog (`IMPLEMENTATION_BACKLOG.md`, P2):
+o card "Peso, altura e IMC — ainda não disponível nesta versão" do
+Relatório vira funcionalidade real.
+
+- **Banco (schemaVersion 7→8, aditivo):** coluna nova `heightCm`
+  (nullable) em `training_preference_records` — altura é perfil,
+  sobrevive ao reset. Tabela nova `body_metric_records` (peso + data,
+  editável/excluível, ao contrário dos ledgers append-only do projeto)
+  — histórico de progresso, apagado pelo "Reiniciar progresso e
+  métricas". Testado em `test/core/database/migration_v8_test.dart` com
+  um banco montado no formato real da v7.
+- **Domínio** (`lib/features/report/domain/body_metric.dart`): validação
+  de faixa plausível (peso 20–300 kg, altura 100–250 cm) e cálculo de
+  IMC/categoria — indicador geral, sem diagnóstico médico (texto
+  explícito na UI).
+- **Definição > Perfil e avaliação:** "Altura" editável (diálogo com
+  validação) e "Peso e IMC" abrindo a tela de histórico.
+- **Nova tela `BodyMetricScreen`** (`lib/features/report/presentation/`):
+  resumo (atual/maior/menor/tendência + IMC), lista de pesagens com
+  editar/excluir (excluir pede confirmação), botão flutuante para
+  adicionar.
+- **Relatório:** card "Peso, altura e IMC" agora mostra peso atual + IMC
+  reais quando há registro, ou estado vazio com atalho "Registrar peso"
+  quando não há.
+- `ProgressResetService` passa a apagar `body_metric_records`; altura
+  (preferência) continua preservada.
+- 189 testes automatizados (eram 169), todos passando; `flutter
+  analyze` sem problemas.
+
 ## 2026-07-27 — Continuação: quatro abas completas, correções de bugs reais
 
 Sessão de continuidade a partir de `docs/HANDOFF_CLAUDE.md` (versão

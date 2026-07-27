@@ -77,6 +77,28 @@ void main() {
             createdAt: now,
           ),
         );
+    await db
+        .into(db.trainingPreferenceRecords)
+        .insert(
+          TrainingPreferenceRecordsCompanion.insert(
+            daysPerWeek: 3,
+            minutesPerSession: 30,
+            location: 'home',
+            equipmentJson: '[]',
+            updatedAt: now,
+            heightCm: const Value(175),
+          ),
+        );
+    await db
+        .into(db.bodyMetricRecords)
+        .insert(
+          BodyMetricRecordsCompanion.insert(
+            recordedAt: now,
+            weightKg: 70,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
   }
 
   testWidgets(
@@ -132,6 +154,16 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.textContaining('+40 XP'), findsOneWidget);
+
+      // Peso/altura/IMC: 70 kg / 1.75 m² = 22.9, "Peso adequado".
+      await tester.dragUntilVisible(
+        find.textContaining('IMC: 22.9'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.textContaining('IMC: 22.9'), findsOneWidget);
+      expect(find.textContaining('Peso adequado'), findsOneWidget);
     },
   );
 }

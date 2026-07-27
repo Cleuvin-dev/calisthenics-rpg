@@ -131,8 +131,16 @@ void main() {
 
   final scenarios = <(String, Size, double)>[
     ('celular pequeno, fonte 1.0x', Size(360, 690), 1.0),
-    ('celular pequeno, fonte 1.4x (limite do slider de acessibilidade)', Size(360, 690), 1.4),
-    ('celular pequeno, fonte 2.0x (escala máxima do sistema)', Size(360, 690), 2.0),
+    (
+      'celular pequeno, fonte 1.4x (limite do slider de acessibilidade)',
+      Size(360, 690),
+      1.4,
+    ),
+    (
+      'celular pequeno, fonte 2.0x (escala máxima do sistema)',
+      Size(360, 690),
+      2.0,
+    ),
     ('tablet grande, fonte 1.0x', Size(1024, 1366), 1.0),
   ];
 
