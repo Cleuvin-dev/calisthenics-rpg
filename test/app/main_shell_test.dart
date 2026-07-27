@@ -17,8 +17,14 @@ void main() {
   testWidgets('quatro abas preservam o estado da busca ao alternar', (
     tester,
   ) async {
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    final directory = await Directory.systemTemp.createTemp('shell_settings_');
+    late AppDatabase db;
+    late Directory directory;
+    // NativeDatabase/temp dir setup does real isolate + file I/O, which never
+    // resolves inside testWidgets' FakeAsync zone unless run via runAsync.
+    await tester.runAsync(() async {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      directory = await Directory.systemTemp.createTemp('shell_settings_');
+    });
     addTearDown(db.close);
     addTearDown(() => directory.delete(recursive: true));
     final now = DateTime(2026, 7, 27);

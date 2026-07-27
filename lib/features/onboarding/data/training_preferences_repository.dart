@@ -22,6 +22,9 @@ class TrainingPreferencesRepository {
               preferences.equipment.map((e) => e.name).toList(),
             ),
             updatedAt: DateTime.now(),
+            preferredWeekdaysJson: Value(
+              jsonEncode(preferences.preferredWeekdays.toList()..sort()),
+            ),
           ),
         );
   }
@@ -38,11 +41,16 @@ class TrainingPreferencesRepository {
 extension TrainingPreferenceRecordDecoding on TrainingPreferenceRecord {
   TrainingPreferences toDomain() {
     final equipmentNames = (jsonDecode(equipmentJson) as List).cast<String>();
+    final weekdaysJson = preferredWeekdaysJson;
+    final preferredWeekdays = weekdaysJson == null
+        ? const <int>{}
+        : (jsonDecode(weekdaysJson) as List).cast<int>().toSet();
     return TrainingPreferences(
       daysPerWeek: daysPerWeek,
       minutesPerSession: minutesPerSession,
       location: TrainingLocation.values.byName(location),
       equipment: equipmentNames.map(Equipment.values.byName).toSet(),
+      preferredWeekdays: preferredWeekdays,
     );
   }
 }

@@ -13,11 +13,12 @@ mova para "Concluído recentemente" com a data, e registre o detalhe
 pendência nova durante uma sessão, adicione aqui **e** explique o
 porquê em `PROJECT_STATUS.md` — nunca só em um dos dois.
 
-**Última sincronização:** 2026-07-24, após feedback do usuário usando o
-app de verdade no aparelho (5 itens novos: 2 bugs de mídia/contraste
-diagnosticados, 3 pedidos de funcionalidade — Configurações completa,
-reavaliação física periódica e adaptativa, trilha completa de treinos
-visível na tela de Treino).
+**Última sincronização:** 2026-07-27, após a continuação do redesenho
+de quatro abas (Descobrir/Relatório/Definição completos, Jornada
+reordenada, 3 bugs reais corrigidos — ver `PROJECT_STATUS.md` e
+`HANDOFF_CLAUDE.md`). Itens novos: peso/altura/IMC, favoritos e
+catálogo de treinos maior viraram bloqueadores explícitos de várias
+seções da especificação de redesenho.
 
 ## P0 — imediato
 
@@ -93,6 +94,55 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## P1 — RPG/conteúdo
 
+- [ ] **Objetivo de treino escolhido pelo usuário** (pedido do usuário,
+  2026-07-27): permitir escolher perder gordura, ganhar força muscular
+  e/ou manter o condicionamento físico (parece multi-seleção, pelo "e/ou"
+  do pedido — confirmar com o usuário antes de implementar), e o app
+  deve **de fato** selecionar exercícios específicos para o objetivo
+  escolhido, não só guardar a preferência sem efeito.
+  - **Não existe hoje nenhum conceito de "objetivo"** no modelo de
+    dados — nem em `TrainingPreferences`
+    (`features/onboarding/domain/training_preferences.dart`), nem em
+    `CatalogExercise`/`Workout`
+    (`features/training_plan/domain/exercise_catalog.dart`/
+    `workout_catalog.dart`). `Workout.objectivePtBr` existente é só
+    texto descritivo do treino curado, não um filtro/seletor.
+  - **Onde a preferência deveria viver:** provavelmente
+    `TrainingPreferences` (mesmo lugar de `daysPerWeek`/equipamento/meta
+    de dias da semana — já é o registro versionado de preferências de
+    treino, editável em Definição pelo mesmo padrão do diálogo de dias
+    da semana implementado em 2026-07-27).
+  - **O que precisa mudar para o objetivo ter efeito real:**
+    `CatalogExercise`/`Workout` precisam de um atributo de objetivo (ou
+    de atributos que permitam derivá-lo — ex.: faixa de repetições,
+    estrutura de circuito/descanso curto para queima calórica vs.
+    séries mais baixas/descanso mais longo para força), e
+    `WeeklyPlanGenerator` precisa usar esse atributo para influenciar
+    a seleção/estrutura da sessão, não só o nível de capacidade como
+    hoje.
+  - **Decisão em aberto antes de codar** (não presumir): como
+    exatamente cada objetivo muda a prescrição? Perder gordura tende a
+    outras faixas de repetição/descanso do que ganhar força — a regra
+    concreta (faixas de reps, séries, descanso, se adiciona
+    condicionamento extra) precisa ser decidida e documentada como
+    regra explícita (mesmo espírito de `TRAINING_ENGINE.md`/
+    `PROGRESSION_RULES.md`), não improvisada linha a linha.
+  - **Reforçado pelo usuário em 2026-07-27**: não basta guardar o
+    objetivo como metadado — o motor precisa da "inteligência" de
+    **identificar quais exercícios do catálogo potencializam aquele
+    objetivo específico** e entregá-los de fato na sessão (ex.:
+    objetivo "perder gordura" → priorizar exercícios/estrutura que
+    potencializem queima calórica, não simplesmente o mesmo catálogo de
+    sempre com um rótulo diferente). Implica que cada `CatalogExercise`
+    precisa de metadado(s) suficientes para o motor **classificar**
+    quão adequado ele é a cada objetivo (não só um enum estático
+    "objetivo do exercício" — a mesma flexão pode servir a mais de um
+    objetivo dependendo de reps/descanso/estrutura aplicados), e que
+    `WeeklyPlanGenerator` precisa de uma etapa de seleção/pontuação por
+    objetivo, além do filtro por nível de capacidade que já existe
+    hoje. Vale desenhar a regra de classificação junto com a decisão de
+    prescrição do item acima — são a mesma peça de motor, não duas
+    peças separadas.
 - [ ] **Teste físico periódico e adaptativo** (pedido do usuário,
   2026-07-24): tela nova acessível por um botão no Dashboard/Jornada,
   onde o usuário pode — a qualquer momento, ou como sugestão a cada
@@ -151,18 +201,33 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 - [ ] Seletor de duração personalizável pré-sessão (chips 20s/30s/45s/
   Personalizar — `SETTINGS_AND_TIMED_EXERCISES.md` §9.1/§12.3). Hoje o
   player usa a duração recomendada do exercício como alvo fixo.
-- [ ] **Página de Configurações completa** (pedido reforçado pelo
-  usuário, 2026-07-24; `SETTINGS_AND_TIMED_EXERCISES.md`, documento
-  inteiro é sobre isso — prompt separado do que já foi implementado):
-  - reset de jornada — apagar/reiniciar dados salvos (nível, XP,
-    missões, histórico de sessões, colocações) para recomeçar do zero;
-  - perfil físico: altura/peso para cálculo de IMC;
-  - estimativa de gasto calórico por sessão/exercício — hoje não existe
-    nenhum campo de peso/altura no modelo de dados nem cálculo de
-    calorias em lugar nenhum do app; precisa decidir a fórmula (MET por
-    padrão de movimento? por exercício?) antes de implementar.
+- [x] **Página de Configurações (Definição)** — em grande parte
+  concluída via o redesenho de quatro abas + continuação de 2026-07-27:
+  reset de jornada (`ProgressResetService`, ver `DATA_RESET.md`), meta
+  de dias de treino da semana, contagem regressiva editável e conectada
+  ao player, uso de armazenamento real. Ainda falta especificamente:
+  - **perfil físico (altura/peso para IMC)** — sem modelo de dados nem
+    persistência; mostrado como estado vazio explícito no Relatório.
+    Precisa de nova tabela + migração + tela de CRUD (peso com data,
+    editar/excluir, tendência/maior/menor — ver seção 6.4 de
+    `APP_RPG_CALISTENIA_REDESENHO_NAVEGACAO_E_IMPLEMENTACAO.md`).
+  - estimativa de gasto calórico por sessão/exercício — nem sequer
+    decidido a fórmula (MET por padrão de movimento? por exercício?);
+    depende do item de peso/altura acima para fazer sentido.
+  - "Descanso padrão" (Definição) existe e é exibido, mas
+    deliberadamente não conectado ao player — ver
+    `docs/HANDOFF_CLAUDE.md` "Lacunas reais restantes" para o porquê
+    (arriscaria descartar rest time curado por exercício no catálogo).
 - [ ] Catálogo de treinos maior — hoje só "Treino A · Fundação"; o
-  documento prevê filtros por nível e múltiplos treinos nomeados.
+  documento prevê filtros por nível e múltiplos treinos nomeados. Sem
+  isso, várias seções da aba Descobrir (§5.1 do documento de
+  redesenho: "Alongar e aquecer", "Desafios", "Progressões de
+  habilidade", "Para iniciantes/Intermediários/Avançados") continuam
+  impossíveis de implementar sem inventar conteúdo — ver
+  `docs/UI_UX.md` "Aba Descobrir".
+- [ ] **Favoritos** (Descobrir) — chip existe na interface, mas
+  desabilitado (`onSelected: null`); falta decidir onde persistir (nova
+  tabela Drift vs. campo em `UserSettings`/JSON) antes de implementar.
 - [ ] Placeholder de mídia sem lista de erros comuns/checklist de
   equipamento (`EXERCISE_MEDIA_GUIDE.md` §12) — mostra só nome,
   ilustração animada e dose.
@@ -200,6 +265,13 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## Concluído recentemente
 
+- 2026-07-27 — Continuação do redesenho de quatro abas: Jornada
+  reordenada, Descobrir/Relatório/Definição completos (filtros reais,
+  aderência/recordes/volume, meta de dias de treino + contagem
+  regressiva conectada + uso de armazenamento), ícone do app, validação
+  visual/responsiva automatizada, 3 bugs reais corrigidos. Ver
+  `PROJECT_STATUS.md` §"Continuação: quatro abas completas, correções
+  de bugs reais (2026-07-27)" e `docs/HANDOFF_CLAUDE.md`.
 - 2026-07-26 — Mídia real (foto em vez de placeholder) nas telas de
   avaliação/Evolução, via `MediaCatalogIndex.byCategoryLevel`. Ver
   `PROJECT_STATUS.md` §"Mídia real nas telas de avaliação/Evolução".

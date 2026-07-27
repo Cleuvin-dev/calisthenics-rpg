@@ -1,5 +1,7 @@
 import 'package:calisthenics_rpg/core/database/app_database.dart';
 import 'package:calisthenics_rpg/core/database/app_database_provider.dart';
+import 'package:calisthenics_rpg/features/settings/data/settings_providers.dart';
+import 'package:calisthenics_rpg/features/settings/data/settings_repository.dart';
 import 'package:calisthenics_rpg/features/training_plan/domain/exercise_catalog.dart'
     show DoseType;
 import 'package:calisthenics_rpg/features/workout_session/data/workout_session_repository.dart';
@@ -72,6 +74,23 @@ void main() {
   Widget wrap(int sessionId) {
     return ProviderScope(
       overrides: [appDatabaseProvider.overrideWithValue(db)],
+      child: MaterialApp(
+        home: WorkoutPlayerScreen(
+          workoutSessionId: sessionId,
+          pushHorizontalPlacement: _placement,
+        ),
+      ),
+    );
+  }
+
+  Widget wrapWithCountdown(int sessionId, int countdownSeconds) {
+    return ProviderScope(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        userSettingsProvider.overrideWith(
+          (ref) async => UserSettings(countdownSeconds: countdownSeconds),
+        ),
+      ],
       child: MaterialApp(
         home: WorkoutPlayerScreen(
           workoutSessionId: sessionId,
@@ -184,6 +203,37 @@ void main() {
       // Terminou a preparação e entrou em "rodando" normalmente — o
       // timer não depende de a imagem ter carregado.
       expect(find.text('Pausar'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'preferência de contagem regressiva (Definição) é aplicada à preparação',
+    (tester) async {
+      final id = await seedTimedSession();
+      await tester.pumpWidget(wrapWithCountdown(id, 5));
+      await tester.pumpAndSettle();
+
+      await _tapButton(tester, 'Iniciar');
+      expect(
+        find.text('5'),
+        findsOneWidget,
+        reason: 'preparação deve começar na contagem configurada, não em 3',
+      );
+    },
+  );
+
+  testWidgets(
+    'contagem regressiva 0 pula a preparação e começa a rodar direto',
+    (tester) async {
+      final id = await seedTimedSession();
+      await tester.pumpWidget(wrapWithCountdown(id, 0));
+      await tester.pumpAndSettle();
+
+      await _tapButton(tester, 'Iniciar');
+      await tester.pump();
+
+      expect(find.text('Pausar'), findsOneWidget);
+      expect(find.text('Senti dor'), findsOneWidget);
     },
   );
 }

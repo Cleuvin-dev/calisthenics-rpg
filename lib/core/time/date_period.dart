@@ -12,3 +12,23 @@ DateTime startOfWeek(DateTime date) {
 
 DateTime endOfWeek(DateTime date) =>
     startOfWeek(date).add(const Duration(days: 7));
+
+/// Dias consecutivos (incluindo hoje ou ontem, para não zerar a sequência
+/// antes do fim do dia) com pelo menos uma data em [completions]. Usado
+/// pela Jornada e pelo Relatório para a mesma "sequência atual" — derivado
+/// só de datas de sessões concluídas reais, nada é inventado.
+int currentStreak(Iterable<DateTime> completions, DateTime now) {
+  final completedDays = completions.map(startOfDay).toSet();
+
+  var cursor = startOfDay(now);
+  if (!completedDays.contains(cursor)) {
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+
+  var streak = 0;
+  while (completedDays.contains(cursor)) {
+    streak++;
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+  return streak;
+}

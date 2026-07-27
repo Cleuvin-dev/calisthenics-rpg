@@ -113,7 +113,18 @@ class SettingsRepository {
   Future<void> save(UserSettings settings) async {
     final file = await _file();
     final temporary = File('${file.path}.tmp');
-    await temporary.writeAsString(jsonEncode(settings.toJson()), flush: true);
-    await temporary.rename(file.path);
+    final encoded = jsonEncode(settings.toJson());
+    await temporary.writeAsString(encoded, flush: true);
+    try {
+      await temporary.rename(file.path);
+    } on FileSystemException {
+      // Rename replace-on-existing can be blocked by locks (e.g. AV scanners)
+      // on some Windows setups. Fall back to a direct write so a save never
+      // silently loses the previous preferences file.
+      await file.writeAsString(encoded, flush: true);
+      if (await temporary.exists()) {
+        await temporary.delete();
+      }
+    }
   }
 }

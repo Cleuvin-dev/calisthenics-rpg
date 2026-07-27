@@ -17,8 +17,12 @@ class XpEvolutionChart extends StatelessWidget {
     final now = DateTime.now();
     const chartHeight = 120.0;
 
+    // Além da barra em si, a coluna de cada dia também reserva espaço
+    // para o texto do valor acima e o rótulo do dia da semana abaixo
+    // (cada um com sua própria altura de linha) — 28px não bastava e
+    // estourava o RenderFlex sempre que havia XP de verdade no período.
     return SizedBox(
-      height: chartHeight + 28,
+      height: chartHeight + 44,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [

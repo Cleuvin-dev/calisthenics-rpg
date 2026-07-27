@@ -28,6 +28,7 @@ class TrainingPreferences {
     required this.minutesPerSession,
     required this.location,
     required this.equipment,
+    this.preferredWeekdays = const {},
   });
 
   /// 2..6, conforme REQUIREMENTS.md FR-015.
@@ -38,4 +39,9 @@ class TrainingPreferences {
 
   final TrainingLocation location;
   final Set<Equipment> equipment;
+
+  /// Dias da semana escolhidos como meta de treino (`DateTime.weekday`,
+  /// 1=segunda..7=domingo). Vazio quando o usuário ainda não formalizou
+  /// dias específicos, apenas a quantidade em [daysPerWeek].
+  final Set<int> preferredWeekdays;
 }

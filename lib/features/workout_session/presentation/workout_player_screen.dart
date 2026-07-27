@@ -11,6 +11,7 @@ import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../progression/data/progression_providers.dart';
 import '../../progression/domain/mastery_evaluator.dart';
 import '../../rpg/data/rpg_providers.dart';
+import '../../settings/data/settings_providers.dart';
 import '../../rpg/domain/level_curve.dart';
 import '../../rpg/domain/xp_rules.dart';
 import '../../training_plan/domain/exercise_catalog.dart' show DoseType;
@@ -413,6 +414,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     final sessionAsync = ref.watch(
       workoutSessionByIdProvider(widget.workoutSessionId),
     );
+    final countdownSeconds = ref
+        .watch(userSettingsProvider)
+        .maybeWhen(data: (settings) => settings.countdownSeconds, orElse: () => 3);
 
     return PopScope(
       canPop: false,
@@ -518,6 +522,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                                   nextSetNumber == _recoveredSetNumber
                                   ? _recoveredElapsedMs
                                   : null,
+                              countdownSeconds: countdownSeconds,
                               onFinalized: () => ref.invalidate(
                                 setLogsForSessionProvider(
                                   widget.workoutSessionId,

@@ -1,6 +1,6 @@
 # Project Status
 
-**Data:** 2026-07-24 (última atualização 2026-07-26)
+**Data:** 2026-07-24 (última atualização 2026-07-27)
 **Responsável:** Claude Code (sessão com Cleuvin)
 **Branch/commit:** `main` (working tree com alterações não commitadas — usuário commita manualmente)
 
@@ -823,26 +823,137 @@ histórico preservado). Confirmado por interação real:
   validado em duas outras telas, risco baixo) e `AssessmentSkipTestScreen`
   (não reexercitada pois a colocação de push_horizontal já existia).
 
+### Redesenho de navegação em quatro abas (antes de 2026-07-27)
+
+Entre a leva acima e a continuação abaixo, o projeto recebeu (fora desta
+sessão, herdado via commit e handoff) um redesenho de navegação: shell
+raiz com `IndexedStack` de quatro abas (Treino/Descobrir/Relatório/
+Definição), substituindo a `JourneyScreen` como tela única; tema central
+ganhou tokens para barra de navegação/alto contraste/escala de texto;
+serviço de reinício de progresso (`ProgressResetService`) implementado
+com fluxo de confirmação em três etapas. Detalhe completo não
+reconstituído aqui (não presenciado) — ver `docs/CHANGELOG.md`.
+
+### Continuação: quatro abas completas, correções de bugs reais (2026-07-27)
+
+Retomada a partir de `docs/HANDOFF_CLAUDE.md` (versão anterior, que
+registrava a implementação das quatro abas como parcial). Detalhe
+técnico completo de cada mudança em `docs/CHANGELOG.md` — resumo aqui:
+
+**Bugs reais corrigidos** (encontrados nesta sessão, não relatados por
+uso manual):
+- `SettingsRepository.save()` ganhou fallback de escrita direta caso o
+  `rename` do arquivo temporário falhe — comportamento padrão
+  verificado seguro neste ambiente Windows (teste de gravações
+  consecutivas), mas sem essa salvaguarda uma falha de `rename`
+  deixaria o usuário sem conseguir salvar preferência nenhuma.
+- `test/app/main_shell_test.dart` travava indefinidamente: criar
+  `NativeDatabase`/`Directory.systemTemp.createTemp()` fora de
+  `await tester.runAsync()` nunca resolve dentro da zona `FakeAsync` de
+  `testWidgets`. Causa raiz documentada em `docs/ARCHITECTURE.md` para
+  não ser redescoberta.
+- `XpEvolutionChart` (usado na Jornada e agora também no Relatório)
+  estourava `RenderFlex` sempre que havia XP real no período — a barra
+  reservava `chartHeight + 28` de altura, insuficiente para texto do
+  valor + barra + rótulo do dia (corrigido para `chartHeight + 44`).
+  Nunca tinha sido exercitado com dado não-zero em teste automatizado
+  antes; encontrado ao escrever `test/features/report/
+  report_screen_data_test.dart`.
+- `test/core/database/migration_v6_test.dart` não criava
+  `training_preference_records` no banco legado simulado, quebrando
+  quando a migração v7 (nova nesta sessão) tentou alterar essa tabela.
+
+**Aba Treino (Jornada)**: reordenada seguindo
+`APP_RPG_CALISTENIA_REDESENHO_NAVEGACAO_E_IMPLEMENTACAO.md` §4.1 (nível/
+XP → sessão pausada → próximo treino → frequência → habilidade →
+missões → sequência atual → evolução de XP → plano completo). Card de
+sessão pausada novo (`_PausedSessionCard`, `journey_screen.dart`):
+exercício e série atuais calculados a partir de `SetLogRecord`s reais da
+sessão ativa, progresso, horário do último salvamento. Sequência atual
+nova (`_StreakCard`): dias consecutivos com sessão concluída, função
+pura `currentStreak` extraída para `core/time/date_period.dart` e
+reusada pelo Relatório. Removido o card "Treino em destaque" —
+redundante com a aba Descobrir, que não existia quando ele foi criado.
+
+**Aba Descobrir**: filtros reais de nível (treinos), duração em faixas
+(treinos), padrão de movimento (exercícios, chips dinâmicos a partir do
+catálogo) e equipamento completo (`Equipment.none` a qualquer item
+específico, antes só um toggle booleano "sem equipamento"). Seção
+"Recentes" nova, a partir de `recentCompletedSessionsProvider`. Chip
+"Favoritos" adicionado desabilitado (`onSelected: null` + tooltip) — sem
+persistência real, não finge suporte.
+
+**Aba Relatório**: `XpLevelBadge` e `XpEvolutionChart` reaproveitados da
+Jornada; `_AdherenceCard` novo (sessões reais no período vs. meta de
+dias/semana do plano ativo); `_PersonalRecordsCard` novo
+(`bestRepsByExerciseProvider`); `_VolumeByPatternCard` novo
+(`ReportSnapshot.volumeByPattern`, soma de repetições por padrão no
+período); XP por sessão no histórico (`ReportSnapshot.xpForSession`,
+correlaciona pelo `sourceId` do ledger); card explícito "Peso, altura e
+IMC — ainda não disponível nesta versão" em vez de qualquer dado
+inventado.
+
+**Aba Definição**:
+- `training_preference_records` ganhou `preferredWeekdaysJson`
+  (migração 6→7, aditiva, testada com banco legado simulado). Domínio
+  `TrainingPreferences.preferredWeekdays` (`Set<int>`, `DateTime.weekday`).
+  Novo diálogo `_WeekdaysDialog` (chips Seg–Dom, exige ao menos um dia
+  selecionado); `daysPerWeek` passa a acompanhar a quantidade escolhida
+  ao salvar, evitando dessincronia entre os dois campos.
+- "Contagem regressiva" virou editável (`_CountdownDialog`, slider
+  0–10s) e foi conectada de verdade: `TimedSetPlayer` ganhou o parâmetro
+  `countdownSeconds` (era hardcoded em `3`), lido de `UserSettings` em
+  `WorkoutPlayerScreen`. `0` pula a preparação e começa a rodar direto.
+- Novo tile "Uso de armazenamento" (`StorageUsageService`), somando o
+  tamanho real de `calisthenics_rpg.sqlite` +
+  `calisthenics_rpg_settings.json` — nunca estimado.
+- Deliberadamente **não conectado**: "Descanso padrão". O catálogo já
+  tem `restSeconds` curado por exercício (um item usa 45s em vez de
+  60s de propósito); substituir por um valor global do usuário
+  descartaria essa tunagem sem necessidade real de dado adicional.
+
+**Ícone do app**: `pubspec.yaml`/`flutter_launcher_icons` passou a usar
+`assets/images/icone.png`; ícones Android/iOS regenerados via
+`dart run flutter_launcher_icons`.
+
+**Validação visual/responsiva**: `test/app/responsive_visual_test.dart`
+novo — 5 cenários (celular pequeno 360×690 em escala de fonte
+1.0×/1.4×/2.0×, tablet 1024×1366, alto contraste), navegando pelas
+quatro abas e rolando em cada uma, sem overflow em nenhum. Screenshot
+manual não foi possível: o projeto nunca teve suporte Web/Windows
+desktop configurado (`flutter create --platforms=...`), e este ambiente
+não tem toolchain MSVC nem `chromium-cli`/Playwright instalados — opção
+apresentada ao usuário, que escolheu manter só a validação
+automatizada.
+
+**Testes**: 91 → **169 testes automatizados**, todos passando.
+`flutter analyze`: sem problemas, verificado repetidamente a cada etapa
+(não só ao final).
+
 ## Banco/migrations
 
 - Backend Supabase segue pausado (ADR-0006); `supabase/migrations/`
   continua vazio. Sync (`OutboxEvents`) segue reservada e não usada
   (ADR-0005, `core/sync/README.md`).
-- Schema local Drift em `schemaVersion = 6`:
+- Schema local Drift em `schemaVersion = 7`:
   - `1→2`: recria `CapabilityEstimateRecords` (`inputAnchor` opcional).
   - `2→3`: cria `training_plan_records`.
   - `3→4`: cria `workout_session_records` e `set_log_records`.
   - `4→5`: cria `xp_ledger_records`.
-  - `5→6` (**nova nesta parte**): adiciona colunas nullable em
-    `set_log_records` (`targetReps`, `targetSeconds`,
-    `activeDurationMs`, `completionReason`, `clientEventId`) via
-    `m.addColumn` — **aditivo**, não recria a tabela, diferente das
-    migrações anteriores, porque agora pode haver dados reais de
-    usuário (o app já foi instalado e usado no aparelho físico em
-    sessões anteriores). Cria `active_timed_set_records` (tabela nova,
-    PK `workoutSessionId`, um timer ativo por sessão). Testada
-    explicitamente em `migration_v6_test.dart` com um banco montado no
-    formato real da v5.
+  - `5→6`: adiciona colunas nullable em `set_log_records` (`targetReps`,
+    `targetSeconds`, `activeDurationMs`, `completionReason`,
+    `clientEventId`) via `m.addColumn` — **aditivo**, não recria a
+    tabela, diferente das migrações anteriores, porque agora pode haver
+    dados reais de usuário (o app já foi instalado e usado no aparelho
+    físico em sessões anteriores). Cria `active_timed_set_records`
+    (tabela nova, PK `workoutSessionId`, um timer ativo por sessão).
+    Testada explicitamente em `migration_v6_test.dart` com um banco
+    montado no formato real da v5.
+  - `6→7` (**nova em 2026-07-27**): adiciona coluna nullable
+    `preferred_weekdays_json` em `training_preference_records` (meta de
+    dias de treino da semana) via `m.addColumn` — mesmo padrão aditivo.
+    Testada em `migration_v7_test.dart` com um banco montado no formato
+    real da v6.
 
 ## Testes executados
 
@@ -872,6 +983,11 @@ histórico preservado). Confirmado por interação real:
 | `flutter analyze` (mídia na avaliação/Evolução, 2026-07-26) | Sem problemas |
 | `flutter test` (mídia na avaliação/Evolução, 2026-07-26) | **142 passed, 0 failed** |
 | `dart format .` (mídia na avaliação/Evolução, 2026-07-26) | 1 arquivo reformatado, nenhum erro |
+| `flutter analyze` (continuação quatro abas, 2026-07-27) | Sem problemas, verificado repetidamente ao longo da sessão |
+| `flutter test` (continuação quatro abas, 2026-07-27) | **169 passed, 0 failed** (final; rodada muitas vezes ao longo da sessão a cada mudança) |
+| `test/app/responsive_visual_test.dart` isolado | 5/5 cenários passando (tela pequena/grande, escala de fonte 1.0×/1.4×/2.0×, alto contraste) |
+| `flutter run -d windows` | Falhou: plataforma Windows nunca configurada neste projeto (`flutter create --platforms=windows .` não foi rodado) |
+| `where cl.exe` / `where msbuild.exe` | Nenhum toolchain MSVC instalado — build desktop não seria possível mesmo com a plataforma configurada |
 
 ## Decisões e ADRs
 
@@ -944,6 +1060,21 @@ priorizada e acionável ("o que fazer a seguir", sem prosa), ver
 `docs/IMPLEMENTATION_BACKLOG.md` — mantenha os dois sincronizados: item
 concluído sai daqui e do backlog; item novo entra nos dois.
 
+- **Registrado em 2026-07-27, ainda não implementado**: usuário pediu
+  para escolher um objetivo de treino (perder gordura, ganhar força
+  muscular e/ou manter o condicionamento físico) e que o motor de
+  treino de fato selecione exercícios específicos para essa escolha —
+  não só guarde a preferência. Reforçado no mesmo dia: o motor precisa
+  da "inteligência" de identificar quais exercícios do catálogo
+  potencializam cada objetivo específico e entregá-los na sessão (ex.:
+  "perder gordura" → priorizar o que potencializa queima calórica), não
+  só rotular o mesmo catálogo de sempre. Hoje não existe nenhum
+  conceito de "objetivo" no modelo de dados (nem em
+  `TrainingPreferences` nem no catálogo de exercícios/treinos);
+  implementar exige decidir antes a regra concreta de como cada
+  objetivo muda faixa de repetições/séries/descanso/estrutura da sessão
+  e como o motor classifica/pontua cada exercício por objetivo. Detalhe
+  completo em `docs/IMPLEMENTATION_BACKLOG.md`, seção P1.
 - Textos de triagem/segurança seguem placeholders — pendente de revisão
   profissional (SAFETY_AND_SCREENING.md §10).
 - Catálogo de exercícios mínimo — precisa crescer antes de qualquer
@@ -1022,6 +1153,16 @@ concluído sai daqui e do backlog; item novo entra nos dois.
     teste de widget dedicado a toque duplo e outro ao ciclo completo
     do timer 3-2-1/pausa/retomada/conclusão), mas nenhum dos dois é
     substituto de um teste manual real em dispositivo físico.
+
+**Pendências novas de 2026-07-27** (continuação das quatro abas — ver
+`docs/HANDOFF_CLAUDE.md` "Lacunas reais restantes" para o detalhe
+completo de cada uma): peso/altura/IMC sem modelo de dados; seções de
+Descobrir que dependem de um catálogo de treinos maior que só "Treino
+A"; favoritos sem persistência decidida; "Descanso padrão" (Definição)
+deliberadamente não conectado ao player (arriscaria descartar tunagem
+por exercício já existente); validação visual manual (screenshot) não
+executável neste ambiente por falta de plataforma Web/Windows
+configurada e de ferramenta de automação de browser.
 
 ## Riscos/bloqueios
 
@@ -1122,16 +1263,16 @@ está em `docs/IMPLEMENTATION_BACKLOG.md`:
 ## Próxima tarefa recomendada
 
 Lista completa e priorizada em `docs/IMPLEMENTATION_BACKLOG.md` (P0 →
-P3). Resumo do topo da fila agora: (1) os três testes manuais que ainda
-faltam no aparelho — modo avião explícito, tela bloqueada durante
-série por tempo (`adb shell input keyevent KEYCODE_POWER`), toque
-duplo físico deliberado (nenhum é bloqueio, só não foram exercitados
-ainda); (2) teste físico periódico/reavaliação sob demanda (P1), que
-também resolve o caso de um padrão nunca autoavaliado nunca acumular
-confirmações de domínio; (3) trilha completa de treinos visível na tela
-de Treino (P1, outro pedido do usuário); (4) revisão profissional de
-conteúdo/mídia (bloqueia publicação comercial, precisa de alguém de
-fora do projeto).
+P3). Resumo do topo da fila em 2026-07-27, depois da continuação das
+quatro abas: (1) decidir e implementar peso/altura/IMC (Relatório +
+Definição) ou favoritos (Descobrir) — ambos exigem decisão de modelo de
+dados antes de codar, ver `docs/HANDOFF_CLAUDE.md` "Lacunas reais
+restantes"; (2) crescer o catálogo de treinos além de "Treino A" — sem
+isso, várias seções da especificação de Descobrir continuam impossíveis
+de implementar sem inventar conteúdo; (3) os três testes manuais físicos
+ainda pendentes de sessões anteriores (modo avião, tela bloqueada, toque
+duplo físico); (4) revisão profissional de conteúdo/mídia (bloqueia
+publicação comercial).
 
 ## Critério para retomar
 
@@ -1150,3 +1291,13 @@ testes manuais ainda não feitos em nenhuma leva são modo avião
 explícito, tela bloqueada e toque duplo físico deliberado (ver
 `docs/IMPLEMENTATION_BACKLOG.md`, seção P0) — nenhum é bloqueio, o
 sistema já foi exercitado de verdade em cenários equivalentes.
+
+**Continuação de 2026-07-27** (quatro abas completas): também ler
+`docs/ARCHITECTURE.md`, `docs/UI_UX.md` e `docs/DATA_RESET.md` (novos),
+além de `docs/HANDOFF_CLAUDE.md` (reescrito, é o ponto de entrada mais
+direto desta vez). 169 testes automatizados passando, incluindo
+validação visual/responsiva automatizada das quatro abas
+(`test/app/responsive_visual_test.dart`) — sem verificação manual no
+aparelho físico nem screenshot desta leva especificamente (sem acesso a
+dispositivo/emulador/Web neste ambiente; usuário optou por manter só a
+automatizada). Nada desta leva foi commitado ainda.

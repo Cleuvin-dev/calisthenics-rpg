@@ -25,6 +25,20 @@ void main() {
       //    entrega.
       final legacy = NativeDatabase(file);
       await legacy.ensureOpen(_NoopUser());
+      // Tabela de preferências já existia desde versões bem anteriores,
+      // sem relação com o que este teste cobre — só precisa existir para
+      // que a migração de versões seguintes (que também altera essa
+      // tabela) encontre o schema legado esperado.
+      await legacy.runCustom('''
+      CREATE TABLE training_preference_records (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        days_per_week INTEGER NOT NULL,
+        minutes_per_session INTEGER NOT NULL,
+        location TEXT NOT NULL,
+        equipment_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    ''');
       await legacy.runCustom('''
       CREATE TABLE workout_session_records (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,

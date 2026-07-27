@@ -37,6 +37,31 @@ class ReportSnapshot {
   int get totalActiveSeconds =>
       logs.fold(0, (sum, log) => sum + ((log.activeDurationMs ?? 0) ~/ 1000));
   int get totalXp => xp.fold(0, (sum, entry) => sum + entry.amount);
+
+  /// Repetições somadas por padrão de movimento, no período do snapshot.
+  /// Séries só por tempo (repsCompleted 0) não distorcem o total porque
+  /// simplesmente não contribuem com repetições.
+  Map<String, int> get volumeByPattern {
+    final volume = <String, int>{};
+    for (final log in logs) {
+      volume[log.pattern] = (volume[log.pattern] ?? 0) + log.repsCompleted;
+    }
+    return volume;
+  }
+
+  /// XP concedido especificamente por concluir cada sessão (evento
+  /// `sessionCompleted`, `sourceId` igual ao id da sessão —
+  /// xp_rules.dart), para mostrar o XP de cada linha do histórico sem
+  /// inventar um valor.
+  int? xpForSession(int sessionId) {
+    for (final entry in xp) {
+      if (entry.eventType == 'sessionCompleted' &&
+          entry.sourceId == '$sessionId') {
+        return entry.amount;
+      }
+    }
+    return null;
+  }
 }
 
 class ReportRepository {

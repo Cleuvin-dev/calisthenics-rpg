@@ -11,4 +11,9 @@ class TrainingPreferenceRecords extends Table {
   TextColumn get location => text()(); // TrainingLocation.name
   TextColumn get equipmentJson => text()(); // json list de Equipment.name
   DateTimeColumn get updatedAt => dateTime()();
+
+  /// Dias da semana escolhidos como meta de treino, json list de
+  /// `DateTime.weekday` (1=segunda..7=domingo). Nulo em linhas gravadas
+  /// antes desta coluna existir — tratado como "não definido".
+  TextColumn get preferredWeekdaysJson => text().nullable()();
 }

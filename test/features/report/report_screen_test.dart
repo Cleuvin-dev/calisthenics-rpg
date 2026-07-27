@@ -29,7 +29,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.dragUntilVisible(
+      find.text('Nenhum treino concluído'),
+      find.byType(ListView),
+      const Offset(0, -400),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Nenhum treino concluído'), findsOneWidget);

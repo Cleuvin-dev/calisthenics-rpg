@@ -30,6 +30,7 @@ class TimedSetPlayer extends ConsumerStatefulWidget {
     required this.onFinalized,
     required this.onPain,
     this.initialElapsedMs,
+    this.countdownSeconds = 3,
   });
 
   final int workoutSessionId;
@@ -50,6 +51,10 @@ class TimedSetPlayer extends ConsumerStatefulWidget {
 
   final int? initialElapsedMs;
 
+  /// Preferência de "Contagem regressiva" (Definição > Treino), aplicada
+  /// à contagem preparatória antes de a série por tempo começar a valer.
+  final int countdownSeconds;
+
   @override
   ConsumerState<TimedSetPlayer> createState() => _TimedSetPlayerState();
 }
@@ -60,7 +65,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
   late ActiveTimer _timer;
   Timer? _uiTicker;
   Timer? _prepTicker;
-  int _prepRemaining = 3;
+  int _prepRemaining = 0;
   bool _hasPersistedRow = false;
   bool _busy = false;
   int _lastPersistedSecond = -1;
@@ -111,9 +116,13 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
   }
 
   void _startPreparation() {
+    if (widget.countdownSeconds <= 0) {
+      _beginRunning();
+      return;
+    }
     setState(() {
       _phase = _Phase.preparing;
-      _prepRemaining = 3;
+      _prepRemaining = widget.countdownSeconds;
     });
     _prepTicker = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;

@@ -38,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +74,14 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(setLogRecords, setLogRecords.completionReason);
         await m.addColumn(setLogRecords, setLogRecords.clientEventId);
         await m.createTable(activeTimedSetRecords);
+      }
+      if (from < 7) {
+        // Meta de treino por dia da semana (aditiva, preferências
+        // pessoais de linhas antigas ficam com esse campo nulo).
+        await m.addColumn(
+          trainingPreferenceRecords,
+          trainingPreferenceRecords.preferredWeekdaysJson,
+        );
       }
     },
   );

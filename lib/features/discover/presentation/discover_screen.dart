@@ -1,31 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../shared/presentation/exercise_media.dart';
+import '../../onboarding/domain/training_preferences.dart';
 import '../../training_plan/domain/exercise_catalog.dart';
 import '../../training_plan/domain/workout_catalog.dart';
 import '../../training_plan/presentation/workout_detail_screen.dart';
+import '../../workout_session/data/workout_session_providers.dart';
+import '../../workout_session/data/workout_session_repository.dart'
+    show WorkoutSessionRecordDecoding;
 
 enum _DoseFilter { all, reps, duration }
 
-class DiscoverScreen extends StatefulWidget {
+enum _DurationBucket {
+  all(label: 'Todos'),
+  under10(label: '< 10 min'),
+  from10to20(label: '10–20 min'),
+  from20to40(label: '20–40 min'),
+  over40(label: '> 40 min');
+
+  const _DurationBucket({required this.label});
+  final String label;
+
+  bool matches(int minutes) {
+    switch (this) {
+      case _DurationBucket.all:
+        return true;
+      case _DurationBucket.under10:
+        return minutes < 10;
+      case _DurationBucket.from10to20:
+        return minutes >= 10 && minutes < 20;
+      case _DurationBucket.from20to40:
+        return minutes >= 20 && minutes < 40;
+      case _DurationBucket.over40:
+        return minutes >= 40;
+    }
+  }
+}
+
+class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key, required this.placement});
 
   final CapabilityEstimateRecord placement;
 
   @override
-  State<DiscoverScreen> createState() => _DiscoverScreenState();
+  ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen> {
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _searchController = TextEditingController();
   _DoseFilter _doseFilter = _DoseFilter.all;
-  bool _withoutEquipment = false;
+  _DurationBucket _durationBucket = _DurationBucket.all;
+  WorkoutLevel? _levelFilter;
+  Equipment? _equipmentFilter;
+  String? _patternFilter;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool _matchesEquipment(Set<Equipment> required, Equipment? filter) {
+    if (filter == null) return true;
+    if (filter == Equipment.none) return required.isEmpty;
+    return required.contains(filter);
   }
 
   @override
@@ -42,15 +82,34 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               exercise.doseType == DoseType.reps) ||
           (_doseFilter == _DoseFilter.duration &&
               exercise.doseType == DoseType.duration);
-      final matchesEquipment =
-          !_withoutEquipment || exercise.requiredEquipment.isEmpty;
-      return matchesText && matchesDose && matchesEquipment;
+      final matchesEquipment = _matchesEquipment(
+        exercise.requiredEquipment,
+        _equipmentFilter,
+      );
+      final matchesPattern =
+          _patternFilter == null || exercise.pattern == _patternFilter;
+      return matchesText && matchesDose && matchesEquipment && matchesPattern;
     }).toList();
     final workouts = workoutCatalog.where((workout) {
-      return query.isEmpty ||
+      final matchesText =
+          query.isEmpty ||
           workout.namePtBr.toLowerCase().contains(query) ||
           workout.objectivePtBr.toLowerCase().contains(query);
+      final matchesLevel = _levelFilter == null || workout.level == _levelFilter;
+      final matchesDuration = _durationBucket.matches(workout.estimatedMinutes);
+      final matchesEquipment = _matchesEquipment(
+        workout.equipment,
+        _equipmentFilter,
+      );
+      return matchesText && matchesLevel && matchesDuration && matchesEquipment;
     }).toList();
+
+    final patterns = <String>[];
+    for (final exercise in exerciseCatalog) {
+      if (!patterns.contains(exercise.pattern)) {
+        patterns.add(exercise.pattern);
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Descobrir')),
@@ -79,11 +138,101 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              child: Row(
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            sliver: SliverToBoxAdapter(
+              child: _FilterRow(
+                label: 'Nível (treinos)',
+                children: [
+                  ChoiceChip(
+                    label: const Text('Todos'),
+                    selected: _levelFilter == null,
+                    onSelected: (_) => setState(() => _levelFilter = null),
+                  ),
+                  for (final level in WorkoutLevel.values)
+                    ChoiceChip(
+                      label: Text(level.labelPtBr),
+                      selected: _levelFilter == level,
+                      onSelected: (_) => setState(() => _levelFilter = level),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            sliver: SliverToBoxAdapter(
+              child: _FilterRow(
+                label: 'Duração (treinos)',
+                children: [
+                  for (final bucket in _DurationBucket.values)
+                    ChoiceChip(
+                      label: Text(bucket.label),
+                      selected: _durationBucket == bucket,
+                      onSelected: (_) =>
+                          setState(() => _durationBucket = bucket),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            sliver: SliverToBoxAdapter(
+              child: _FilterRow(
+                label: 'Padrão de movimento (exercícios)',
+                children: [
+                  ChoiceChip(
+                    label: const Text('Todos'),
+                    selected: _patternFilter == null,
+                    onSelected: (_) => setState(() => _patternFilter = null),
+                  ),
+                  for (final pattern in patterns)
+                    ChoiceChip(
+                      label: Text(_patternLabel(pattern)),
+                      selected: _patternFilter == pattern,
+                      onSelected: (_) =>
+                          setState(() => _patternFilter = pattern),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            sliver: SliverToBoxAdapter(
+              child: _FilterRow(
+                label: 'Equipamento',
+                children: [
+                  ChoiceChip(
+                    label: const Text('Todos'),
+                    selected: _equipmentFilter == null,
+                    onSelected: (_) => setState(() => _equipmentFilter = null),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Sem equipamento'),
+                    selected: _equipmentFilter == Equipment.none,
+                    onSelected: (_) =>
+                        setState(() => _equipmentFilter = Equipment.none),
+                  ),
+                  for (final equipment in Equipment.values.where(
+                    (e) => e != Equipment.none,
+                  ))
+                    ChoiceChip(
+                      label: Text(equipment.label),
+                      selected: _equipmentFilter == equipment,
+                      onSelected: (_) =>
+                          setState(() => _equipmentFilter = equipment),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            sliver: SliverToBoxAdapter(
+              child: _FilterRow(
+                label: 'Tipo de medição',
                 children: [
                   ChoiceChip(
                     label: const Text('Todos'),
@@ -91,31 +240,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     onSelected: (_) =>
                         setState(() => _doseFilter = _DoseFilter.all),
                   ),
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     label: const Text('Repetições'),
                     selected: _doseFilter == _DoseFilter.reps,
                     onSelected: (_) =>
                         setState(() => _doseFilter = _DoseFilter.reps),
                   ),
-                  const SizedBox(width: 8),
                   ChoiceChip(
                     label: const Text('Por tempo'),
                     selected: _doseFilter == _DoseFilter.duration,
                     onSelected: (_) =>
                         setState(() => _doseFilter = _DoseFilter.duration),
                   ),
-                  const SizedBox(width: 8),
-                  FilterChip(
-                    label: const Text('Sem equipamento'),
-                    selected: _withoutEquipment,
-                    onSelected: (value) =>
-                        setState(() => _withoutEquipment = value),
+                  Tooltip(
+                    message: 'Favoritos ainda não estão disponíveis nesta versão',
+                    child: ChoiceChip(
+                      label: const Text('Favoritos'),
+                      selected: false,
+                      onSelected: null,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+          if (query.isEmpty) const _RecentExercisesSliver(),
           if (workouts.isNotEmpty) ...[
             const _SectionTitle(title: 'Treinos disponíveis'),
             SliverList.builder(
@@ -136,36 +285,135 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               },
             ),
           ],
-          _SectionTitle(
-            title: query.isEmpty ? 'Catálogo de exercícios' : 'Resultados',
-          ),
           if (exercises.isEmpty)
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Center(
-                  child: Text('Nenhum item corresponde aos filtros.'),
-                ),
-              ),
-            )
-          else
-            SliverList.builder(
-              itemCount: exercises.length,
-              itemBuilder: (context, index) => _ExerciseCard(
-                exercise: exercises[index],
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ExerciseDetailScreen(exercise: exercises[index]),
+                  child: Text(
+                    workouts.isEmpty
+                        ? 'Nenhum item corresponde aos filtros.'
+                        : 'Nenhum exercício corresponde aos filtros.',
                   ),
                 ),
               ),
-            ),
+            )
+          else if (_patternFilter != null || query.isNotEmpty)
+            ...[
+              _SectionTitle(
+                title: query.isEmpty ? 'Catálogo de exercícios' : 'Resultados',
+              ),
+              SliverList.builder(
+                itemCount: exercises.length,
+                itemBuilder: (context, index) => _ExerciseCard(
+                  exercise: exercises[index],
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ExerciseDetailScreen(exercise: exercises[index]),
+                    ),
+                  ),
+                ),
+              ),
+            ]
+          else
+            for (final pattern in patterns)
+              if (exercises.any((e) => e.pattern == pattern)) ...[
+                _SectionTitle(title: _patternLabel(pattern)),
+                SliverList.builder(
+                  itemCount: exercises
+                      .where((e) => e.pattern == pattern)
+                      .length,
+                  itemBuilder: (context, index) {
+                    final item = exercises
+                        .where((e) => e.pattern == pattern)
+                        .toList()[index];
+                    return _ExerciseCard(
+                      exercise: item,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ExerciseDetailScreen(exercise: item),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
   }
+}
+
+class _RecentExercisesSliver extends ConsumerWidget {
+  const _RecentExercisesSliver();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentSessionsAsync = ref.watch(recentCompletedSessionsProvider);
+    return recentSessionsAsync.when(
+      loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      data: (sessions) {
+        final seenSlugs = <String>{};
+        final recent = <CatalogExercise>[];
+        for (final session in sessions) {
+          for (final item in session.items) {
+            if (seenSlugs.add(item.exerciseSlug)) {
+              final exercise = catalogExerciseForSlug(item.exerciseSlug);
+              if (exercise != null) recent.add(exercise);
+            }
+          }
+          if (recent.length >= 8) break;
+        }
+        if (recent.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+        return SliverMainAxisGroup(
+          slivers: [
+            const _SectionTitle(title: 'Recentes'),
+            SliverList.builder(
+              itemCount: recent.length,
+              itemBuilder: (context, index) => _ExerciseCard(
+                exercise: recent[index],
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ExerciseDetailScreen(exercise: recent[index]),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FilterRow extends StatelessWidget {
+  const _FilterRow({required this.label, required this.children});
+
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: Theme.of(context).textTheme.labelMedium),
+      const SizedBox(height: 4),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final child in children) ...[
+              child,
+              const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -195,7 +443,9 @@ class _WorkoutCard extends StatelessWidget {
         leading: const Icon(Icons.fitness_center, size: 32),
         title: Text(workout.namePtBr),
         subtitle: Text(
-          '${workout.estimatedMinutes} min · ${workout.level.labelPtBr}\n${workout.objectivePtBr}',
+          '${workout.estimatedMinutes} min · ${workout.level.labelPtBr}\n'
+          '${workout.objectivePtBr}\n'
+          '${workout.equipment.isEmpty ? 'Sem equipamento' : workout.equipment.map((e) => e.label).join(', ')}',
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
@@ -242,6 +492,16 @@ class _ExerciseCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${_patternLabel(exercise.pattern)} · descanso ${exercise.restSeconds}s',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      exercise.requiredEquipment.isEmpty
+                          ? 'Sem equipamento'
+                          : exercise.requiredEquipment
+                                .map((e) => e.label)
+                                .join(', '),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

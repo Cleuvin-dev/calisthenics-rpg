@@ -6,6 +6,8 @@ import '../../../core/database/app_database.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../missions/data/mission_providers.dart';
 import '../../onboarding/data/training_preferences_providers.dart';
+import '../../onboarding/data/training_preferences_repository.dart';
+import '../../onboarding/domain/training_preferences.dart';
 import '../../report/data/report_providers.dart';
 import '../../rpg/data/rpg_providers.dart';
 import '../../training_plan/data/training_plan_providers.dart';
@@ -13,6 +15,8 @@ import '../../workout_session/data/workout_session_providers.dart';
 import '../data/progress_reset_providers.dart';
 import '../data/settings_providers.dart';
 import '../data/settings_repository.dart';
+import '../data/storage_usage_providers.dart';
+import '../data/storage_usage_service.dart' show formatBytes;
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key, required this.preferences});
@@ -22,6 +26,11 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(userSettingsProvider);
+    final latestPreferencesAsync = ref.watch(latestTrainingPreferencesProvider);
+    final activePreferences = latestPreferencesAsync.maybeWhen(
+      data: (latest) => latest ?? preferences,
+      orElse: () => preferences,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Definição')),
       body: settings.when(
@@ -50,10 +59,24 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   ListTile(
                     leading: const Icon(Icons.event_available_outlined),
-                    title: Text('${preferences.daysPerWeek} dias por semana'),
-                    subtitle: Text(
-                      '${preferences.minutesPerSession} min por sessão · ${preferences.location}',
+                    title: Text(
+                      '${activePreferences.daysPerWeek} dias por semana',
                     ),
+                    subtitle: Text(
+                      '${activePreferences.minutesPerSession} min por sessão · '
+                      '${activePreferences.location}',
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.event_repeat_outlined),
+                    title: const Text('Dias de treino na semana'),
+                    subtitle: Text(
+                      _weekdaysSummary(
+                        activePreferences.toDomain().preferredWeekdays,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _editWeekdays(context, ref, activePreferences),
                   ),
                   ListTile(
                     leading: const Icon(Icons.assignment_outlined),
@@ -100,7 +123,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   ListTile(
                     title: const Text('Contagem regressiva'),
+                    subtitle: const Text(
+                      'Antes de iniciar cada série por tempo',
+                    ),
                     trailing: Text('${value.countdownSeconds}s'),
+                    onTap: () => _editCountdown(context, ref, value),
                   ),
                 ],
               ),
@@ -144,6 +171,24 @@ class SettingsScreen extends ConsumerWidget {
             Card(
               child: Column(
                 children: [
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final usage = ref.watch(storageUsageProvider);
+                      return ListTile(
+                        leading: const Icon(Icons.storage_outlined),
+                        title: const Text('Uso de armazenamento'),
+                        trailing: usage.when(
+                          loading: () => const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          error: (_, _) => const Text('—'),
+                          data: (bytes) => Text(formatBytes(bytes)),
+                        ),
+                      );
+                    },
+                  ),
                   const ListTile(
                     leading: Icon(Icons.file_download_outlined),
                     title: Text('Exportar dados'),
@@ -187,6 +232,50 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _editWeekdays(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingPreferenceRecord current,
+  ) async {
+    final currentDomain = current.toDomain();
+    final selected = await showDialog<Set<int>>(
+      context: context,
+      builder: (context) =>
+          _WeekdaysDialog(initialSelection: currentDomain.preferredWeekdays),
+    );
+    if (selected == null) return;
+
+    final updated = TrainingPreferences(
+      daysPerWeek: selected.length,
+      minutesPerSession: currentDomain.minutesPerSession,
+      location: currentDomain.location,
+      equipment: currentDomain.equipment,
+      preferredWeekdays: selected,
+    );
+    await ref.read(trainingPreferencesRepositoryProvider).save(updated);
+    ref.invalidate(latestTrainingPreferencesProvider);
+  }
+
+  String _weekdaysSummary(Set<int> preferredWeekdays) {
+    if (preferredWeekdays.isEmpty) return 'Ainda não definido';
+    const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    final sorted = preferredWeekdays.toList()..sort();
+    return sorted.map((weekday) => labels[weekday - 1]).join(', ');
+  }
+
+  Future<void> _editCountdown(
+    BuildContext context,
+    WidgetRef ref,
+    UserSettings current,
+  ) async {
+    final seconds = await showDialog<int>(
+      context: context,
+      builder: (context) => _CountdownDialog(initialSeconds: current.countdownSeconds),
+    );
+    if (seconds == null) return;
+    await _update(ref, current.copyWith(countdownSeconds: seconds));
   }
 
   Future<void> _editName(
@@ -417,4 +506,116 @@ class _SwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       SwitchListTile(title: Text(title), value: value, onChanged: onChanged);
+}
+
+/// Deixa o usuário formalizar em quais dias da semana pretende treinar
+/// (`DateTime.weekday`, 1=segunda..7=domingo) — vira a meta usada pela
+/// frequência semanal na Jornada e pelo motor de plano.
+class _WeekdaysDialog extends StatefulWidget {
+  const _WeekdaysDialog({required this.initialSelection});
+
+  final Set<int> initialSelection;
+
+  @override
+  State<_WeekdaysDialog> createState() => _WeekdaysDialogState();
+}
+
+class _WeekdaysDialogState extends State<_WeekdaysDialog> {
+  static const _labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  late final Set<int> _selected = {...widget.initialSelection};
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Dias de treino na semana'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Escolha os dias que formam sua meta semanal.'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(7, (index) {
+              final weekday = index + 1;
+              return FilterChip(
+                label: Text(_labels[index]),
+                selected: _selected.contains(weekday),
+                onSelected: (value) => setState(() {
+                  if (value) {
+                    _selected.add(weekday);
+                  } else {
+                    _selected.remove(weekday);
+                  }
+                }),
+              );
+            }),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _selected.isEmpty
+              ? null
+              : () => Navigator.pop(context, _selected),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Ajusta a contagem preparatória mostrada antes de séries por tempo em
+/// `TimedSetPlayer` — 0 pula direto para o cronômetro, sem preparação.
+class _CountdownDialog extends StatefulWidget {
+  const _CountdownDialog({required this.initialSeconds});
+
+  final int initialSeconds;
+
+  @override
+  State<_CountdownDialog> createState() => _CountdownDialogState();
+}
+
+class _CountdownDialogState extends State<_CountdownDialog> {
+  late double _seconds = widget.initialSeconds.toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Contagem regressiva'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _seconds == 0
+                ? 'Sem preparação (começa direto no cronômetro)'
+                : '${_seconds.round()} segundos antes de começar',
+          ),
+          Slider(
+            value: _seconds,
+            min: 0,
+            max: 10,
+            divisions: 10,
+            label: '${_seconds.round()}s',
+            onChanged: (v) => setState(() => _seconds = v),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _seconds.round()),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
 }
