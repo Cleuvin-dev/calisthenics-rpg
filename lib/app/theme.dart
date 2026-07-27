@@ -18,7 +18,7 @@ const _stateWarning = Color(0xFFF4B740);
 const _stateDanger = Color(0xFFF45B69);
 const _divider = Color(0xFF2A302F);
 
-ThemeData buildCalisthenicsRpgTheme() {
+ThemeData buildCalisthenicsRpgTheme({bool highContrast = false}) {
   final colorScheme =
       ColorScheme.fromSeed(
         seedColor: _brandPrimary,
@@ -35,13 +35,15 @@ ThemeData buildCalisthenicsRpgTheme() {
         onTertiaryContainer: const Color(0xFFE4DBFF),
         surface: _surfaceCanvas,
         onSurface: _textPrimary,
-        onSurfaceVariant: _textSecondary,
+        onSurfaceVariant: highContrast
+            ? const Color(0xFFD5DDD9)
+            : _textSecondary,
         surfaceContainerHigh: _surfaceCard,
         surfaceContainerHighest: _surfaceElevated,
         error: _stateDanger,
         onError: const Color(0xFF3A0A10),
-        outline: _divider,
-        outlineVariant: _divider,
+        outline: highContrast ? const Color(0xFF75807B) : _divider,
+        outlineVariant: highContrast ? const Color(0xFF75807B) : _divider,
       );
 
   return ThemeData(
@@ -84,6 +86,27 @@ ThemeData buildCalisthenicsRpgTheme() {
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: colorScheme.tertiary,
       linearTrackColor: colorScheme.surfaceContainerHighest,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: colorScheme.surfaceContainerHigh,
+      indicatorColor: colorScheme.primary.withValues(alpha: 0.16),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        return IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        );
+      }),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        return TextStyle(
+          color: states.contains(WidgetState.selected)
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w500,
+        );
+      }),
     ),
   );
 }

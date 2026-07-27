@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/app_database.dart';
 import '../features/assessment/data/capability_estimate_providers.dart';
 import '../features/assessment/presentation/assessment_skip_test_screen.dart';
-import '../features/journey/presentation/journey_screen.dart';
+import 'main_shell.dart';
+import 'app_reset.dart';
 import '../features/onboarding/data/training_preferences_providers.dart';
 import '../features/onboarding/presentation/onboarding_preferences_screen.dart';
 import '../features/safety/data/safety_screening_providers.dart';
@@ -23,6 +24,7 @@ class AppFlowGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appResetEpochProvider);
     final screeningAsync = ref.watch(latestSafetyScreeningProvider);
 
     return screeningAsync.when(
@@ -114,7 +116,7 @@ class _AfterPlacementGate extends ConsumerWidget {
             placement: placement,
           );
         }
-        return JourneyScreen(
+        return MainShell(
           record: plan,
           preferences: preferences,
           placement: placement,
