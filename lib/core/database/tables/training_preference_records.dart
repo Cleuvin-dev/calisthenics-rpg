@@ -21,4 +21,11 @@ class TrainingPreferenceRecords extends Table {
   /// Definição §7.1). É perfil, não progresso — sobrevive ao reset, ao
   /// contrário do histórico de peso (`body_metric_records`).
   RealColumn get heightCm => real().nullable()();
+
+  /// Objetivo de treino (força/perder gordura/condicionamento), modula
+  /// a dose prescrita por `WeeklyPlanGenerator`. Nulo em linhas
+  /// gravadas antes desta coluna existir — tratado como
+  /// `TrainingObjective.strength` (mesma filosofia de
+  /// `preferredWeekdaysJson`).
+  TextColumn get objective => text().nullable()(); // TrainingObjective.name
 }

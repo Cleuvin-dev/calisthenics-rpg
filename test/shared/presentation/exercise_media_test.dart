@@ -2,21 +2,20 @@ import 'package:calisthenics_rpg/shared/data/exercise_media_catalog_provider.dar
 import 'package:calisthenics_rpg/shared/domain/exercise_media_catalog.dart';
 import 'package:calisthenics_rpg/shared/presentation/exercise_media.dart';
 import 'package:calisthenics_rpg/shared/presentation/exercise_media_placeholder.dart';
-import 'package:calisthenics_rpg/shared/presentation/pattern_illustration.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// EXERCISE_MEDIA_GUIDE.md §13/§22: quando não há imagem local para o
-/// slug, a tela não pode travar nem ficar em branco — cai para a
-/// ilustração animada (mesmo placeholder usado antes desta entrega).
+/// slug, a tela não pode travar nem ficar em branco — cai para o
+/// placeholder estático (ícone fixo, sem animação).
 void main() {
   Widget wrap(Widget child) {
     return ProviderScope(child: MaterialApp(home: child));
   }
 
   testWidgets(
-    'cai para PatternIllustration quando não há imagem local para o slug',
+    'cai para o placeholder estático quando não há imagem local para o slug',
     (tester) async {
       await tester.pumpWidget(
         wrap(
@@ -30,8 +29,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.byType(PatternIllustration), findsOneWidget);
       expect(find.byType(ExerciseMediaPlaceholder), findsOneWidget);
+      expect(find.byType(Icon), findsOneWidget);
     },
   );
 

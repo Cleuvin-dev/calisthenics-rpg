@@ -21,6 +21,19 @@ enum Equipment {
   final String label;
 }
 
+/// Objetivo de treino escolhido pelo usuário — modula a dose prescrita
+/// por `WeeklyPlanGenerator` (`restSeconds`/`targetSets`), sem trocar o
+/// catálogo de exercícios nem os padrões selecionados. Um único
+/// objetivo ativo por vez (decisão do usuário, 2026-07-27).
+enum TrainingObjective {
+  strength(label: 'Força muscular'),
+  fatLoss(label: 'Perder gordura'),
+  conditioning(label: 'Condicionamento físico');
+
+  const TrainingObjective({required this.label});
+  final String label;
+}
+
 /// Agenda e equipamento informados no onboarding.
 class TrainingPreferences {
   const TrainingPreferences({
@@ -30,6 +43,7 @@ class TrainingPreferences {
     required this.equipment,
     this.preferredWeekdays = const {},
     this.heightCm,
+    this.objective = TrainingObjective.strength,
   });
 
   /// 2..6, conforme REQUIREMENTS.md FR-015.
@@ -48,4 +62,9 @@ class TrainingPreferences {
 
   /// Altura em centímetros, para IMC. Nulo até o usuário informar.
   final double? heightCm;
+
+  /// Padrão `strength` — mesma dose que o catálogo já prescrevia antes
+  /// deste campo existir, então preferências antigas sem valor gravado
+  /// mantêm o comportamento de sempre.
+  final TrainingObjective objective;
 }

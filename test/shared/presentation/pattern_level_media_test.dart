@@ -1,7 +1,6 @@
 import 'package:calisthenics_rpg/shared/data/exercise_media_catalog_provider.dart';
 import 'package:calisthenics_rpg/shared/domain/exercise_media_catalog.dart';
 import 'package:calisthenics_rpg/shared/presentation/exercise_media_placeholder.dart';
-import 'package:calisthenics_rpg/shared/presentation/pattern_illustration.dart';
 import 'package:calisthenics_rpg/shared/presentation/pattern_level_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,7 +53,7 @@ void main() {
     );
   });
 
-  testWidgets('cai para o placeholder animado quando o nível não tem imagem '
+  testWidgets('cai para o placeholder estático quando o nível não tem imagem '
       'associada', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -76,7 +75,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.byType(PatternIllustration), findsOneWidget);
     expect(find.byType(ExerciseMediaPlaceholder), findsOneWidget);
   });
 }

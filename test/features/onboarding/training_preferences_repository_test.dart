@@ -76,4 +76,34 @@ void main() {
 
     expect(latest!.toDomain().heightCm, isNull);
   });
+
+  test('objetivo de treino persiste e volta o mesmo objetivo', () async {
+    final repository = TrainingPreferencesRepository(db);
+    const preferences = TrainingPreferences(
+      daysPerWeek: 3,
+      minutesPerSession: 30,
+      location: TrainingLocation.home,
+      equipment: {},
+      objective: TrainingObjective.fatLoss,
+    );
+
+    await repository.save(preferences);
+    final latest = await repository.latest();
+
+    expect(latest!.toDomain().objective, TrainingObjective.fatLoss);
+  });
+
+  test('linha gravada antes da coluna de objetivo existir (nula no banco) '
+      'decodifica como força muscular', () {
+    final record = TrainingPreferenceRecord(
+      id: 1,
+      daysPerWeek: 3,
+      minutesPerSession: 30,
+      location: 'home',
+      equipmentJson: '[]',
+      updatedAt: DateTime(2026, 1, 1),
+    );
+
+    expect(record.toDomain().objective, TrainingObjective.strength);
+  });
 }

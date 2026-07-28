@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -103,6 +103,16 @@ class AppDatabase extends _$AppDatabase {
         // Favoritos de treino/exercício na Descobrir (§5.2) — preferência
         // pessoal, tabela nova sem impacto em dados existentes.
         await m.createTable(favoriteRecords);
+      }
+      if (from < 10) {
+        // Objetivo de treino (força/perder gordura/condicionamento) —
+        // coluna aditiva, preferências gravadas antes disto ficam nulas
+        // e são tratadas como TrainingObjective.strength (o
+        // comportamento de hoje).
+        await m.addColumn(
+          trainingPreferenceRecords,
+          trainingPreferenceRecords.objective,
+        );
       }
     },
   );

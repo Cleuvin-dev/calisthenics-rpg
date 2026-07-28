@@ -1450,3 +1450,219 @@ validação visual/responsiva automatizada das quatro abas
 aparelho físico nem screenshot desta leva especificamente (sem acesso a
 dispositivo/emulador/Web neste ambiente; usuário optou por manter só a
 automatizada). Nada desta leva foi commitado ainda.
+
+## Reverificação da integração das 195 imagens (2026-07-27)
+
+O usuário pediu novamente a integração das 195 imagens de exercício,
+citando 28 já entregues + 167 restantes. Essa integração **já estava
+completa** desde a leva "Integração do pacote de 195 imagens reais"
+registrada acima (commit `5b9a84a`) — catálogo `assets/data/
+exercise_media_catalog.json` com as 195 entradas, `ExerciseMedia`/
+`MediaCatalogIndex`/`exercise_media_catalog_provider.dart`, e as 8 telas
+de exercício já usando a imagem real com fallback. Esta sessão foi de
+**auditoria e correção**, não recriação:
+
+- **Bug encontrado e corrigido**: o `README.md` da raiz do projeto tinha
+  sido sobrescrito pelo README do pacote de imagens (172→85 linhas,
+  perdendo o mapa da documentação mestre). Restaurado via
+  `git checkout -- README.md`; nenhum código foi tocado por essa
+  correção.
+- **Conferência dado-a-dado**: os 195 `slug` de
+  `exercise_media_catalog_remaining_167.json` (167) +
+  `previously_delivered_28_reference.json` (28, referência) batem
+  1-para-1 com os 195 `slug` de `assets/data/exercise_media_catalog.json`
+  (0 divergências em qualquer direção); os 195 `asset_path` existem
+  fisicamente em disco; `Wall walk parcial`/`Handstand livre
+  consistente` seguem com um único registro cada, sem duplicar.
+- Os 3 arquivos legados `assets/images/exercises/{forearm_plank_full,
+  push_up_incline,sit_to_stand_squat}/v1/start.png` (198 PNGs no total,
+  195 + esses 3) **não são sobra** — são o fallback nível 2 que
+  `ExerciseMedia` (`lib/shared/presentation/exercise_media.dart:51`)
+  tenta pelo `exerciseSlug` do catálogo de prescrição quando o
+  `mediaSlug` não resolve; mantidos como estão.
+- `flutter pub get`, `flutter analyze` (sem problemas), `dart format
+  --set-exit-if-changed .` (0 arquivos alterados) e `flutter test`
+  (**194 passed, 0 failed**, incluindo os 5 testes de
+  `test/shared/domain/exercise_media_catalog_test.dart` que travam a
+  contagem de 195 e a ausência de asset ausente) rodados de novo nesta
+  sessão — nada regrediu desde o commit anterior.
+- Arquivos soltos na raiz desta entrega (`CLAUDE_CODE_PROMPT.md`,
+  `SHA256SUMS.txt`, `VALIDATION_REPORT.md`,
+  `exercise_media_catalog_remaining_167.json`,
+  `exercise_media_manifest_remaining_167.csv`,
+  `previously_delivered_28_reference.json`,
+  `pubspec_assets_snippet.yaml`) duplicavam o conteúdo já commitado em
+  `App_RPG_Exercise_Images/` (mesmo catálogo de 195, já íntegro) —
+  sinalizados ao usuário, que confirmou a remoção; apagados desta
+  sessão (nunca chegaram a ser commitados).
+
+Nenhum código de produção foi alterado nesta leva — só o `README.md`
+restaurado e este registro de documentação.
+
+### Remoção da ilustração animada (mesmo dia, pedido em seguida)
+
+O usuário pediu para remover "os gifs" e as imagens pedidas antes desta
+entrega, deixando só as 195 fotos reais. Não havia nenhum `.gif` no
+projeto — o único elemento animado era `PatternIllustration`
+(bonequinho de traços, `CustomPainter` com `AnimationController` em
+loop), usado como fallback em `ExerciseMediaPlaceholder` sempre que um
+exercício não tinha uma das 195 fotos (inclusive nas telas de
+avaliação/Evolução, via `PatternLevelMedia`). Confirmado com o usuário
+antes de mexer (só esse widget, sem tocar no ícone do app):
+
+- `lib/shared/presentation/pattern_illustration.dart` **removido**
+  (era usado só por `exercise_media_placeholder.dart`, sem outro
+  consumidor).
+- `lib/shared/presentation/exercise_media_placeholder.dart` reescrito:
+  em vez do bonequinho animado, mostra um `Icon(Icons.fitness_center)`
+  estático, sem `AnimationController`. Mesma API (`pattern`, `size`),
+  então `ExerciseMedia`/`PatternLevelMedia` não precisaram mudar.
+- Testes atualizados para não referenciar mais `PatternIllustration`:
+  `test/shared/presentation/exercise_media_test.dart`,
+  `test/shared/presentation/pattern_level_media_test.dart` (removida a
+  asserção `find.byType(PatternIllustration)`, mantida a de
+  `ExerciseMediaPlaceholder`) e o comentário desatualizado em
+  `test/features/workout_session/timed_set_player_flow_test.dart`.
+- `flutter analyze`: sem problemas. `dart format
+  --set-exit-if-changed .`: 0 arquivos alterados. `flutter test`:
+  **194 passed, 0 failed** (mesma contagem de antes — nenhum teste foi
+  removido, só ajustado).
+
+Efeito visual: os ~180 nós do catálogo de 195 que nenhuma tela ainda
+resolve por `mediaSlug`/`categorySlug:level` (níveis avançados de front
+lever, back lever, handstand livre etc.) e qualquer exercício sem
+`mediaSlug` associado agora mostram um ícone fixo de exercício, não
+mais uma animação.
+
+### Abas "Próximo treino" / "Semana completa" no plano (mesmo dia)
+
+O usuário pediu para a tela do plano não despejar todos os exercícios
+da semana de uma vez — só os do dia que ele vai treinar agora — sem
+tirar o acesso à semana inteira (pediu abas ou tela separada).
+
+- `lib/features/training_plan/domain/training_plan.dart`: nova função
+  pura `nextPendingSession(WeeklyPlan, Set&lt;String&gt; completedDayLabels)`
+  — primeira `PlannedSession` cujo `dayLabel` ainda não está entre as
+  concluídas na semana, `null` se todas já foram feitas. Extraída da
+  lógica que já existia (duplicada) dentro de `_NextSessionCard` em
+  `journey_screen.dart`, para as duas telas nunca divergirem sobre qual
+  é o "próximo treino".
+- `lib/features/journey/presentation/journey_screen.dart`: `_NextSessionCard`
+  passou a chamar `nextPendingSession` em vez de repetir o loop.
+  `_openPlan` ganhou `{int initialTabIndex = 0}`: tocar no card de
+  próxima sessão abre a aba "Próximo treino" (índice 0, padrão); o
+  botão "Ver plano da semana completo" agora abre direto na aba
+  "Semana completa" (índice 1).
+- `lib/features/training_plan/presentation/training_plan_screen.dart`:
+  reestruturada com `TabController` (`SingleTickerProviderStateMixin`)
+  e duas abas na `AppBar` (`TabBar`/`TabBarView`). Cabeçalho comum
+  (badge de XP, banner de sessão em andamento, motivo de downgrade de
+  frequência, resumo/data) continua fora das abas. Nova
+  `_NextTrainingTab`: mostra só a sessão de `nextPendingSession` (ou um
+  estado vazio "Todas as sessões desta semana concluídas" com botão
+  "Ver semana completa" que troca de aba via
+  `_tabController.animateTo(1)`, quando não sobra nenhuma pendente).
+  `_FullWeekTab`: o comportamento antigo, sem mudanças — todas as
+  sessões, todos os exercícios, `_SessionCard`/`_ExerciseRow`
+  reaproveitados como estavam.
+- Teste novo: `test/features/training_plan/training_plan_screen_test.dart`
+  (3 casos) — aba "Próximo treino" mostra só o exercício do primeiro
+  dia pendente e não o do segundo; aba "Semana completa" mostra os dois;
+  `initialTabIndex: 1` abre direto na semana completa.
+- `flutter analyze`: sem problemas. `dart format --set-exit-if-changed .`:
+  0 arquivos alterados. `flutter test`: **197 passed, 0 failed** (194 +
+  os 3 novos).
+
+Não alterado: `WorkoutDetailScreen`/`DiscoverScreen` (fluxo de treinos
+curados do catálogo estático, não do `WeeklyPlan` — fora do pedido) e
+o motor de geração do plano em si (`weekly_plan_generator.dart`) —
+mudança é só de apresentação/navegação, nenhuma regra de treino, XP ou
+progressão foi tocada.
+
+### Objetivo de treino (mesmo dia)
+
+Item que já estava em `IMPLEMENTATION_BACKLOG.md` (P1) com duas
+decisões marcadas como "não presumir, perguntar ao usuário antes de
+codar". Perguntado antes de implementar (`AskUserQuestion`), o usuário
+escolheu:
+
+1. **Um único objetivo ativo por vez** (`strength`/`fatLoss`/
+   `conditioning`), não multi-seleção — apesar do "e/ou" do pedido
+   original ter sugerido o contrário.
+2. **Regra de dose** (proposta minha, aprovada sem alteração):
+   `strength` (padrão) mantém a dose do catálogo exatamente como
+   sempre foi; `fatLoss` reduz `restSeconds` pela metade (piso 20s);
+   `conditioning` reduz `restSeconds` em 25% (piso 30s) e soma
+   `targetSets + 1`. O aquecimento nunca é modificado (bloco contínuo
+   único de 3-5 min, "mais uma série" não se aplica). Escopo
+   deliberadamente menor que a ambição original do item do backlog
+   (que pedia o motor "classificar" cada exercício por adequação a
+   cada objetivo e selecionar exercícios diferentes) — com apenas 1-2
+   variações por padrão no catálogo mínimo atual, não há material pra
+   uma seleção real por objetivo; mexer na dose é o que efetivamente
+   muda o treino hoje.
+
+**Implementado:**
+
+- `lib/features/onboarding/domain/training_preferences.dart`: novo
+  enum `TrainingObjective { strength, fatLoss, conditioning }` (label
+  pt-BR, mesmo padrão de `TrainingLocation`/`Equipment`) + campo
+  `TrainingPreferences.objective` (padrão `strength`, preferências
+  antigas continuam com o comportamento de sempre).
+- `lib/core/database/tables/training_preference_records.dart` +
+  `app_database.dart`: coluna aditiva `objective` (nullable, migração
+  9→10 — mesma filosofia de `heightCm`/`preferredWeekdaysJson`, linhas
+  antigas decodificam como `strength`). Codegen do Drift regenerado
+  (`dart run build_runner build --delete-conflicting-outputs`).
+- `lib/features/onboarding/data/training_preferences_repository.dart`:
+  `save()`/`toDomain()` gravam/decodificam o novo campo.
+- **Bug pré-existente corrigido**: `_editWeekdays`
+  (`settings_screen.dart`) reconstruía `TrainingPreferences` sem
+  repassar `heightCm` — editar os dias de treino zerava silenciosamente
+  a altura salva. Corrigido junto, já que a mesma reconstrução também
+  precisava passar a repassar `objective`.
+- **Segundo bug pré-existente encontrado durante o teste de regressão
+  do primeiro**: `TrainingPreferencesRepository.latest()` ordenava só
+  por `updatedAt DESC` — gravações em sequência rápida (editar altura,
+  objetivo e dias de treino em poucos segundos, como o teste de
+  widget faz) podem cair no mesmo milissegundo de relógio, e o
+  `ORDER BY` sem desempate não garante devolver a linha mais recente
+  entre as empatadas. Corrigido adicionando `id DESC` como critério de
+  desempate (autoincrement, estritamente crescente). Sem isso, o teste
+  de regressão do bug do `heightCm` falhava de um jeito confuso
+  (objetivo "voltava" para `strength` sozinho) até isolar a causa com
+  um teste mínimo fora da árvore de widgets.
+- `lib/features/settings/presentation/settings_screen.dart`: item
+  "Objetivo de treino" em Definição > Perfil e avaliação (ao lado de
+  "Dias de treino na semana"), diálogo `_ObjectiveDialog` (seleção
+  única via `RadioGroup`/`RadioListTile`, mesmo padrão moderno já usado
+  em `assessment_skip_test_screen.dart` — evita o `RadioListTile`
+  antigo, que gera aviso de depreciação). `_editObjective` mostra um
+  `SnackBar` lembrando que é preciso tocar em "Gerar novamente" no
+  plano da semana pra aplicar a nova dose (a regeneração continua
+  manual, mesmo padrão de toda outra preferência).
+- `lib/features/training_plan/domain/weekly_plan_generator.dart`:
+  `objective` passado de `generate()` → `_buildSession()` →
+  `_toItem()`; novo `_doseFor(CatalogExercise, TrainingObjective)`
+  aplica a regra acima sobre `targetSets`/`restSeconds` (nunca sobre
+  `targetReps`/`targetSeconds`, que continuam vindo do catálogo puro).
+  `weeklyPlanGeneratorRuleVersion` → `'weekly-plan-v2'`.
+- Onboarding (`onboarding_preferences_screen.dart`) **não** ganhou
+  seletor de objetivo — mesmo precedente de `heightCm`/
+  `preferredWeekdays`, editáveis só em Definição depois da conta
+  criada, não no fluxo inicial.
+
+**Testes novos:**
+`test/features/onboarding/training_preferences_repository_test.dart`
+(round-trip do objetivo + decodificação de linha antiga sem a coluna),
+`test/features/training_plan/weekly_plan_generator_test.dart` (grupo
+"dose por objetivo de treino" — os 3 objetivos, incluindo os valores
+exatos de arredondamento or `45×0.5=22.5→23` e `45×0.75=33.75→34`, e o
+aquecimento nunca mudando), `test/features/settings/
+settings_screen_objective_test.dart` (trocar objetivo pela tela +
+teste de regressão específico: altura e objetivo sobrevivem a uma
+edição de dias de treino em sequência).
+
+**Resultado:** `flutter analyze`: sem problemas. `dart format
+--set-exit-if-changed .`: 0 arquivos alterados. `flutter test`:
+**206 passed, 0 failed** (197 + 9 novos).

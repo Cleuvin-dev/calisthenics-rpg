@@ -82,6 +82,16 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => _editWeekdays(context, ref, activePreferences),
                   ),
                   ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: const Text('Objetivo de treino'),
+                    subtitle: Text(
+                      activePreferences.toDomain().objective.label,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        _editObjective(context, ref, activePreferences),
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.height),
                     title: const Text('Altura'),
                     subtitle: Text(
@@ -278,6 +288,8 @@ class SettingsScreen extends ConsumerWidget {
       location: currentDomain.location,
       equipment: currentDomain.equipment,
       preferredWeekdays: selected,
+      heightCm: currentDomain.heightCm,
+      objective: currentDomain.objective,
     );
     await ref.read(trainingPreferencesRepositoryProvider).save(updated);
     ref.invalidate(latestTrainingPreferencesProvider);
@@ -303,9 +315,46 @@ class SettingsScreen extends ConsumerWidget {
       equipment: currentDomain.equipment,
       preferredWeekdays: currentDomain.preferredWeekdays,
       heightCm: heightCm,
+      objective: currentDomain.objective,
     );
     await ref.read(trainingPreferencesRepositoryProvider).save(updated);
     ref.invalidate(latestTrainingPreferencesProvider);
+  }
+
+  Future<void> _editObjective(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingPreferenceRecord current,
+  ) async {
+    final currentDomain = current.toDomain();
+    final objective = await showDialog<TrainingObjective>(
+      context: context,
+      builder: (context) =>
+          _ObjectiveDialog(initialObjective: currentDomain.objective),
+    );
+    if (objective == null) return;
+
+    final updated = TrainingPreferences(
+      daysPerWeek: currentDomain.daysPerWeek,
+      minutesPerSession: currentDomain.minutesPerSession,
+      location: currentDomain.location,
+      equipment: currentDomain.equipment,
+      preferredWeekdays: currentDomain.preferredWeekdays,
+      heightCm: currentDomain.heightCm,
+      objective: objective,
+    );
+    await ref.read(trainingPreferencesRepositoryProvider).save(updated);
+    ref.invalidate(latestTrainingPreferencesProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Objetivo salvo. Toque em "Gerar novamente" no plano da '
+            'semana para aplicar a nova dose.',
+          ),
+        ),
+      );
+    }
   }
 
   String _weekdaysSummary(Set<int> preferredWeekdays) {
@@ -615,6 +664,54 @@ class _WeekdaysDialogState extends State<_WeekdaysDialog> {
           onPressed: _selected.isEmpty
               ? null
               : () => Navigator.pop(context, _selected),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Deixa o usuário trocar o objetivo de treino (força/perder gordura/
+/// condicionamento) — um único objetivo ativo por vez, usado por
+/// `WeeklyPlanGenerator` pra modular descanso/séries da próxima vez que
+/// o plano for gerado.
+class _ObjectiveDialog extends StatefulWidget {
+  const _ObjectiveDialog({required this.initialObjective});
+
+  final TrainingObjective initialObjective;
+
+  @override
+  State<_ObjectiveDialog> createState() => _ObjectiveDialogState();
+}
+
+class _ObjectiveDialogState extends State<_ObjectiveDialog> {
+  late TrainingObjective _selected = widget.initialObjective;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Objetivo de treino'),
+      content: RadioGroup<TrainingObjective>(
+        groupValue: _selected,
+        onChanged: (value) => setState(() => _selected = value!),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final objective in TrainingObjective.values)
+              RadioListTile<TrainingObjective>(
+                title: Text(objective.label),
+                value: objective,
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selected),
           child: const Text('Salvar'),
         ),
       ],

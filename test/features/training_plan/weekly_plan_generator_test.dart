@@ -11,12 +11,14 @@ void main() {
     required int daysPerWeek,
     required int minutesPerSession,
     Set<Equipment> equipment = const {},
+    TrainingObjective objective = TrainingObjective.strength,
   }) {
     return TrainingPreferences(
       daysPerWeek: daysPerWeek,
       minutesPerSession: minutesPerSession,
       location: TrainingLocation.home,
       equipment: equipment,
+      objective: objective,
     );
   }
 
@@ -203,5 +205,78 @@ void main() {
         .expand((s) => s.items)
         .firstWhere((i) => i.pattern == 'hinge_posterior_chain');
     expect(hingeItem.exerciseSlug, 'glute_bridge');
+  });
+
+  group('dose por objetivo de treino (2026-07-27)', () {
+    // push_up_wall (push_horizontal nível 0-1): targetSets 2, restSeconds
+    // 60 (default do catálogo). forearm_plank_full (core_anti_extension
+    // nível 5-6): targetSets 3, restSeconds 45 — escolhido também pra
+    // conferir o arredondamento de valores quebrados (45*0.5=22.5,
+    // 45*0.75=33.75).
+    WeeklyPlan planFor(TrainingObjective objective) {
+      return generator.generate(
+        preferences: prefs(
+          daysPerWeek: 2,
+          minutesPerSession: 45,
+          objective: objective,
+        ),
+        capabilityLevelsByPattern: const {
+          'push_horizontal': 0,
+          'core_anti_extension': 5,
+        },
+        now: now,
+      );
+    }
+
+    PlannedExerciseItem itemFor(WeeklyPlan plan, String slug) =>
+        plan.sessions.first.items.firstWhere((i) => i.exerciseSlug == slug);
+
+    test('ruleVersion reflete a mudança de regra de dose', () {
+      expect(weeklyPlanGeneratorRuleVersion, 'weekly-plan-v2');
+    });
+
+    test('força muscular (padrão) mantém a dose do catálogo sem alteração', () {
+      final plan = planFor(TrainingObjective.strength);
+      final push = itemFor(plan, 'push_up_wall');
+      final plank = itemFor(plan, 'forearm_plank_full');
+
+      expect(push.targetSets, 2);
+      expect(push.restSeconds, 60);
+      expect(plank.targetSets, 3);
+      expect(plank.restSeconds, 45);
+    });
+
+    test('perder gordura reduz o descanso pela metade (piso 20s), sem '
+        'mudar séries', () {
+      final plan = planFor(TrainingObjective.fatLoss);
+      final push = itemFor(plan, 'push_up_wall');
+      final plank = itemFor(plan, 'forearm_plank_full');
+
+      expect(push.targetSets, 2);
+      expect(push.restSeconds, 30); // 60 * 0.5
+      expect(plank.targetSets, 3);
+      expect(plank.restSeconds, 23); // 45 * 0.5 = 22.5 -> 23
+    });
+
+    test('condicionamento reduz o descanso em 25% (piso 30s) e adiciona '
+        'uma série', () {
+      final plan = planFor(TrainingObjective.conditioning);
+      final push = itemFor(plan, 'push_up_wall');
+      final plank = itemFor(plan, 'forearm_plank_full');
+
+      expect(push.targetSets, 3); // 2 + 1
+      expect(push.restSeconds, 45); // 60 * 0.75
+      expect(plank.targetSets, 4); // 3 + 1
+      expect(plank.restSeconds, 34); // 45 * 0.75 = 33.75 -> 34
+    });
+
+    test('aquecimento nunca muda de dose, em nenhum objetivo', () {
+      for (final objective in TrainingObjective.values) {
+        final plan = planFor(objective);
+        final warmup = itemFor(plan, 'warmup_joint_mobility');
+        expect(warmup.targetSets, 1, reason: 'objetivo: $objective');
+        expect(warmup.restSeconds, 60, reason: 'objetivo: $objective');
+      }
+    });
   });
 }

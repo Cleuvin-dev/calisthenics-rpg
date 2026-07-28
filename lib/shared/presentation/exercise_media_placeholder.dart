@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'pattern_illustration.dart';
-
-/// Placeholder reutilizável para quando não há mídia estática de um
-/// exercício (asset ausente ou erro de decodificação) — "um erro de
-/// imagem nunca pode impedir o treino"
-/// (`App_RPG_Exercise_Images/CLAUDE_CODE_PROMPT.md`). Reaproveita a
-/// ilustração animada por família de movimento já usada no app em vez de
-/// uma silhueta genérica nova.
+/// Placeholder estático para quando não há uma das 195 imagens reais de
+/// um exercício (asset ausente, sem `mediaSlug` associado, ou erro de
+/// decodificação) — "um erro de imagem nunca pode impedir o treino"
+/// (`App_RPG_Exercise_Images/CLAUDE_CODE_PROMPT.md`). Ícone fixo, sem
+/// animação: a pedido do usuário, a ilustração animada por família de
+/// movimento que existia antes desta entrega foi removida — só as fotos
+/// reais entregues ficam visíveis no app.
 class ExerciseMediaPlaceholder extends StatelessWidget {
   const ExerciseMediaPlaceholder({
     super.key,
@@ -20,6 +19,14 @@ class ExerciseMediaPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PatternIllustration(pattern: pattern, size: size);
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Icon(
+        Icons.fitness_center,
+        size: size * 0.5,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
   }
 }

@@ -4,7 +4,9 @@ import 'training_plan.dart';
 
 /// Versão da regra determinística de geração de plano. Muda sempre que o
 /// algoritmo, os templates ou o orçamento por duração forem revisados.
-const weeklyPlanGeneratorRuleVersion = 'weekly-plan-v1';
+/// v2: dose (`restSeconds`/`targetSets`) passou a variar por
+/// `TrainingObjective` (ver `_doseFor`).
+const weeklyPlanGeneratorRuleVersion = 'weekly-plan-v2';
 
 /// Nível de capacidade mais conservador possível (SCORING_AND_PLACEMENT.md
 /// §4 "não avaliado"), usado para todo padrão sem colocação própria ainda.
@@ -50,6 +52,7 @@ class WeeklyPlanGenerator {
             budget: budget,
             capabilityLevelsByPattern: capabilityLevelsByPattern,
             availableEquipment: preferences.equipment,
+            objective: preferences.objective,
           ),
         )
         .toList();
@@ -79,13 +82,16 @@ class WeeklyPlanGenerator {
     required int budget,
     required Map<String, int?> capabilityLevelsByPattern,
     required Set<Equipment> availableEquipment,
+    required TrainingObjective objective,
   }) {
     final items = <PlannedExerciseItem>[];
 
     final warmup = exercisesForPattern(
       'mobility_specific',
     ).firstWhere((e) => e.isWarmup);
-    items.add(_toItem(warmup, PlanReasonCode.foundationGap));
+    items.add(
+      _toItem(warmup, PlanReasonCode.foundationGap, objective: objective),
+    );
 
     var slotsFilled = 0;
     for (var i = 0; i < day.patterns.length && slotsFilled < budget; i++) {
@@ -107,6 +113,7 @@ class WeeklyPlanGenerator {
               ? PlanReasonCode.foundationGap
               : PlanReasonCode.weeklyBalance,
           equipmentSubstituted: chosen.substituted,
+          objective: objective,
         ),
       );
       slotsFilled++;
@@ -123,7 +130,9 @@ class WeeklyPlanGenerator {
     CatalogExercise exercise,
     PlanReasonCode reasonCode, {
     bool equipmentSubstituted = false,
+    required TrainingObjective objective,
   }) {
+    final dose = _doseFor(exercise, objective);
     return PlannedExerciseItem(
       pattern: exercise.pattern,
       exerciseSlug: exercise.slug,
@@ -133,12 +142,51 @@ class WeeklyPlanGenerator {
           ? PlanReasonCode.equipmentSubstitution
           : reasonCode,
       doseType: exercise.doseType,
-      targetSets: exercise.targetSets,
+      targetSets: dose.targetSets,
       targetReps: exercise.targetReps,
       targetSeconds: exercise.targetSeconds,
-      restSeconds: exercise.restSeconds,
+      restSeconds: dose.restSeconds,
       mediaSlug: exercise.mediaSlug,
     );
+  }
+
+  /// Modificador de dose por objetivo de treino (decisão do usuário,
+  /// 2026-07-27) sobre `targetSets`/`restSeconds` do catálogo — nunca
+  /// sobre `targetReps`/`targetSeconds` (alvo de repetições/duração
+  /// continua vindo do catálogo puro). O aquecimento (`isWarmup`) nunca
+  /// é modificado: é um bloco contínuo único (3-5 min), "mais uma
+  /// série" não se aplica a ele.
+  ///
+  /// - `strength`: sem alteração — a dose do catálogo já é a
+  ///   prescrição conservadora de força de sempre.
+  /// - `fatLoss`: descanso reduzido pela metade (piso de 20s), pra
+  ///   manter a frequência cardíaca elevada entre séries.
+  /// - `conditioning`: descanso reduzido em 25% (piso de 30s) e mais
+  ///   uma série, pra aumentar o volume total sem cair no ritmo curto
+  ///   de `fatLoss`.
+  _Dose _doseFor(CatalogExercise exercise, TrainingObjective objective) {
+    if (exercise.isWarmup || objective == TrainingObjective.strength) {
+      return _Dose(exercise.targetSets, exercise.restSeconds);
+    }
+    switch (objective) {
+      case TrainingObjective.fatLoss:
+        return _Dose(
+          exercise.targetSets,
+          _restWithFloor(exercise.restSeconds * 0.5, 20),
+        );
+      case TrainingObjective.conditioning:
+        return _Dose(
+          exercise.targetSets + 1,
+          _restWithFloor(exercise.restSeconds * 0.75, 30),
+        );
+      case TrainingObjective.strength:
+        return _Dose(exercise.targetSets, exercise.restSeconds);
+    }
+  }
+
+  int _restWithFloor(double value, int floor) {
+    final rounded = value.round();
+    return rounded < floor ? floor : rounded;
   }
 
   /// Escolhe a melhor variação disponível para o padrão: entre as
@@ -282,4 +330,11 @@ class _PickedExercise {
 
   final CatalogExercise exercise;
   final bool substituted;
+}
+
+class _Dose {
+  const _Dose(this.targetSets, this.restSeconds);
+
+  final int targetSets;
+  final int restSeconds;
 }

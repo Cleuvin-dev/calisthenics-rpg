@@ -173,3 +173,20 @@ class WeeklyPlan {
     );
   }
 }
+
+/// Sessão pendente do "treino escolhido" do usuário: a primeira
+/// [PlannedSession] da semana cujo `dayLabel` ainda não está em
+/// [completedDayLabels]. `null` quando todas as sessões da semana já
+/// foram concluídas. Usada tanto pelo card de próxima sessão da Jornada
+/// quanto pela aba "Próximo treino" do plano semanal — uma única
+/// resolução, para as duas telas nunca divergirem sobre qual é o
+/// próximo dia.
+PlannedSession? nextPendingSession(
+  WeeklyPlan plan,
+  Set<String> completedDayLabels,
+) {
+  for (final session in plan.sessions) {
+    if (!completedDayLabels.contains(session.dayLabel)) return session;
+  }
+  return null;
+}

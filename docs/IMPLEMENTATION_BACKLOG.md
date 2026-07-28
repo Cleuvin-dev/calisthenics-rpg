@@ -13,10 +13,11 @@ mova para "Concluído recentemente" com a data, e registre o detalhe
 pendência nova durante uma sessão, adicione aqui **e** explique o
 porquê em `PROJECT_STATUS.md` — nunca só em um dos dois.
 
-**Última sincronização:** 2026-07-27, após implementar peso/altura/IMC e,
-em seguida, favoritos (Descobrir) — ver `PROJECT_STATUS.md`. Item ainda
-aberto: catálogo de treinos maior continua bloqueador explícito de
-várias seções da especificação de redesenho (Descobrir §5.1).
+**Última sincronização:** 2026-07-27, após implementar peso/altura/IMC,
+favoritos (Descobrir) e, em seguida, objetivo de treino (dose por
+`strength`/`fatLoss`/`conditioning`) — ver `PROJECT_STATUS.md`. Item
+ainda aberto: catálogo de treinos maior continua bloqueador explícito
+de várias seções da especificação de redesenho (Descobrir §5.1).
 
 ## P0 — imediato
 
@@ -91,56 +92,6 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
   foto real.
 
 ## P1 — RPG/conteúdo
-
-- [ ] **Objetivo de treino escolhido pelo usuário** (pedido do usuário,
-  2026-07-27): permitir escolher perder gordura, ganhar força muscular
-  e/ou manter o condicionamento físico (parece multi-seleção, pelo "e/ou"
-  do pedido — confirmar com o usuário antes de implementar), e o app
-  deve **de fato** selecionar exercícios específicos para o objetivo
-  escolhido, não só guardar a preferência sem efeito.
-  - **Não existe hoje nenhum conceito de "objetivo"** no modelo de
-    dados — nem em `TrainingPreferences`
-    (`features/onboarding/domain/training_preferences.dart`), nem em
-    `CatalogExercise`/`Workout`
-    (`features/training_plan/domain/exercise_catalog.dart`/
-    `workout_catalog.dart`). `Workout.objectivePtBr` existente é só
-    texto descritivo do treino curado, não um filtro/seletor.
-  - **Onde a preferência deveria viver:** provavelmente
-    `TrainingPreferences` (mesmo lugar de `daysPerWeek`/equipamento/meta
-    de dias da semana — já é o registro versionado de preferências de
-    treino, editável em Definição pelo mesmo padrão do diálogo de dias
-    da semana implementado em 2026-07-27).
-  - **O que precisa mudar para o objetivo ter efeito real:**
-    `CatalogExercise`/`Workout` precisam de um atributo de objetivo (ou
-    de atributos que permitam derivá-lo — ex.: faixa de repetições,
-    estrutura de circuito/descanso curto para queima calórica vs.
-    séries mais baixas/descanso mais longo para força), e
-    `WeeklyPlanGenerator` precisa usar esse atributo para influenciar
-    a seleção/estrutura da sessão, não só o nível de capacidade como
-    hoje.
-  - **Decisão em aberto antes de codar** (não presumir): como
-    exatamente cada objetivo muda a prescrição? Perder gordura tende a
-    outras faixas de repetição/descanso do que ganhar força — a regra
-    concreta (faixas de reps, séries, descanso, se adiciona
-    condicionamento extra) precisa ser decidida e documentada como
-    regra explícita (mesmo espírito de `TRAINING_ENGINE.md`/
-    `PROGRESSION_RULES.md`), não improvisada linha a linha.
-  - **Reforçado pelo usuário em 2026-07-27**: não basta guardar o
-    objetivo como metadado — o motor precisa da "inteligência" de
-    **identificar quais exercícios do catálogo potencializam aquele
-    objetivo específico** e entregá-los de fato na sessão (ex.:
-    objetivo "perder gordura" → priorizar exercícios/estrutura que
-    potencializem queima calórica, não simplesmente o mesmo catálogo de
-    sempre com um rótulo diferente). Implica que cada `CatalogExercise`
-    precisa de metadado(s) suficientes para o motor **classificar**
-    quão adequado ele é a cada objetivo (não só um enum estático
-    "objetivo do exercício" — a mesma flexão pode servir a mais de um
-    objetivo dependendo de reps/descanso/estrutura aplicados), e que
-    `WeeklyPlanGenerator` precisa de uma etapa de seleção/pontuação por
-    objetivo, além do filtro por nível de capacidade que já existe
-    hoje. Vale desenhar a regra de classificação junto com a decisão de
-    prescrição do item acima — são a mesma peça de motor, não duas
-    peças separadas.
 - [ ] **Nova curva de XP por nível, progressiva a 5% por nível** (pedido
   do usuário, 2026-07-27): substitui a fórmula atual de
   `lib/features/rpg/domain/level_curve.dart`
@@ -302,6 +253,23 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## Concluído recentemente
 
+- 2026-07-27 — Objetivo de treino escolhido pelo usuário: as duas
+  decisões que este item deixava em aberto foram resolvidas pelo
+  usuário antes de codar (não presumidas) — (1) **um único objetivo
+  ativo por vez** (não multi-seleção, apesar do "e/ou" do pedido
+  original) e (2) regra de dose explícita: `strength` (padrão) mantém
+  a dose do catálogo; `fatLoss` reduz `restSeconds` pela metade (piso
+  20s); `conditioning` reduz `restSeconds` em 25% (piso 30s) e soma
+  `targetSets + 1`; aquecimento nunca é modificado. Implementado como
+  modificador de dose em `WeeklyPlanGenerator._doseFor`
+  (`weeklyPlanGeneratorRuleVersion` → `weekly-plan-v2`), não como
+  reclassificação de exercícios por objetivo — a versão mais ambiciosa
+  descrita originalmente (motor "pontuar" cada `CatalogExercise` por
+  adequação a cada objetivo) foi descartada pelo usuário em favor desta
+  mais simples. Novo enum `TrainingObjective` em `TrainingPreferences`
+  + coluna aditiva `objective` em `training_preference_records`
+  (migração 9→10) + item "Objetivo de treino" em Definição > Perfil e
+  avaliação. Ver `PROJECT_STATUS.md` §"Objetivo de treino".
 - 2026-07-27 — Favoritos (Descobrir): tabela `favorite_records`
   (migração 8→9, aditiva), `FavoriteRepository`
   (toggle/allKeys, `workout`/`exercise` não colidem por slug igual),

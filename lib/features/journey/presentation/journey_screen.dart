@@ -68,13 +68,14 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     ref.invalidate(weeklyXpEvolutionProvider);
   }
 
-  void _openPlan() {
+  void _openPlan({int initialTabIndex = 0}) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TrainingPlanScreen(
           record: widget.record,
           preferences: widget.preferences,
           placement: widget.placement,
+          initialTabIndex: initialTabIndex,
         ),
       ),
     );
@@ -273,7 +274,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
           ),
           const SizedBox(height: 12),
           OutlinedButton(
-            onPressed: _openPlan,
+            onPressed: () => _openPlan(initialTabIndex: 1),
             child: const Text('Ver plano da semana completo'),
           ),
           const SizedBox(height: 12),
@@ -538,13 +539,7 @@ class _NextSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    PlannedSession? nextSession;
-    for (final session in plan.sessions) {
-      if (!completedDayLabels.contains(session.dayLabel)) {
-        nextSession = session;
-        break;
-      }
-    }
+    final nextSession = nextPendingSession(plan, completedDayLabels);
 
     final onPrimaryContainer = Theme.of(context).colorScheme.onPrimaryContainer;
 

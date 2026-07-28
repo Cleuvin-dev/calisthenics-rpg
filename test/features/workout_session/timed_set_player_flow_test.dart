@@ -181,14 +181,12 @@ void main() {
       );
 
       await tester.pumpWidget(wrap(id));
-      // Não usa `pumpAndSettle`: a mídia cai para `PatternIllustration`,
-      // que anima em loop contínuo por design e nunca "assenta" sozinha.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
       // Nenhuma exceção não tratada até aqui já prova que a resolução de
       // mídia com falha não travou a tela; confirma explicitamente que
-      // caiu no placeholder animado.
+      // caiu no placeholder estático.
       expect(find.text('Alvo: 2 segundos'), findsOneWidget);
 
       await _tapButton(tester, 'Iniciar');
