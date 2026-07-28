@@ -2,7 +2,7 @@
 
 **Data:** 2026-07-24 (última atualização 2026-07-27)
 **Responsável:** Claude Code (sessão com Cleuvin)
-**Branch/commit:** `main` (working tree com alterações não commitadas — usuário commita manualmente)
+**Branch/commit:** `main`, até `f8bda20` (commitado pelo usuário — trabalho desta sessão está em `753d58c`)
 
 Histórico narrativo de sessão ("o que foi feito e por quê"). Para a
 lista priorizada e acionável do que falta ("o que fazer a seguir"), ver
@@ -1666,3 +1666,29 @@ edição de dias de treino em sequência).
 **Resultado:** `flutter analyze`: sem problemas. `dart format
 --set-exit-if-changed .`: 0 arquivos alterados. `flutter test`:
 **206 passed, 0 failed** (197 + 9 novos).
+
+### Instalação e verificação no aparelho físico (mesmo dia)
+
+Todo o trabalho acima (reverificação das 195 imagens, remoção da
+ilustração animada, abas do plano, objetivo de treino) foi commitado
+pelo usuário (`753d58c`) e instalado no aparelho físico já usado em
+sessões anteriores (`7549GMFUDA4DKZW8`):
+
+```
+flutter build apk --release   # build\app\outputs\flutter-apk\app-release.apk, 104.2MB
+adb -s 7549GMFUDA4DKZW8 install -r build/app/outputs/flutter-apk/app-release.apk
+```
+
+App abriu e ficou de pé (`adb shell pidof` confirmou o processo vivo
+alguns segundos depois do lançamento via `monkey`), sem `FATAL
+EXCEPTION`/`AndroidRuntime` no `logcat`. **Isto é só um "não crasha ao
+abrir" automatizado** — não substitui a navegação manual real pelas
+telas novas (Definição > Objetivo de treino, as duas abas do plano)
+que os testes automatizados já cobrem no nível de widget mas que
+ninguém tocou de verdade no aparelho ainda nesta leva.
+
+Commit seguinte do usuário (`f8bda20`, "atualizado documentação")
+removeu `assets/images/icon.jpg`/`icon.png` do repositório — ação do
+próprio usuário, fora desta sessão de trabalho; `assets/images/icone.png`
+(o que `pubspec.yaml`/`flutter_launcher_icons` de fato usa) não foi
+tocado.

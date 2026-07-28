@@ -5,6 +5,47 @@ de cada entrada, ver `PROJECT_STATUS.md`. Entradas anteriores a
 2026-07-27 são resumidas a partir do histórico de commits e de
 `PROJECT_STATUS.md` — não presenciadas por quem escreveu este arquivo.
 
+## 2026-07-27 — Objetivo de treino, abas do plano, limpeza da mídia
+(commit `753d58c`)
+
+Quarto item da mesma sessão de continuidade, depois de peso/altura/IMC
+e favoritos. Começou como uma reverificação da integração das 195
+imagens (pedido repetido do usuário) e virou quatro entregas:
+
+- **Auditoria da integração das 195 imagens**: já estava completa de
+  uma sessão anterior (commit `5b9a84a`); corrigido `README.md` da
+  raiz (tinha sido sobrescrito pelo README de um pacote de entrega) e
+  removidos 7 arquivos de manifesto/checksum duplicados soltos na
+  raiz do repositório (nunca chegaram a ser commitados).
+- **Ilustração animada removida**: `PatternIllustration` (bonequinho
+  de traços animado, usado como fallback quando não há foto real)
+  deletado a pedido do usuário; `ExerciseMediaPlaceholder` agora mostra
+  um ícone estático (`Icons.fitness_center`).
+- **Plano da semana em duas abas**: "Próximo treino" (só a sessão
+  pendente mais próxima, mesma resolução de `nextPendingSession` usada
+  no card da Jornada) e "Semana completa" (comportamento antigo,
+  todos os dias). Antes, `TrainingPlanScreen` sempre mostrava a semana
+  inteira de uma vez.
+- **Objetivo de treino** (força muscular/perder gordura/
+  condicionamento, um único por vez): novo enum `TrainingObjective` em
+  `TrainingPreferences` + coluna aditiva `objective`
+  (`training_preference_records`, migração 9→10) + item em Definição >
+  Perfil e avaliação. Muda a dose prescrita em
+  `WeeklyPlanGenerator._doseFor` (`restSeconds`/`targetSets`;
+  `weeklyPlanGeneratorRuleVersion` → `weekly-plan-v2`); aquecimento
+  nunca é modificado.
+- **2 bugs pré-existentes corrigidos** (achados testando o item
+  acima): `_editWeekdays` (Definição) zerava a altura salva ao não
+  repassar `heightCm`; `TrainingPreferencesRepository.latest()` não
+  desempatava gravações com o mesmo `updatedAt` (sequência rápida de
+  edições), agora desempata por `id DESC`.
+- Instalado e verificado sem crash no aparelho físico
+  (`7549GMFUDA4DKZW8`) via `flutter build apk --release` + `adb
+  install -r` — só checagem de abertura, sem navegação manual pelas
+  telas novas ainda.
+- 206 testes automatizados (eram 197), todos passando; `flutter
+  analyze` sem problemas.
+
 ## 2026-07-27 — Favoritos (Descobrir)
 
 Segundo item escolhido pelo usuário do topo do backlog, logo após
