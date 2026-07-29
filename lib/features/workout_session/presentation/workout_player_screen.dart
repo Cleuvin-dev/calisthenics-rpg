@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../shared/data/exercise_media_catalog_provider.dart';
-import '../../../shared/presentation/exercise_media.dart';
+import '../../../shared/presentation/exercise_image_card.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
 import '../../assessment/domain/fundamental_pattern_anchors.dart';
 import '../../progression/data/progression_providers.dart';
@@ -18,16 +18,21 @@ import '../../training_plan/domain/exercise_catalog.dart' show DoseType;
 import '../data/workout_session_providers.dart';
 import '../data/workout_session_repository.dart';
 import '../domain/workout_session.dart';
+import 'exercise_bottom_navigation.dart';
+import 'exercise_execution_header.dart';
+import 'exercise_primary_action_button.dart';
+import 'exercise_set_metrics_card.dart';
 import 'log_set_sheet.dart';
 import 'rest_screen.dart';
+import 'rest_timer_panel.dart';
 import 'timed_set_player.dart';
 import 'timed_set_recovery_dialog.dart';
 import 'workout_summary_screen.dart';
 
 /// Player de exercício (SCREENS_AND_FLOWS.md §4): série atual, alvo,
 /// registro e o botão de dor sempre visível, nunca escondido em menu.
-/// Compartilha o mesmo "shell" (AppBar, mídia, nome, série) entre as
-/// modalidades por repetições e por tempo
+/// Compartilha o mesmo "shell" (cabeçalho, imagem, card de métricas)
+/// entre as modalidades por repetições e por tempo
 /// (VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md §10), só a área de dose
 /// muda.
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
@@ -55,6 +60,15 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   bool _submitting = false;
   bool _recoveryChecked = false;
   int _precachedForIndex = -1;
+
+  /// Descanso **entre séries do mesmo exercício** (seção 5 do pedido do
+  /// usuário) — diferente do `RestScreen` entre exercícios, que continua
+  /// existindo sem mudança em `_advanceOrComplete`.
+  bool _resting = false;
+
+  /// Status coarse reportado por `TimedSetPlayer` (só para exercícios por
+  /// tempo — repetições não têm fase interna própria).
+  ExerciseSetStatus? _timedStatus;
 
   @override
   void initState() {
@@ -128,8 +142,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   /// (`App_RPG_Exercise_Images/CLAUDE_CODE_PROMPT.md` #11) — não a
   /// sessão inteira, para não pressionar a memória de aparelhos Android
   /// intermediários. Falha de precache é silenciosa: o próprio
-  /// `Image.asset`/`ExerciseMedia` já tem seu `errorBuilder` para quando
-  /// a imagem realmente for exibida.
+  /// `Image.asset`/`ExerciseMedia`/`ExerciseImageCard` já tem seu
+  /// `errorBuilder` para quando a imagem realmente for exibida.
   void _precacheAdjacentMedia(List<WorkoutSessionItem> items) {
     if (_precachedForIndex == _currentIndex) return;
     _precachedForIndex = _currentIndex;
@@ -200,6 +214,19 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Toda série concluída (reps ou tempo) que não é a última do exercício
+  /// entra em descanso — exceto quando a razão foi dor/interrupção
+  /// manual, casos em que o usuário já está saindo do exercício, não
+  /// continuando para a próxima série.
+  void _maybeEnterRest({
+    required int justLoggedSetNumber,
+    required int totalSets,
+  }) {
+    if (justLoggedSetNumber < totalSets) {
+      setState(() => _resting = true);
+    }
+  }
+
   Future<void> _logSet(
     WorkoutSessionItem item,
     int setNumber,
@@ -239,7 +266,63 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
     if (result.effort == PerceivedEffort.pain && mounted) {
       await _showPainDialog();
+    } else if (mounted) {
+      _maybeEnterRest(justLoggedSetNumber: setNumber, totalSets: totalSets);
     }
+  }
+
+  /// Pular a série atual sem executá-la (seção 6 do pedido do usuário) —
+  /// pede confirmação porque afeta o progresso do exercício, e conta
+  /// como uma série registrada (`notCompleted`) para a regra de "todas as
+  /// séries registradas" que habilita avançar.
+  Future<void> _skipSet(WorkoutSessionItem item, int setNumber) async {
+    if (_submitting) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Pular esta série?'),
+        content: const Text(
+          'Ela será registrada como não concluída — ainda conta para o '
+          'total de séries do exercício.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Pular série'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _submitting = true);
+    await ref
+        .read(workoutSessionRepositoryProvider)
+        .logSet(
+          workoutSessionId: widget.workoutSessionId,
+          exerciseSlug: item.exerciseSlug,
+          pattern: item.pattern,
+          setNumber: setNumber,
+          repsCompleted: 0,
+          targetReps: item.targetReps,
+          perceivedEffort: PerceivedEffort.notCompleted,
+          now: DateTime.now(),
+        );
+    ref.invalidate(setLogsForSessionProvider(widget.workoutSessionId));
+    if (mounted) setState(() => _submitting = false);
+  }
+
+  void _goToPreviousExercise() {
+    if (_currentIndex == 0 || _submitting) return;
+    setState(() {
+      _currentIndex--;
+      _resting = false;
+      _timedStatus = null;
+    });
   }
 
   Future<void> _reportPainNow(WorkoutSessionItem item, int setNumber) async {
@@ -319,6 +402,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       setState(() {
         _currentIndex++;
         _submitting = false;
+        _resting = false;
+        _timedStatus = null;
       });
     }
   }
@@ -409,6 +494,18 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     );
   }
 
+  /// Exercício considerado "pronto para avançar": todas as séries
+  /// registradas, ou uma delas foi por dor (a mesma regra de segurança
+  /// de sempre — dor encerra o exercício, não exige completar o resto).
+  bool _exerciseReadyToAdvance(List<SetLogRecord> itemLogs, int totalSets) {
+    if (itemLogs.length >= totalSets) return true;
+    return itemLogs.any(
+      (l) =>
+          PerceivedEffort.values.byName(l.perceivedEffort) ==
+          PerceivedEffort.pain,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(
@@ -420,6 +517,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           data: (settings) => settings.countdownSeconds,
           orElse: () => 3,
         );
+    final catalogAsync = ref.watch(exerciseMediaCatalogProvider);
 
     return PopScope(
       canPop: false,
@@ -455,145 +553,272 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                   (_) => _precacheAdjacentMedia(items),
                 );
 
-                return Scaffold(
-                  appBar: AppBar(
-                    leading: IconButton(
-                      icon: const Icon(Icons.pause),
-                      tooltip: 'Pausar e sair',
-                      onPressed: _pauseAndExit,
-                    ),
-                    title: Text(session.dayLabel),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.flag_outlined),
-                        tooltip: 'Abandonar sessão',
-                        onPressed: _confirmAbandon,
-                      ),
-                    ],
-                  ),
-                  body: logsAsync.when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (error, _) => Center(child: Text('Erro: $error')),
-                    data: (logs) {
-                      final itemLogs = logs
-                          .where(
-                            (l) => l.exerciseSlug == currentItem.exerciseSlug,
-                          )
-                          .toList();
-                      final nextSetNumber = itemLogs.length + 1;
+                final mediaEntry = currentItem.mediaSlug == null
+                    ? null
+                    : catalogAsync.value?.bySlug(currentItem.mediaSlug!);
 
-                      return ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          Center(
-                            child: ExerciseMedia(
-                              key: ValueKey(currentItem.exerciseSlug),
-                              exerciseSlug: currentItem.exerciseSlug,
-                              pattern: currentItem.pattern,
-                              namePtBr: currentItem.namePtBr,
-                              mediaSlug: currentItem.mediaSlug,
-                              size: 140,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Exercício ${_currentIndex + 1}/${items.length}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            currentItem.namePtBr,
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(currentItem.setsRepsGuidance),
-                          const SizedBox(height: 16),
-                          if (currentItem.doseType == DoseType.duration)
-                            TimedSetPlayer(
-                              key: ValueKey(
-                                '${currentItem.exerciseSlug}-$nextSetNumber',
-                              ),
-                              workoutSessionId: widget.workoutSessionId,
-                              exerciseSlug: currentItem.exerciseSlug,
-                              pattern: currentItem.pattern,
-                              exerciseNamePtBr: currentItem.namePtBr,
-                              setNumber: nextSetNumber,
-                              totalSets: currentItem.targetSets,
-                              targetSeconds: currentItem.targetSeconds ?? 30,
-                              initialElapsedMs:
-                                  nextSetNumber == _recoveredSetNumber
-                                  ? _recoveredElapsedMs
-                                  : null,
-                              countdownSeconds: countdownSeconds,
-                              onFinalized: () => ref.invalidate(
-                                setLogsForSessionProvider(
-                                  widget.workoutSessionId,
-                                ),
-                              ),
-                              onPain: () => _showPainDialog(),
+                return Scaffold(
+                  body: SafeArea(
+                    child: logsAsync.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(child: Text('Erro: $error')),
+                      data: (logs) {
+                        final itemLogs = logs
+                            .where(
+                              (l) => l.exerciseSlug == currentItem.exerciseSlug,
                             )
-                          else ...[
-                            for (final log in itemLogs)
-                              ListTile(
-                                dense: true,
-                                leading: const Icon(Icons.check_circle_outline),
-                                title: Text(
-                                  'Série ${log.setNumber}: '
-                                  '${log.repsCompleted} reps',
-                                ),
-                                subtitle: Text(
-                                  PerceivedEffort.values
-                                      .byName(log.perceivedEffort)
-                                      .labelPtBr,
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: _submitting
-                                        ? null
-                                        : () => _logSet(
-                                            currentItem,
-                                            nextSetNumber,
-                                            currentItem.targetSets,
-                                          ),
-                                    child: const Text('Registrar série'),
+                            .toList();
+                        final nextSetNumber = itemLogs.length + 1;
+                        final setsComplete = _exerciseReadyToAdvance(
+                          itemLogs,
+                          currentItem.targetSets,
+                        );
+                        final displaySet = setsComplete
+                            ? currentItem.targetSets
+                            : nextSetNumber;
+
+                        final ExerciseSetStatus status;
+                        if (_resting) {
+                          status = ExerciseSetStatus.resting;
+                        } else if (setsComplete) {
+                          status = ExerciseSetStatus.completed;
+                        } else if (currentItem.doseType == DoseType.duration) {
+                          status = _timedStatus ?? ExerciseSetStatus.waiting;
+                        } else {
+                          status = itemLogs.isEmpty
+                              ? ExerciseSetStatus.waiting
+                              : ExerciseSetStatus.active;
+                        }
+
+                        Widget? primaryButton;
+                        if (setsComplete) {
+                          primaryButton = ExercisePrimaryActionButton(
+                            label: 'Concluir exercício',
+                            onPressed: (_submitting || _resting)
+                                ? null
+                                : () => _advanceOrComplete(
+                                    session,
+                                    items,
+                                    isLast,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.error,
-                                  ),
-                                  onPressed: () => _reportPainNow(
+                          );
+                        } else if (currentItem.doseType != DoseType.duration) {
+                          primaryButton = ExercisePrimaryActionButton(
+                            label: 'Concluir série',
+                            onPressed: (_submitting || _resting)
+                                ? null
+                                : () => _logSet(
                                     currentItem,
                                     nextSetNumber,
+                                    currentItem.targetSets,
                                   ),
-                                  child: const Text('Senti dor'),
+                          );
+                        }
+                        // Enquanto uma série por tempo está rodando, o
+                        // próprio `TimedSetPlayer` já mostra seus botões
+                        // de ação (Iniciar/Pausar/Continuar) no lugar do
+                        // botão principal — evita duas ações
+                        // concorrentes para a mesma coisa.
+
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: ListView(
+                                padding: const EdgeInsets.all(16),
+                                children: [
+                                  ExerciseExecutionHeader(
+                                    exerciseNamePtBr: currentItem.namePtBr,
+                                    categoryLabel:
+                                        mediaEntry?.category ??
+                                        currentItem.pattern.replaceAll(
+                                          '_',
+                                          ' ',
+                                        ),
+                                    level: mediaEntry?.level,
+                                    exerciseIndex: _currentIndex + 1,
+                                    totalExercises: items.length,
+                                    onBack: _pauseAndExit,
+                                    onAbandon: _confirmAbandon,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ExerciseImageCard(
+                                    key: ValueKey(currentItem.exerciseSlug),
+                                    exerciseSlug: currentItem.exerciseSlug,
+                                    pattern: currentItem.pattern,
+                                    namePtBr: currentItem.namePtBr,
+                                    mediaSlug: currentItem.mediaSlug,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ExerciseSetMetricsCard(
+                                    currentSet: displaySet,
+                                    totalSets: currentItem.targetSets,
+                                    metricLabel:
+                                        currentItem.doseType ==
+                                            DoseType.duration
+                                        ? 'TEMPO'
+                                        : 'REPETIÇÕES',
+                                    metricValue:
+                                        currentItem.doseType ==
+                                            DoseType.duration
+                                        ? '${currentItem.targetSeconds ?? 0}s'
+                                        : '${currentItem.targetReps ?? 0}',
+                                    restSeconds: currentItem.restSeconds,
+                                    status: status,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (_resting)
+                                    RestTimerPanel(
+                                      key: ValueKey(
+                                        '${currentItem.exerciseSlug}-rest-$nextSetNumber',
+                                      ),
+                                      seconds: currentItem.restSeconds,
+                                      onFinished: () {
+                                        if (mounted) {
+                                          setState(() => _resting = false);
+                                        }
+                                      },
+                                    )
+                                  else if (currentItem.doseType ==
+                                      DoseType.duration)
+                                    if (setsComplete)
+                                      Text(
+                                        'Todas as séries desta série por '
+                                        'tempo já foram registradas.',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      )
+                                    else
+                                      TimedSetPlayer(
+                                        key: ValueKey(
+                                          '${currentItem.exerciseSlug}-$nextSetNumber',
+                                        ),
+                                        workoutSessionId:
+                                            widget.workoutSessionId,
+                                        exerciseSlug: currentItem.exerciseSlug,
+                                        pattern: currentItem.pattern,
+                                        exerciseNamePtBr: currentItem.namePtBr,
+                                        setNumber: nextSetNumber,
+                                        totalSets: currentItem.targetSets,
+                                        targetSeconds:
+                                            currentItem.targetSeconds ?? 30,
+                                        initialElapsedMs:
+                                            nextSetNumber == _recoveredSetNumber
+                                            ? _recoveredElapsedMs
+                                            : null,
+                                        countdownSeconds: countdownSeconds,
+                                        onStatusChanged: (value) {
+                                          if (mounted) {
+                                            setState(
+                                              () => _timedStatus = value,
+                                            );
+                                          }
+                                        },
+                                        onFinalized: (reason) {
+                                          ref.invalidate(
+                                            setLogsForSessionProvider(
+                                              widget.workoutSessionId,
+                                            ),
+                                          );
+                                          if (!mounted) return;
+                                          setState(() {
+                                            _timedStatus = null;
+                                          });
+                                          if (reason ==
+                                              TimedSetCompletionReason
+                                                  .targetReached) {
+                                            _maybeEnterRest(
+                                              justLoggedSetNumber:
+                                                  nextSetNumber,
+                                              totalSets: currentItem.targetSets,
+                                            );
+                                          }
+                                        },
+                                        onPain: () => _showPainDialog(),
+                                      )
+                                  else ...[
+                                    for (final log in itemLogs)
+                                      ListTile(
+                                        dense: true,
+                                        leading: const Icon(
+                                          Icons.check_circle_outline,
+                                        ),
+                                        title: Text(
+                                          'Série ${log.setNumber}: '
+                                          '${log.repsCompleted} reps',
+                                        ),
+                                        subtitle: Text(
+                                          PerceivedEffort.values
+                                              .byName(log.perceivedEffort)
+                                              .labelPtBr,
+                                        ),
+                                      ),
+                                    if (!setsComplete) ...[
+                                      const SizedBox(height: 8),
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                          ),
+                                          onPressed: () => _reportPainNow(
+                                            currentItem,
+                                            nextSetNumber,
+                                          ),
+                                          child: const Text('Senti dor'),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                  if (primaryButton != null) ...[
+                                    const SizedBox(height: 16),
+                                    primaryButton,
+                                  ],
+                                ],
+                              ),
+                            ),
+                            SafeArea(
+                              top: false,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  8,
+                                  16,
+                                  16,
                                 ),
-                              ],
+                                child: ExerciseBottomNavigation(
+                                  onSkipSet:
+                                      (_resting ||
+                                          _submitting ||
+                                          setsComplete ||
+                                          currentItem.doseType ==
+                                              DoseType.duration)
+                                      ? null
+                                      : () => _skipSet(
+                                          currentItem,
+                                          nextSetNumber,
+                                        ),
+                                  onPrevious:
+                                      (_currentIndex == 0 || _submitting)
+                                      ? null
+                                      : _goToPreviousExercise,
+                                  onNext: (!setsComplete || _submitting)
+                                      ? null
+                                      : () => _advanceOrComplete(
+                                          session,
+                                          items,
+                                          isLast,
+                                        ),
+                                  isLastExercise: isLast,
+                                ),
+                              ),
                             ),
                           ],
-                        ],
-                      );
-                    },
-                  ),
-                  bottomNavigationBar: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: FilledButton(
-                        onPressed: _submitting
-                            ? null
-                            : () => _advanceOrComplete(session, items, isLast),
-                        child: Text(
-                          isLast ? 'Concluir sessão' : 'Próximo exercício',
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                 );

@@ -24,6 +24,15 @@ Future<void> _tapButton(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
+/// A tela de execução tem cabeçalho + imagem grande (~60% do viewport)
+/// antes do timer — em telas de teste isso empurra o timer/botões para
+/// fora do alcance de pré-construção padrão da sliver list, então é
+/// preciso rolar antes de interagir com eles.
+Future<void> _scrollControlsIntoView(WidgetTester tester) async {
+  await tester.drag(find.byType(ListView), const Offset(0, -600));
+  await tester.pumpAndSettle();
+}
+
 final _placement = CapabilityEstimateRecord(
   id: 1,
   pattern: 'push_horizontal',
@@ -105,6 +114,7 @@ void main() {
     final id = await seedTimedSession();
     await tester.pumpWidget(wrap(id));
     await tester.pumpAndSettle();
+    await _scrollControlsIntoView(tester);
 
     expect(find.text('Alvo: 2 segundos'), findsOneWidget);
     expect(find.text('Senti dor'), findsOneWidget);
@@ -183,6 +193,7 @@ void main() {
       await tester.pumpWidget(wrap(id));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
+      await _scrollControlsIntoView(tester);
 
       // Nenhuma exceção não tratada até aqui já prova que a resolução de
       // mídia com falha não travou a tela; confirma explicitamente que
@@ -210,6 +221,7 @@ void main() {
       final id = await seedTimedSession();
       await tester.pumpWidget(wrapWithCountdown(id, 5));
       await tester.pumpAndSettle();
+      await _scrollControlsIntoView(tester);
 
       await _tapButton(tester, 'Iniciar');
       expect(
@@ -226,6 +238,7 @@ void main() {
       final id = await seedTimedSession();
       await tester.pumpWidget(wrapWithCountdown(id, 0));
       await tester.pumpAndSettle();
+      await _scrollControlsIntoView(tester);
 
       await _tapButton(tester, 'Iniciar');
       await tester.pump();

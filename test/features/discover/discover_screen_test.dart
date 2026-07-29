@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:calisthenics_rpg/core/database/app_database.dart';
 import 'package:calisthenics_rpg/core/database/app_database_provider.dart';
 import 'package:calisthenics_rpg/features/discover/presentation/discover_screen.dart';
+import 'package:calisthenics_rpg/features/training_plan/domain/exercise_catalog.dart';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -180,4 +181,76 @@ void main() {
       expect(find.text('Flexão na parede'), findsWidgets);
     },
   );
+
+  group('ExerciseDetailScreen ("Como executar")', () {
+    Widget wrapDetail(CatalogExercise exercise) => ProviderScope(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      child: MaterialApp(home: ExerciseDetailScreen(exercise: exercise)),
+    );
+
+    final exercise = exerciseCatalog.firstWhere(
+      (e) => e.slug == 'scapular_retraction_bodyweight',
+    );
+
+    // A `ExerciseImageCard` ocupa ~60% do viewport antes das linhas de
+    // detalhe — em tamanho de tela de teste padrão isso empurra essas
+    // linhas para fora do alcance de pré-construção da sliver list
+    // (mesma armadilha documentada em `ARCHITECTURE.md` para a tela de
+    // execução), então é preciso rolar antes de conferir.
+    Future<void> scrollDetailsIntoView(WidgetTester tester) async {
+      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'linhas de detalhe (Padrão/Descanso/Medição/Equipamento) renderizam '
+      'sem quebrar em texto grande — regressão do uso inválido de '
+      '`Flexible` dentro de `ListTile.trailing`',
+      (tester) async {
+        await tester.pumpWidget(wrapDetail(exercise));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await scrollDetailsIntoView(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Padrão'), findsOneWidget);
+        expect(find.text('Descanso'), findsOneWidget);
+        expect(find.text('Medição'), findsOneWidget);
+        expect(find.text('Equipamento'), findsOneWidget);
+        expect(find.text('60 segundos'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'não estoura nem lança exceção com escala de fonte grande (2.0x)',
+      (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        await tester.pumpWidget(wrapDetail(exercise));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await scrollDetailsIntoView(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Padrão'), findsOneWidget);
+        expect(find.text('Descanso'), findsOneWidget);
+      },
+    );
+
+    testWidgets('imagem principal abre o zoom em tela cheia ao tocar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapDetail(exercise));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Toque para ampliar'), findsOneWidget);
+
+      await tester.tap(find.byType(InkWell));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+    });
+  });
 }

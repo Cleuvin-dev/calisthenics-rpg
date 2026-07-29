@@ -74,6 +74,11 @@ da própria tela, por serem usados uma única vez):
   (`shared/presentation/`) — mídia real (foto) quando associada no
   catálogo de 195 imagens, com fallback automático (via `errorBuilder`)
   para ilustração animada por família de movimento.
+- `ExerciseImageCard`/`ExerciseFullscreenViewer` (`shared/presentation/`,
+  2026-07-28) — imagem principal da tela de execução (~60% do viewport,
+  borda verde-neon) e o visualizador em tela cheia com zoom
+  (`InteractiveViewer`+`Hero`). Diferente de `ExerciseMedia` (miniatura
+  quadrada de tamanho fixo, usada em listas/cards pequenos).
 - `EmptyStateCard` (`shared/presentation/empty_state_card.dart`) —
   ícone + título + mensagem + ação opcional; usado em todo estado vazio
   real (Relatório sem histórico, sem recordes, sem plano, sem peso
@@ -164,10 +169,16 @@ duração, XP da sessão quando existe), progressão de habilidades.
 
 ## Aba Definição (`SettingsScreen`)
 
-Seções: Perfil e avaliação (nome editável, dias/semana + meta de dias
-específicos da semana editável, altura editável com validação de faixa
-plausível, "Peso e IMC" abrindo `BodyMetricScreen`, "Refazer avaliação
-física" desabilitado com explicação), Treino (som/vibração/voz/início automático de descanso
+Seções: Perfil e avaliação (nome editável; "X dias por semana" e "Dias
+de treino na semana" abrem o mesmo diálogo — a quantidade é sempre
+derivada de quais dias foram marcados, nunca um segundo editor
+independente; altura editável com validação de faixa plausível; "Peso e
+IMC" abrindo `BodyMetricScreen`; "Refazer avaliação física" (2026-07-28:
+reativado — abre uma folha com as duas colocações existentes,
+`AssessmentSkipTestScreen`/`OtherPatternsAssessmentScreen`, reaproveitadas
+de `PlacementResultScreen`/`EvolutionScreen`; mostra o lembrete de
+regenerar o plano só quando o usuário realmente salva uma colocação
+nova, via `pop(true)`)), Treino (som/vibração/voz/início automático de descanso
 via `SwitchListTile`; contagem regressiva editável com diálogo de
 slider 0–10s, conectada de verdade ao `TimedSetPlayer`; "Descanso
 padrão" ainda só exibido, não editável — ver nota abaixo), Aparência e
@@ -183,6 +194,24 @@ para um exercício específico de `core_anti_extension`). Substituir esse
 valor pelo ajuste global do usuário descartaria uma tunagem já existente
 sem necessidade real de dado adicional — decisão de escopo, não
 esquecimento. Ver `IMPLEMENTATION_BACKLOG.md`.
+
+## Tela de execução de exercício (`WorkoutPlayerScreen`)
+
+Reestilizada em 2026-07-28 seguindo `assets/exemplo-molde.png`: imagem do
+exercício como elemento principal (~60% da altura inicial do viewport,
+borda verde-neon, cantos arredondados, "Toque para ampliar" abre zoom em
+tela cheia), card de métricas (série/alvo/descanso/status), botão
+principal com rótulo sempre dinâmico (nunca um texto fixo de "concluído"
+antes de a ação realmente acontecer) e navegação inferior (pular série,
+anterior, próximo/finalizar treino). Ver `ARCHITECTURE.md` para os nomes
+reais dos componentes.
+
+**Descanso entre séries do mesmo exercício** é funcionalidade nova desta
+entrega — antes só existia descanso entre exercícios diferentes
+(`RestScreen`, preservado sem mudança). "Próximo"/"Finalizar treino"
+passou a ficar desabilitado até todas as séries do exercício atual serem
+registradas (antes era possível avançar a qualquer momento, mesmo com
+séries pendentes) — mudança de comportamento, não só visual.
 
 ## Regras de interface aplicadas
 

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/app_reset.dart';
 import '../../../core/database/app_database.dart';
 import '../../assessment/data/capability_estimate_providers.dart';
+import '../../assessment/presentation/assessment_skip_test_screen.dart';
+import '../../assessment/presentation/other_patterns_assessment_screen.dart';
 import '../../missions/data/mission_providers.dart';
 import '../../onboarding/data/training_preferences_providers.dart';
 import '../../onboarding/data/training_preferences_repository.dart';
@@ -69,6 +71,14 @@ class SettingsScreen extends ConsumerWidget {
                       '${activePreferences.minutesPerSession} min por sessão · '
                       '${activePreferences.location}',
                     ),
+                    trailing: const Icon(Icons.chevron_right),
+                    // Quantos dias por semana é sempre derivado de quais
+                    // dias foram escolhidos (`selected.length` em
+                    // `_editWeekdays`) — reaproveita o mesmo diálogo em vez
+                    // de um segundo editor de "quantidade" que poderia
+                    // divergir da lista de dias específicos escolhida
+                    // logo abaixo.
+                    onTap: () => _editWeekdays(context, ref, activePreferences),
                   ),
                   ListTile(
                     leading: const Icon(Icons.event_repeat_outlined),
@@ -117,9 +127,10 @@ class SettingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.assignment_outlined),
                     title: const Text('Refazer avaliação física'),
                     subtitle: const Text(
-                      'Disponível após reiniciar ou em uma futura reavaliação dedicada',
+                      'Atualizar sua colocação a qualquer momento',
                     ),
-                    enabled: false,
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _reassessPhysicalCapability(context),
                   ),
                 ],
               ),
@@ -351,6 +362,62 @@ class SettingsScreen extends ConsumerWidget {
           content: Text(
             'Objetivo salvo. Toque em "Gerar novamente" no plano da '
             'semana para aplicar a nova dose.',
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Deixa o usuário refazer a colocação a qualquer momento (não só na
+  /// onboarding) — reaproveita as mesmas telas já usadas em
+  /// `PlacementResultScreen` ("Refazer colocação", só para
+  /// push_horizontal) e `EvolutionScreen` ("Avaliar padrões pendentes",
+  /// os outros 4 padrões). Cada envio grava uma nova linha de colocação
+  /// (histórico append-only, `CapabilityEstimateRepository.save`), nunca
+  /// sobrescreve a anterior.
+  Future<void> _reassessPhysicalCapability(BuildContext context) async {
+    final pattern = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.fitness_center),
+              title: const Text('Empurrar horizontal'),
+              subtitle: const Text('Refazer a colocação obrigatória'),
+              onTap: () => Navigator.of(sheetContext).pop('push_horizontal'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist_outlined),
+              title: const Text('Outros padrões'),
+              subtitle: const Text(
+                'Puxar, agachamento, cadeia posterior, core',
+              ),
+              onTap: () => Navigator.of(sheetContext).pop('others'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (pattern == null || !context.mounted) return;
+
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => pattern == 'push_horizontal'
+            ? const AssessmentSkipTestScreen()
+            : const OtherPatternsAssessmentScreen(),
+      ),
+    );
+    // `saved` só vem `true` se o usuário realmente enviou uma colocação
+    // (ver `pop(true)` nas duas telas) — voltar sem responder não deve
+    // mostrar o lembrete abaixo.
+    if (saved == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Colocação salva. Toque em "Gerar novamente" no plano da '
+            'semana para aplicar ao próximo plano.',
           ),
         ),
       );

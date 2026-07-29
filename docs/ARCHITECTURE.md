@@ -95,6 +95,60 @@ Módulos existentes: `safety`, `onboarding`, `assessment`, `training_plan`,
 histórico), acessível pelo ícone no `AppBar` da Jornada — não é uma das
 quatro abas.
 
+## Tela de execução (`WorkoutPlayerScreen`)
+
+Reestilizada em 2026-07-28 (tema escuro/verde-neon, seguindo
+`assets/exemplo-molde.png`) e quebrada em componentes menores dentro de
+`lib/features/workout_session/presentation/` — a classe
+`WorkoutPlayerScreen` continua sendo o container (estado da sessão,
+navegação, XP), só a composição visual mudou:
+
+- `ExerciseExecutionHeader` — cabeçalho compacto (voltar, título, nível
+  do catálogo de mídia via `mediaSlug`, nome, categoria, progresso da
+  sessão, botão "Abandonar sessão").
+- `shared/presentation/exercise_image_card.dart` (`ExerciseImageCard`) —
+  imagem principal (~60% da altura do viewport, `BoxFit.contain`, borda
+  verde-neon), diferente de `ExerciseMedia` (miniatura de tamanho fixo,
+  usada em listas). As duas compartilham a mesma resolução de caminho via
+  `resolveExerciseAssetPath()` (`shared/presentation/exercise_media.dart`).
+  Toque abre `shared/presentation/exercise_fullscreen_viewer.dart`
+  (`ExerciseFullscreenViewer`: `InteractiveViewer` + `Hero`, pan/pinça/
+  duplo toque) — empurrada como rota nova, então o `TimedSetPlayer`/
+  `ActiveTimer` por baixo continua rodando sem perder estado.
+- `ExerciseSetMetricsCard` — série/alvo/descanso/status
+  (`ExerciseSetStatus`: aguardando/em execução/pausado/descanso/
+  concluído). `TimedSetPlayer` reporta seu status coarse via
+  `onStatusChanged` (mapeado de `_Phase`, privado ao arquivo).
+- `RestTimerPanel` — descanso **entre séries do mesmo exercício**
+  (reaproveita `ActiveTimer`), diferente de `RestScreen` (descanso entre
+  exercícios, tela cheia com prévia do próximo, inalterado).
+- `ExercisePrimaryActionButton`/`ExerciseBottomNavigation` — botão
+  principal com rótulo sempre dinâmico (nunca "CONCLUÍDO" fixo) e
+  navegação inferior (pular série com confirmação, anterior, próximo/
+  finalizar treino — desabilitado até todas as séries do exercício atual
+  serem registradas).
+
+**Armadilha de teste nova**: a tela usa uma `ListView` com cabeçalho +
+imagem grande antes dos controles — em tamanho de tela de teste padrão,
+isso empurra o card de métricas/timer/botões para fora do alcance de
+pré-construção da sliver list (`cacheExtent`), então `find.text`/`tap`
+não encontram esses widgets sem antes rolar
+(`tester.drag(find.byType(ListView), const Offset(0, -600))`). Ver
+`test/features/workout_session/workout_player_screen_test.dart`.
+
+## Vínculo de imagens de exercício (`tool/link_exercise_media.dart`)
+
+Script único (mesmo padrão de `tool/prepare_app_icon.dart`), usado
+quando o pacote de 195 imagens é substituído/renomeado: casa cada arquivo
+`Nivel N - Nome.ext` por **nome normalizado** contra
+`assets/data/exercise_media_catalog.json` (nunca pelo número — é uma
+numeração global do pacote de entrega, diferente da escala 0-7 por
+padrão que o campo `level` do catálogo usa) e copia para o `asset_path`
+que o catálogo já declara — não cria nenhum manifesto paralelo, o
+catálogo já é a fonte única de verdade. Rodar com `dart run
+tool/link_exercise_media.dart`; só copia/apaga a pasta de origem se
+todas as imagens baterem sem ambiguidade.
+
 ## Persistência
 
 ### Banco Drift (`lib/core/database/app_database.dart`)

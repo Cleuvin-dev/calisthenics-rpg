@@ -1692,3 +1692,171 @@ removeu `assets/images/icon.jpg`/`icon.png` do repositório — ação do
 próprio usuário, fora desta sessão de trabalho; `assets/images/icone.png`
 (o que `pubspec.yaml`/`flutter_launcher_icons` de fato usa) não foi
 tocado.
+
+## Nova tela de execução + 195 imagens relinkadas (2026-07-28)
+
+### Ponto de partida: achado crítico antes de qualquer código
+
+Ao verificar `git status` no início desta sessão (como o handoff
+anterior recomendava — "não presuma que a árvore está limpa"), encontrei
+195 deleções: `assets/images/exercises/` (a estrutura por categoria que
+`pubspec.yaml`/`MediaCatalogIndex` esperavam) tinha sumido do disco fora
+do git, entre a sessão anterior e esta. No lugar, uma pasta nova sem
+versionamento, `assets/images/exercicios/` (nome em português, sem
+subpastas), continha 195 arquivos maiores e mais detalhados — cada um
+já com nome, categoria, nível, mapa muscular e instruções desenhados na
+própria arte — renomeados no padrão `Nivel N - Nome do exercício.png`.
+
+Isso quebrava o bundle de assets do app (`flutter build bundle` falhava
+com "unable to find directory entry in pubspec.yaml" para as pastas
+antigas). Avisei o usuário antes de mexer em qualquer arquivo; a
+resposta foi "isso é uma alteração que farei depois", então segui para o
+próximo item do backlog **sem tocar nas imagens** — até o usuário voltar,
+na mesma sessão, com um pedido detalhado que incluía explicitamente
+resolver esse vínculo como parte da nova tela de execução. Antes de
+implementar, ainda perguntei explicitamente o que fazer com a pasta
+plana original depois de copiar/validar — o usuário escolheu apagá-la
+(evitar duplicar 327 MB no projeto).
+
+### Vínculo das 195 imagens
+
+Decisão arquitetural: **não criar um manifesto paralelo** (o pedido
+original sugeria `exercise_asset_manifest.dart`/novo JSON) — o catálogo
+existente (`assets/data/exercise_media_catalog.json`, 195 entradas com
+`slug`/`name`/`level`/`category_slug`/`asset_path`) já é a fonte única
+de verdade usada por `MediaCatalogIndex` e todos os widgets de mídia.
+Recriar isso duplicaria uma peça já testada e usada em produção.
+
+Descoberta-chave ao investigar o mapeamento: o número em "Nivel N" do
+nome do arquivo **não é** o campo `level` do catálogo — é uma numeração
+global 1-23 do pacote de entrega (agrupa exercícios de padrões
+diferentes sob o mesmo "Nivel"), enquanto `level` no catálogo é por
+categoria (0-7 ou 0-5, escala própria de cada padrão de movimento). O
+vínculo correto é só pelo **nome**, normalizado (minúsculo, sem acento,
+pontuação vira espaço). Testado com um script Node de análise antes de
+escrever qualquer coisa no repositório: 174/195 batem exatamente; os
+outros 21 têm typo (`"Dead hand"` em vez de `"Dead hang"`,
+`"Tranferencia"` sem o "s", `"Nive"` em vez de `"Nivel"` no prefixo) ou
+nome abreviado/traduzido (`"Elevação de joelhos suspenso"` no arquivo vs.
+`"Knee raises suspenso"` no catálogo). Conferi manualmente cada um dos 21
+contra a única entrada órfã correspondente do catálogo — todos batem 1
+para 1, nenhuma ambiguidade real.
+
+`tool/link_exercise_media.dart` (novo, mesmo padrão de
+`tool/prepare_app_icon.dart`): parser tolerante a 5 variações de typo
+observadas no prefixo "Nivel" (`Ninvel`, `Nive`, `Nive,`, `Nnivel`),
+casamento por nome normalizado + tabela fixa de 21 exceções (comentada
+linha a linha, com o porquê de cada uma), cópia de cada arquivo para o
+`asset_path` que o catálogo já declarava (`assets/images/exercises/
+<category_slug>/<slug>.png` — os mesmos caminhos de sempre, então
+nenhuma mudança em `pubspec.yaml`/código foi necessária), validação
+completa (195/195, 0 sem correspondência, 0 duplicidade) antes de apagar
+`assets/images/exercicios/`. `test/shared/domain/
+exercise_media_catalog_test.dart` (já existente, criado numa sessão
+anterior) já cobria exatamente as verificações permanentes que a seção
+7.5 do pedido pedia (asset existe, slug único, mediaSlug de
+`exercise_catalog.dart` resolve) — voltou a passar sozinho depois da
+cópia, sem precisar de um teste novo.
+
+**Aviso real, não resolvido nesta sessão**: as imagens novas são ~9×
+maiores (1024×1536px, ~1,7 MB cada, vs. os PNGs pequenos de antes) — o
+bundle de assets cresceu para ~327 MB e o APK release final ficou em
+387,7 MB. Ficou registrado em `IMPLEMENTATION_BACKLOG.md` como decisão
+pendente (aceitar, comprimir, ou converter pra WebP) — não é decisão que
+eu deveria tomar sozinho.
+
+### Tela "Treino em andamento" redesenhada
+
+Pedido do usuário: seguir fielmente `assets/exemplo-molde.png` (tema
+escuro, verde-neon, imagem do exercício como elemento principal, zoom em
+tela cheia, card de métricas, fluxo de descanso, navegação inferior).
+
+Investigação da arquitetura atual antes de codar (via agente de
+exploração + leitura direta): `WorkoutPlayerScreen`
+(`ConsumerStatefulWidget`, Riverpod) já orquestrava tudo que a nova tela
+precisava — `TimedSetPlayer` (série por tempo, `_Phase` interno,
+`ActiveTimer` monotônico, persistência a cada 1s, recuperação após
+fechar o app), `LogSetSheet` (série por repetições), `RestScreen`
+(descanso entre exercícios), XP via `awardsForCompletedSession`/
+`xp_ledger_repository.dart` (idempotência por `idempotencyKey`). Decisão:
+**reestilizar e quebrar em componentes essa tela existente, não criar
+uma tela paralela** — exatamente o que o pedido também instruía
+("reaproveite a arquitetura atual").
+
+**Componentes novos**, todos em `lib/features/workout_session/
+presentation/` (exceto os dois primeiros, em `lib/shared/presentation/`
+por serem genéricos o bastante para reaproveitar fora da sessão de
+treino):
+
+- `ExerciseImageCard`/`ExerciseFullscreenViewer` — imagem principal
+  (~60% do viewport, `BoxFit.contain`, borda verde-neon) diferente de
+  `ExerciseMedia` (miniatura quadrada de tamanho fixo, ainda usada em
+  listas/avaliação). As duas compartilham a resolução de caminho via
+  `resolveExerciseAssetPath()`, extraída de dentro de `ExerciseMedia`
+  pra não duplicar a lógica de catálogo→convenção antiga→placeholder.
+  Zoom via `InteractiveViewer` (pan/pinça) + duplo toque (alterna entre
+  escala 1x e 2.5x, centrado no ponto tocado) + `Hero`. Empurrado como
+  rota nova (não substitui) — o `TimedSetPlayer`/`ActiveTimer` por baixo
+  continuam rodando, sem perder nenhum estado do cronômetro ao abrir/
+  fechar o zoom.
+- `ExerciseExecutionHeader` — cabeçalho compacto: voltar, nível (do
+  catálogo de mídia via `mediaSlug`, quando existe — 2 exercícios não
+  têm), nome, categoria, progresso. Ganhou um botão "Abandonar sessão"
+  que não estava na imagem de exemplo estática, mas que já existia na
+  `AppBar` antiga — removê-lo seria uma regressão de funcionalidade
+  real, não só uma escolha visual.
+- `ExerciseSetMetricsCard` — série/alvo (rótulo "REPETIÇÕES" ou "TEMPO"
+  conforme `DoseType`)/descanso/status. `TimedSetPlayer` ganhou um
+  callback novo, `onStatusChanged` (`ValueChanged<ExerciseSetStatus>?`),
+  reportado a cada transição de `_Phase` — sem isso, o status "Pausado"
+  do card não teria como saber que a série por tempo está pausada
+  internamente.
+- `RestTimerPanel` — **funcionalidade nova real**, não só visual: o
+  pedido descrevia descanso entre séries do mesmo exercício, que não
+  existia antes (só havia descanso entre exercícios diferentes, via
+  `RestScreen`, que continua existindo sem mudança nenhuma — é uma
+  preocupação diferente, mostra prévia do próximo exercício). Entra
+  automaticamente depois de qualquer série que não seja a última do
+  exercício (reps ou tempo), exceto quando a série terminou por dor
+  (`PerceivedEffort.pain`) — nesse caso o usuário já está saindo do
+  exercício, não faz sentido descansar pra continuar nele. Reaproveita o
+  mesmo `ActiveTimer` monotônico de `RestScreen`/`TimedSetPlayer`.
+- `ExercisePrimaryActionButton`/`ExerciseBottomNavigation` — o pedido
+  listava rótulos possíveis pro botão principal (Iniciar/Pausar/
+  Continuar/Concluir série/Concluir exercício) e insistia em nunca usar
+  "CONCLUÍDO" fixo antes de a ação acontecer de verdade. A própria
+  imagem de exemplo mostra "CONCLUÍDO" com o timer ainda rodando
+  (00:28 de 00:45) — decidi seguir o texto do pedido em vez da imagem
+  estática nesse ponto específico, já que os dois se contradizem.
+  Durante uma série por tempo rodando, o botão principal não aparece
+  duplicado — o próprio `TimedSetPlayer` já mostra suas ações
+  (Iniciar/Pausar/Continuar) com o estilo verde-neon do tema.
+
+**Mudanças de comportamento** (além do reestilo, coisas que agora
+funcionam diferente de antes):
+
+- "Próximo"/"Finalizar treino" fica desabilitado até todas as séries do
+  exercício atual estarem registradas (ou uma delas por dor). Antes era
+  possível avançar de exercício com séries pendentes.
+- "Anterior" é novo: volta ao exercício anterior sem apagar nenhuma
+  série já salva (o histórico vive no banco por sessão+exercício, não
+  por índice local de navegação).
+- "Pular série" é novo: pede confirmação (afeta o progresso do
+  exercício), registra a série como `notCompleted` com 0 repetições —
+  ainda conta pro total de séries exigidas.
+
+**Testes**: 8 novos/reescritos em `workout_player_screen_test.dart`
+(card de métricas, botão desabilitado até completar séries, descanso
+aparece e "Pular descanso" avança, pular série com confirmação, anterior
+preserva histórico), 3 novos em `exercise_image_card_test.dart`
+(placeholder, abrir/fechar zoom preservando estado do widget pai, duplo
+toque não trava). Armadilha de teste nova, documentada em
+`ARCHITECTURE.md`: a `ListView` com cabeçalho+imagem grande empurra os
+controles pra fora do alcance de pré-construção padrão da sliver list em
+telas de teste — é preciso `tester.drag` antes de `find`/`tap` neles.
+**206 → 214 testes**, todos passando; `flutter analyze` sem problemas;
+`dart format` sem mudanças; `flutter build apk --release` OK (387,7 MB).
+**Não instalado no aparelho físico nesta sessão** — nenhum dispositivo
+estava conectado ao ambiente (`adb devices` vazio). Verificação manual
+real (zoom por gesto, descanso entre séries, fotos novas) fica pendente,
+registrada em `IMPLEMENTATION_BACKLOG.md`.

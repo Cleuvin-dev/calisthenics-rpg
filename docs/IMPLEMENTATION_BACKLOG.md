@@ -13,11 +13,12 @@ mova para "Concluído recentemente" com a data, e registre o detalhe
 pendência nova durante uma sessão, adicione aqui **e** explique o
 porquê em `PROJECT_STATUS.md` — nunca só em um dos dois.
 
-**Última sincronização:** 2026-07-27, após implementar peso/altura/IMC,
-favoritos (Descobrir) e, em seguida, objetivo de treino (dose por
-`strength`/`fatLoss`/`conditioning`) — ver `PROJECT_STATUS.md`. Item
-ainda aberto: catálogo de treinos maior continua bloqueador explícito
-de várias seções da especificação de redesenho (Descobrir §5.1).
+**Última sincronização:** 2026-07-28, após relinkar as 195 imagens
+(renomeadas/substituídas fora desta sessão) e redesenhar a tela "Treino
+em andamento" (tema verde-neon, zoom em tela cheia, descanso entre
+séries) — ver `PROJECT_STATUS.md`. Item ainda aberto: catálogo de
+treinos maior continua bloqueador explícito de várias seções da
+especificação de redesenho (Descobrir §5.1).
 
 ## P0 — imediato
 
@@ -26,7 +27,19 @@ de várias seções da especificação de redesenho (Descobrir §5.1).
   bloqueada durante série por tempo (`adb shell input keyevent
   KEYCODE_POWER`), toque duplo físico deliberado em "Concluir"/
   "Registrar série". O resto do player (mídia real, recuperação de
-  série por tempo, ausência de crash) já foi confirmado no aparelho.
+  série por tempo, ausência de crash) já foi confirmado no aparelho —
+  **exceto a tela "Treino em andamento" redesenhada em 2026-07-28**
+  (nenhum aparelho estava conectado ao ambiente nesta sessão): zoom da
+  imagem (pinça/duplo toque), descanso entre séries, "Pular série"/
+  "Anterior", e conferir visualmente as fotos novas (mais detalhadas,
+  1024×1536) num dispositivo real.
+- [ ] **Tamanho do bundle de imagens** (2026-07-28): as 195 imagens
+  novas são ~9× maiores que as antigas (1024×1536, ~1,7 MB cada) — o
+  `flutter build apk --release` final ficou em 387,7 MB (era bem menor
+  antes). Nenhuma compressão foi aplicada (fora do escopo pedido).
+  Decisão pendente: aceitar o tamanho, comprimir/redimensionar, ou
+  converter para WebP (o campo `media_type` do catálogo já suporta
+  valores diferentes de `static_png`, mas nenhuma conversão foi feita).
 - [ ] **Revisão profissional de conteúdo/mídia** (Educação Física) —
   bloqueia publicação comercial (`README.md` do pacote de imagens,
   `SAFETY_AND_SCREENING.md` §10, `EXERCISE_SCHEMA.md` §5). Nenhum
@@ -150,9 +163,14 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
   (`conservative_placement.dart`), `CapabilityEstimateRepository.
   saveEstimate` (já grava uma nova linha por reavaliação, o histórico
   de colocações já é append-only), `OtherPatternsAssessmentScreen` como
-  referência de UI para autorrelato por padrão. Falta: entrada point no
-  Dashboard, fluxo de "reavaliar quando eu quiser" (não só na
-  onboarding), e o recálculo automático do plano/metas ao final.
+  referência de UI para autorrelato por padrão. **Parcialmente coberto
+  em 2026-07-28**: "Refazer avaliação física" (Definição) reativado —
+  já dá pra reavaliar qualquer padrão a qualquer momento (reaproveitando
+  `AssessmentSkipTestScreen`/`OtherPatternsAssessmentScreen`), com
+  lembrete pra regenerar o plano manualmente. Ainda falta: sugestão
+  periódica (15/30 dias), entrada point no Dashboard/Jornada (só existe
+  em Definição/Evolução por enquanto) e o recálculo automático do
+  plano/metas ao final (continua manual, via "Gerar novamente").
 - [ ] **Campanha/fases narrativas, atributos, Boss Test, classes,
   ranking** (`RPG_SYSTEM.md` §4-7, §10-11) — hoje só existe XP/nível +
   missões diárias/semanais.
@@ -237,6 +255,14 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## Achados de ambiente (não é trabalho de produto, mas afeta como testar)
 
+- 2026-07-28 — Entre a sessão anterior e esta, alguém apagou
+  `assets/images/exercises/` do disco (fora do git — apareceu como 195
+  deleções no `git status`) e substituiu por 195 arquivos novos,
+  renomeados `Nivel N - Nome.png`, soltos em `assets/images/exercicios/`
+  (327 MB). Resolvido nesta sessão (ver "Concluído recentemente"), mas
+  fica registrado para não presumir novamente que `git status` está
+  limpo no início de uma sessão — sempre conferir antes de assumir.
+
 - `adb shell uiautomator dump` neste aparelho específico
   (`7549GMFUDA4DKZW8`) abre esporadicamente o assistente de
   acessibilidade "Acesso por interruptor" do Android. Ao testar
@@ -253,6 +279,24 @@ automatizado — diagnosticados no código, corrigidos em 2026-07-26.
 
 ## Concluído recentemente
 
+- 2026-07-28 (continuação, achado no aparelho físico) — Corrigido
+  `ExerciseDetailScreen` ("Como executar"), que travava o layout
+  inteiro por uso inválido de `Flexible` dentro de `ListTile.trailing`
+  (bug pré-existente, não desta sessão); imagem dessa tela ganhou zoom
+  em tela cheia (`ExerciseImageCard`, reaproveitado); Definição > "X
+  dias por semana" e "Refazer avaliação física" ficaram clicáveis (ver
+  detalhe no item de "Teste físico periódico" acima). 220 testes (eram
+  214). Ver `docs/CHANGELOG.md`.
+- 2026-07-28 — Vínculo das 195 imagens novas (renomeadas/substituídas
+  fora desta sessão, ver "Achados de ambiente" abaixo) via novo
+  `tool/link_exercise_media.dart`, e tela "Treino em andamento"
+  redesenhada (tema verde-neon, `ExerciseImageCard`/
+  `ExerciseFullscreenViewer` com zoom, `ExerciseSetMetricsCard`,
+  `RestTimerPanel` — descanso entre séries do mesmo exercício, novo),
+  seguindo `assets/exemplo-molde.png`. "Próximo"/"Finalizar treino" agora
+  exige todas as séries do exercício atual registradas antes de avançar
+  (mudança de comportamento). Ver `docs/PROJECT_STATUS.md` §"Nova tela
+  de execução + 195 imagens relinkadas" e `docs/ARCHITECTURE.md`.
 - 2026-07-27 — Objetivo de treino escolhido pelo usuário: as duas
   decisões que este item deixava em aberto foram resolvidas pelo
   usuário antes de codar (não presumidas) — (1) **um único objetivo

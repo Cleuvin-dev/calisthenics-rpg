@@ -107,6 +107,22 @@ void main() {
     },
   );
 
+  testWidgets(
+    'tocar em "X dias por semana" abre o mesmo editor de dias da semana',
+    (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 dias por semana'), findsOneWidget);
+
+      await tester.tap(find.text('3 dias por semana'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dias de treino na semana'), findsWidgets);
+      expect(find.byType(FilterChip), findsNWidgets(7));
+    },
+  );
+
   testWidgets('usuário ajusta a contagem regressiva e o valor persiste', (
     tester,
   ) async {
@@ -137,4 +153,65 @@ void main() {
 
     expect(find.text('8s'), findsOneWidget);
   });
+
+  testWidgets(
+    '"Refazer avaliação física" deixa escolher push_horizontal e salva '
+    'uma nova colocação, mostrando o lembrete de regenerar o plano',
+    (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pumpAndSettle();
+
+      await tester.dragUntilVisible(
+        find.text('Refazer avaliação física'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Refazer avaliação física'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Empurrar horizontal'), findsOneWidget);
+      expect(find.text('Outros padrões'), findsOneWidget);
+
+      await tester.tap(find.text('Empurrar horizontal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Colocação inicial — empurrar'), findsOneWidget);
+
+      await tester.tap(find.text('Não quero responder agora'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Colocação inicial — empurrar'), findsNothing);
+      expect(
+        find.textContaining('Colocação salva'),
+        findsOneWidget,
+        reason: 'lembrete só aparece depois de uma colocação real ser salva',
+      );
+    },
+  );
+
+  testWidgets(
+    'voltar do seletor de "Refazer avaliação física" sem escolher nada '
+    'não mostra o lembrete',
+    (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pumpAndSettle();
+
+      await tester.dragUntilVisible(
+        find.text('Refazer avaliação física'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Refazer avaliação física'));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(20, 20)); // fora do bottom sheet
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Colocação salva'), findsNothing);
+    },
+  );
 }

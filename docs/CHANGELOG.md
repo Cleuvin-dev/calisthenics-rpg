@@ -5,6 +5,136 @@ de cada entrada, ver `PROJECT_STATUS.md`. Entradas anteriores a
 2026-07-27 são resumidas a partir do histórico de commits e de
 `PROJECT_STATUS.md` — não presenciadas por quem escreveu este arquivo.
 
+## 2026-07-28 (continuação 2) — Bug crítico: sessão iniciada perdia a
+dose real do plano
+
+Achado testando ao vivo no aparelho: a tela de execução "não estava
+conforme a imagem de exemplo" — exercícios mostravam sempre placeholder
+(nunca a foto real), "REPETIÇÕES: 0" mesmo em exercícios por tempo,
+sempre "1/1" série. Investigado com `flutter analyze`/leitura de código
+(não emulável em modo debug neste ambiente — Gradle trava, mesma
+limitação já documentada), a causa raiz: `TrainingPlanScreen._startSession`
+reconstruía `WorkoutSessionItem` a partir do `PlannedExerciseItem` do
+plano copiando só 4 campos (`pattern`/`exerciseSlug`/`namePtBr`/
+`setsRepsGuidance`) — `doseType`, `targetSets`, `targetReps`,
+`targetSeconds`, `restSeconds` e `mediaSlug` caíam nos valores padrão
+(`reps`/1 série/60s/sem imagem), descartando a dose e a imagem reais do
+plano gerado. Bug **pré-existente**, não desta sessão — nenhum teste
+automatizado exercitava esse caminho real (os testes de
+`workout_player_screen_test.dart`/`timed_set_player_flow_test.dart`
+constroem `WorkoutSessionItem` diretamente, sem passar por
+`_startSession`), então nunca foi pego antes.
+
+- Corrigido: `_startSession` agora repassa todos os campos do
+  `PlannedExerciseItem`.
+- Teste de regressão novo: inicia uma sessão de verdade a partir do
+  plano (não construindo o item à mão) e confere que `doseType`/
+  `targetSeconds`/`targetSets`/`mediaSlug` sobrevivem.
+- Verificado ao vivo no aparelho: sessão nova mostra "TEMPO" (não
+  "REPETIÇÕES") para o aquecimento, alvo de 240s correto, descanso 60s
+  correto, status sincronizado em tempo real (Aguardando → Em
+  execução). O aquecimento continua sem foto real por não ter
+  `mediaSlug` associado (`warmup_joint_mobility`, decisão antiga
+  documentada) — não é bug, os demais exercícios do plano (Flexão
+  tradicional, Agachamento livre, Prancha completa etc.) já mostravam
+  foto real na lista da semana, confirmando que o vínculo de mídia
+  continua correto.
+- 222 testes automatizados (eram 221); `flutter analyze`/`dart format`
+  sem problemas.
+
+## 2026-07-28 (continuação) — Bug real achado no aparelho + 3 itens de
+Definição
+
+Depois de instalar a entrega anterior no aparelho físico, o usuário
+reportou e pediu três coisas na mesma sessão:
+
+- **Bug real corrigido, pré-existente** (não introduzido pela sessão
+  anterior): `ExerciseDetailScreen` ("Como executar", Descobrir →
+  exercício) travava o layout inteiro — `_DetailRow` usava `Flexible`
+  dentro de `ListTile.trailing`, uso inválido (`ListTile` não é um
+  `Flex`), gerando "Incorrect use of ParentDataWidget" e cascata de
+  colunas de uma letra por linha. Corrigido trocando por `Row`+`Expanded`
+  de verdade. Achado com um teste de regressão reproduzindo a tela
+  (`test/features/discover/discover_screen_test.dart`), não só olhando
+  o print do erro.
+- **Zoom em tela cheia na imagem do exercício** (Descobrir → "Como
+  executar"): trocado o `ExerciseMedia` de tamanho fixo (240px) pelo
+  `ExerciseImageCard`/`ExerciseFullscreenViewer` já construídos na
+  entrega anterior — mesmo componente, reaproveitado, sem código novo.
+- **Definição > "X dias por semana" agora é clicável**: abre o mesmo
+  diálogo de "Dias de treino na semana" (a quantidade sempre foi
+  derivada de quantos dias são escolhidos ali — não criei um segundo
+  editor de quantidade que pudesse divergir).
+- **Definição > "Refazer avaliação física" reativado**: estava
+  `enabled: false` com uma nota de "futura reavaliação dedicada". Agora
+  abre uma folha com as duas colocações já existentes no app
+  (`AssessmentSkipTestScreen` para empurrar horizontal,
+  `OtherPatternsAssessmentScreen` para os outros 4 padrões) —
+  reaproveitadas de `PlacementResultScreen`/`EvolutionScreen`, nenhuma
+  tela nova. As duas passaram a devolver `pop(true)` quando salvam de
+  verdade, para o lembrete de "gerar novamente o plano" só aparecer
+  quando algo foi mesmo salvo (não ao simplesmente voltar).
+- 220 testes automatizados (eram 214), todos passando; `flutter
+  analyze`/`dart format` sem problemas; instalado e verificado sem
+  crash no aparelho físico (`7549GMFUDA4DKZW8`) duas vezes nesta
+  continuação.
+
+## 2026-07-28 — Nova tela "Treino em andamento" + 195 imagens relinkadas
+
+Fora do fluxo normal de continuidade: entre a sessão anterior e esta, as
+195 imagens de `assets/images/exercises/` foram apagadas do disco (fora
+do git) e substituídas por 195 arquivos novos, maiores e com muito mais
+conteúdo visual (nome, categoria, nível, mapa muscular, instruções já
+desenhados na própria arte), soltos e renomeados como `Nivel N -
+Nome.png` em `assets/images/exercicios/` — sem estrutura de pastas, sem
+vínculo com o catálogo. Isso quebrava o bundle de assets do app
+(`pubspec.yaml` referenciava pastas que não existiam mais). Duas
+entregas nesta sessão, pedidas juntas pelo usuário:
+
+- **Vínculo das 195 imagens**: novo `tool/link_exercise_media.dart`
+  (rodar com `dart run tool/link_exercise_media.dart`) casa cada arquivo
+  por **nome normalizado** (nunca pelo número em "Nivel N", que é uma
+  numeração global 1-23 do pacote de entrega, diferente da escala 0-7
+  por padrão que o catálogo usa) contra `exercise_media_catalog.json` —
+  174/195 batem exatamente; os outros 21 (typo/abreviação no nome do
+  arquivo) resolvidos por uma tabela fixa de exceções, cada uma conferida
+  manualmente contra a única entrada órfã do catálogo, comentada linha a
+  linha no script. Copia cada arquivo pro `asset_path` que o catálogo já
+  declarava (`assets/images/exercises/<categoria>/<slug>.png`) — nenhuma
+  mudança em `pubspec.yaml`/`MediaCatalogIndex`/`ExerciseMedia`, porque
+  os caminhos já eram esses. As 195 bateram sem erro; a pasta original
+  `assets/images/exercicios/` foi apagada depois da validação (a pedido
+  do usuário). **Aviso real**: as imagens novas são ~9× maiores (1024×1536,
+  ~1,7 MB cada) — o bundle de assets cresceu de dezenas de MB para
+  ~327 MB; o APK release final ficou em 387,7 MB. Ver
+  `docs/IMPLEMENTATION_BACKLOG.md`.
+- **Tela "Treino em andamento" redesenhada** (tema escuro, verde-neon,
+  seguindo `assets/exemplo-molde.png`): `WorkoutPlayerScreen` foi
+  quebrada em componentes novos (`ExerciseExecutionHeader`,
+  `ExerciseImageCard`/`ExerciseFullscreenViewer` com zoom via
+  `InteractiveViewer`+`Hero`, `ExerciseSetMetricsCard`,
+  `RestTimerPanel`, `ExercisePrimaryActionButton`,
+  `ExerciseBottomNavigation`) reaproveitando toda a arquitetura existente
+  (Riverpod, `ActiveTimer` monotônico, `TimedSetPlayer`, XP/idempotência)
+  — nenhuma tela paralela. **Funcionalidade nova real**: descanso
+  **entre séries do mesmo exercício** (`RestTimerPanel`), que não existia
+  antes (só havia descanso entre exercícios, via `RestScreen`, mantido
+  sem mudança). "Próximo"/"Finalizar treino" agora fica desabilitado até
+  todas as séries do exercício atual serem registradas (antes era
+  possível avançar a qualquer momento); "Pular série" (com confirmação) e
+  "Anterior" (não apaga histórico) são novos. Botão "Abandonar sessão"
+  preservado como ícone no cabeçalho (não estava no protótipo estático,
+  mas removê-lo seria uma regressão de funcionalidade já existente). Ver
+  `docs/PROJECT_STATUS.md` §"Nova tela de execução + 195 imagens
+  relinkadas".
+- 8 testes novos/reescritos em `workout_player_screen_test.dart` (rolagem
+  necessária nos testes por causa da imagem grande — anotado como
+  armadilha em `ARCHITECTURE.md`), 3 novos em `exercise_image_card_test.dart`.
+  214 testes automatizados (eram 206), todos passando; `flutter analyze`
+  sem problemas; `flutter build apk --release` OK. **Não instalado no
+  aparelho físico nesta sessão** (nenhum dispositivo conectado ao
+  ambiente) — pendente verificação manual.
+
 ## 2026-07-27 — Objetivo de treino, abas do plano, limpeza da mídia
 (commit `753d58c`)
 

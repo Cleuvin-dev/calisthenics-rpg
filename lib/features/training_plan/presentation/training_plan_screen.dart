@@ -63,22 +63,36 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen>
   }
 
   Future<void> _regenerate() async {
+    if (_regenerating) return;
     setState(() => _regenerating = true);
 
-    final capabilityLevelsByPattern = await resolveCapabilityLevelsByPattern(
-      ref,
-      widget.placement.level,
-    );
-    const generator = WeeklyPlanGenerator();
-    final plan = generator.generate(
-      preferences: widget.preferences.toDomain(),
-      capabilityLevelsByPattern: capabilityLevelsByPattern,
-      now: DateTime.now(),
-    );
+    try {
+      final capabilityLevelsByPattern = await resolveCapabilityLevelsByPattern(
+        ref,
+        widget.placement.level,
+      );
+      const generator = WeeklyPlanGenerator();
+      final plan = generator.generate(
+        preferences: widget.preferences.toDomain(),
+        capabilityLevelsByPattern: capabilityLevelsByPattern,
+        now: DateTime.now(),
+      );
 
-    await ref.read(trainingPlanRepositoryProvider).save(plan);
+      await ref.read(trainingPlanRepositoryProvider).save(plan);
 
-    ref.invalidate(latestTrainingPlanProvider);
+      ref.invalidate(latestTrainingPlanProvider);
+    } catch (error) {
+      // Sem isso, uma falha aqui deixava o botão preso girando pra
+      // sempre (`_regenerating` nunca voltava a `false`) e o erro
+      // desaparecia sem feedback nenhum pro usuário.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível gerar o plano: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _regenerating = false);
+    }
   }
 
   Future<void> _openSession(int workoutSessionId) async {
@@ -121,6 +135,16 @@ class _TrainingPlanScreenState extends ConsumerState<TrainingPlanScreen>
               exerciseSlug: i.exerciseSlug,
               namePtBr: i.namePtBr,
               setsRepsGuidance: i.setsRepsGuidance,
+              // Sem repassar estes campos, toda sessão iniciada perdia a
+              // dose real do plano (virava reps/1 série/60s por padrão)
+              // e a imagem (mediaSlug nulo) — bug real encontrado
+              // testando no aparelho físico.
+              doseType: i.doseType,
+              targetSets: i.targetSets,
+              targetReps: i.targetReps,
+              targetSeconds: i.targetSeconds,
+              restSeconds: i.restSeconds,
+              mediaSlug: i.mediaSlug,
             ),
           )
           .toList(),

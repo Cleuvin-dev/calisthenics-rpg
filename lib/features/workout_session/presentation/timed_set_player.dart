@@ -6,8 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/workout_session_providers.dart';
 import '../domain/active_timer.dart';
 import '../domain/workout_session.dart';
+import 'exercise_set_metrics_card.dart';
 
 enum _Phase { ready, preparing, running, paused }
+
+ExerciseSetStatus _statusForPhase(_Phase phase) => switch (phase) {
+  _Phase.ready => ExerciseSetStatus.waiting,
+  _Phase.preparing || _Phase.running => ExerciseSetStatus.active,
+  _Phase.paused => ExerciseSetStatus.paused,
+};
 
 /// Painel de dose por tempo (VISUAL_ARCHITECTURE_AND_WORKOUT_PLAYER.md
 /// §12): contagem preparatória 3-2-1, contador regressivo, pausa,
@@ -31,6 +38,7 @@ class TimedSetPlayer extends ConsumerStatefulWidget {
     required this.onPain,
     this.initialElapsedMs,
     this.countdownSeconds = 3,
+    this.onStatusChanged,
   });
 
   final int workoutSessionId;
@@ -42,8 +50,10 @@ class TimedSetPlayer extends ConsumerStatefulWidget {
   final int targetSeconds;
 
   /// Chamado depois que a série é finalizada com sucesso (alvo atingido,
-  /// interrompida ou dor) — o pai decide o que fazer a seguir.
-  final VoidCallback onFinalized;
+  /// interrompida ou dor) — o motivo informa se o pai deve entrar em
+  /// descanso antes da próxima série (só quando `targetReached`; uma
+  /// interrupção manual ou dor não gera descanso automático).
+  final ValueChanged<TimedSetCompletionReason> onFinalized;
 
   /// Chamado depois de finalizar por dor — o pai mostra o fluxo de
   /// segurança (mesmo diálogo do player por repetições).
@@ -54,6 +64,11 @@ class TimedSetPlayer extends ConsumerStatefulWidget {
   /// Preferência de "Contagem regressiva" (Definição > Treino), aplicada
   /// à contagem preparatória antes de a série por tempo começar a valer.
   final int countdownSeconds;
+
+  /// Reporta o status coarse (SÉRIE/STATUS do card de métricas da tela de
+  /// execução) sempre que a fase interna muda — `null` quando quem chama
+  /// não precisa (ex.: telas antigas/testes que só usam o timer isolado).
+  final ValueChanged<ExerciseSetStatus>? onStatusChanged;
 
   @override
   ConsumerState<TimedSetPlayer> createState() => _TimedSetPlayerState();
@@ -82,6 +97,9 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
     } else {
       _phase = _Phase.ready;
     }
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => widget.onStatusChanged?.call(_statusForPhase(_phase)),
+    );
   }
 
   @override
@@ -124,6 +142,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
       _phase = _Phase.preparing;
       _prepRemaining = widget.countdownSeconds;
     });
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
     _prepTicker = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
       setState(() => _prepRemaining--);
@@ -137,6 +156,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
   void _cancelPreparation() {
     _prepTicker?.cancel();
     setState(() => _phase = _Phase.ready);
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
   }
 
   Future<void> _beginRunning() async {
@@ -156,6 +176,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
     if (!mounted) return;
     _timer.start();
     setState(() => _phase = _Phase.running);
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
     _uiTicker = Timer.periodic(
       const Duration(milliseconds: 250),
       (_) => _tick(),
@@ -183,12 +204,14 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
     _uiTicker?.cancel();
     _timer.pause();
     setState(() => _phase = _Phase.paused);
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
     unawaited(_persistProgress(running: false));
   }
 
   void _resume() {
     _timer.resume();
     setState(() => _phase = _Phase.running);
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
     _uiTicker = Timer.periodic(
       const Duration(milliseconds: 250),
       (_) => _tick(),
@@ -210,6 +233,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
       _lastPersistedSecond = -1;
       _phase = _Phase.ready;
     });
+    widget.onStatusChanged?.call(_statusForPhase(_phase));
   }
 
   Future<void> _stop() async {
@@ -295,7 +319,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
         );
     _hasPersistedRow = false;
     if (!mounted) return;
-    widget.onFinalized();
+    widget.onFinalized(completionReason);
   }
 
   @override
@@ -320,6 +344,7 @@ class _TimedSetPlayerState extends ConsumerState<TimedSetPlayer>
         else if (_phase == _Phase.running || _phase == _Phase.paused)
           _RunningView(
             remainingSeconds: remainingSeconds,
+            totalSeconds: widget.targetSeconds,
             progress: progress,
             paused: _phase == _Phase.paused,
           )
@@ -453,11 +478,13 @@ class _PreparationView extends StatelessWidget {
 class _RunningView extends StatelessWidget {
   const _RunningView({
     required this.remainingSeconds,
+    required this.totalSeconds,
     required this.progress,
     required this.paused,
   });
 
   final int remainingSeconds;
+  final int totalSeconds;
   final double progress;
   final bool paused;
 
@@ -465,34 +492,60 @@ class _RunningView extends StatelessWidget {
   Widget build(BuildContext context) {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (remainingSeconds % 60).toString().padLeft(2, '0');
+    final totalMinutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final totalSecondsPart = (totalSeconds % 60).toString().padLeft(2, '0');
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return Center(
-      child: SizedBox(
-        width: 180,
-        height: 180,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 180,
-              height: 180,
-              child: CircularProgressIndicator(
-                value: progress.clamp(0, 1),
-                strokeWidth: 8,
-              ),
-            ),
-            Semantics(
-              label: paused
-                  ? '$remainingSeconds segundos restantes, pausado'
-                  : '$remainingSeconds segundos restantes, timer em andamento',
-              child: Text(
-                '$minutes:$seconds',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ),
-          ],
+    return Column(
+      children: [
+        Text(
+          'TEMPO RESTANTE',
+          style: textTheme.labelMedium?.copyWith(
+            color: colorScheme.primary,
+            letterSpacing: 1.2,
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: 180,
+          height: 180,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 180,
+                height: 180,
+                child: CircularProgressIndicator(
+                  value: progress.clamp(0, 1),
+                  strokeWidth: 8,
+                  // Verde-menta, nunca o roxo reservado para XP
+                  // (UI_UX.md) — sem isso, herdaria
+                  // `progressIndicatorTheme.color` (violeta) do tema.
+                  color: colorScheme.primary,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                ),
+              ),
+              Semantics(
+                label: paused
+                    ? '$remainingSeconds segundos restantes, pausado'
+                    : '$remainingSeconds segundos restantes, timer em andamento',
+                child: Text(
+                  '$minutes:$seconds',
+                  style: textTheme.headlineMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'de $totalMinutes:$totalSecondsPart',
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

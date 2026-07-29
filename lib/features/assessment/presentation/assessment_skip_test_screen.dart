@@ -27,7 +27,7 @@ class _AssessmentSkipTestScreenState
     ref.invalidate(latestCapabilityEstimateProvider('push_horizontal'));
 
     if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     }
   }
 

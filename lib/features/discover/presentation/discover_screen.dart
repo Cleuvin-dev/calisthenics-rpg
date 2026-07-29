@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../shared/presentation/exercise_image_card.dart';
 import '../../../shared/presentation/exercise_media.dart';
 import '../../onboarding/domain/training_preferences.dart';
 import '../../training_plan/domain/exercise_catalog.dart';
@@ -592,14 +593,11 @@ class ExerciseDetailScreen extends StatelessWidget {
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Center(
-          child: ExerciseMedia(
-            exerciseSlug: exercise.slug,
-            pattern: exercise.pattern,
-            namePtBr: exercise.namePtBr,
-            mediaSlug: exercise.mediaSlug,
-            size: 240,
-          ),
+        ExerciseImageCard(
+          exerciseSlug: exercise.slug,
+          pattern: exercise.pattern,
+          namePtBr: exercise.namePtBr,
+          mediaSlug: exercise.mediaSlug,
         ),
         const SizedBox(height: 20),
         Text(
@@ -641,10 +639,16 @@ class _DetailRow extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label),
-    trailing: Flexible(child: Text(value, textAlign: TextAlign.end)),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: Text(label)),
+        const SizedBox(width: 12),
+        Expanded(flex: 2, child: Text(value, textAlign: TextAlign.end)),
+      ],
+    ),
   );
 }
 

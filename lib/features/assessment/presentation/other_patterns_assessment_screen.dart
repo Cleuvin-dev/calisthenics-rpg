@@ -48,7 +48,7 @@ class _OtherPatternsAssessmentScreenState
     }
 
     if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     }
   }
 
